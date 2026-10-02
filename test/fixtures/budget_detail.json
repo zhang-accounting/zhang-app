@@ -1,0 +1,23 @@
+{
+ "data": {
+  "name": "food",
+  "alias": "Eating",
+  "category": "Living",
+  "closed": false,
+  "related_accounts": [
+   "Expenses:Groceries"
+  ],
+  "assigned_amount": {
+   "number": "1000",
+   "commodity": "CNY"
+  },
+  "activity_amount": {
+   "number": "88.50",
+   "commodity": "CNY"
+  },
+  "available_amount": {
+   "number": "911.50",
+   "commodity": "CNY"
+  }
+ }
+}

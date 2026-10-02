@@ -1,0 +1,38 @@
+{
+ "data": {
+  "balance": {
+   "USD": [
+    {
+     "date": "2023-09-06",
+     "balance": {
+      "number": "-260",
+      "commodity": "USD"
+     }
+    }
+   ],
+   "CNY": [
+    {
+     "date": "2023-08-03",
+     "balance": {
+      "number": "134857",
+      "commodity": "CNY"
+     }
+    },
+    {
+     "date": "2023-08-29",
+     "balance": {
+      "number": "134702",
+      "commodity": "CNY"
+     }
+    },
+    {
+     "date": "2023-06-26",
+     "balance": {
+      "number": "134980",
+      "commodity": "CNY"
+     }
+    }
+   ]
+  }
+ }
+}

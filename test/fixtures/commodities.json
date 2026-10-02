@@ -1,0 +1,40 @@
+{
+ "data": [
+  {
+   "name": "CNY",
+   "precision": 2,
+   "prefix": "¥",
+   "suffix": null,
+   "rounding": "RoundDown",
+   "group": null,
+   "total_amount": "298631.00",
+   "latest_price_date": null,
+   "latest_price_amount": null,
+   "latest_price_commodity": null
+  },
+  {
+   "name": "USD",
+   "precision": 2,
+   "prefix": "$",
+   "suffix": null,
+   "rounding": "RoundDown",
+   "group": null,
+   "total_amount": "-272.99",
+   "latest_price_date": "2023-09-01T00:00:00",
+   "latest_price_amount": "7.25",
+   "latest_price_commodity": "CNY"
+  },
+  {
+   "name": "BTC",
+   "precision": 8,
+   "prefix": null,
+   "suffix": null,
+   "rounding": "RoundDown",
+   "group": "Crypto",
+   "total_amount": "0.01",
+   "latest_price_date": null,
+   "latest_price_amount": null,
+   "latest_price_commodity": null
+  }
+ ]
+}

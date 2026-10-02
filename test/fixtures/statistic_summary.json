@@ -1,0 +1,47 @@
+{
+ "data": {
+  "from": "2023-08-31T15:00:00Z",
+  "to": "2023-09-30T14:59:59Z",
+  "balance": {
+   "calculated": {
+    "number": "296692.771",
+    "commodity": "CNY"
+   },
+   "detail": {
+    "USD": "-272.99",
+    "BTC": "0.01",
+    "CNY": "298631.00"
+   }
+  },
+  "liability": {
+   "calculated": {
+    "number": "-743.229",
+    "commodity": "CNY"
+   },
+   "detail": {
+    "USD": "-12.99",
+    "CNY": "-651"
+   }
+  },
+  "income": {
+   "calculated": {
+    "number": "-436",
+    "commodity": "CNY"
+   },
+   "detail": {
+    "CNY": "-436"
+   }
+  },
+  "expense": {
+   "calculated": {
+    "number": "796.729",
+    "commodity": "CNY"
+   },
+   "detail": {
+    "CNY": "704.50",
+    "USD": "12.99"
+   }
+  },
+  "transaction_number": 40
+ }
+}

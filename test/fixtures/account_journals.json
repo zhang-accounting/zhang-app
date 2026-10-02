@@ -1,0 +1,36 @@
+{
+ "data": [
+  {
+   "datetime": "2023-09-13T14:25:00",
+   "timestamp": 1694582700,
+   "account": "Assets:WeChat",
+   "trx_id": "e7c19293-4205-3209-a353-87dd81d2675c",
+   "payee": "Github Restaurant",
+   "narration": "Fried Chicken",
+   "inferred_unit": {
+    "number": "-25",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "59.00",
+    "commodity": "CNY"
+   }
+  },
+  {
+   "datetime": "2023-09-10T23:00:00",
+   "timestamp": 1694354400,
+   "account": "Assets:WeChat",
+   "trx_id": "811eb670-aa18-7125-3d96-3a3ccdd52349",
+   "payee": "Balance Check",
+   "narration": "Assets:WeChat",
+   "inferred_unit": {
+    "number": "-145994.50",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "100.00",
+    "commodity": "CNY"
+   }
+  }
+ ]
+}

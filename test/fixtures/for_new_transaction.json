@@ -1,0 +1,37 @@
+{
+ "data": {
+  "payee": [
+   "The Zhang Book Group",
+   "Doge Random House",
+   "UNIQLO",
+   "隆江猪脚饭",
+   "Nike",
+   "KFC",
+   "Mcdonald",
+   "Github Restaurant",
+   "Vans",
+   "Supermarket",
+   "Oops",
+   "Balance Check",
+   "Scgolastic",
+   "Exchange",
+   "Balance Pad",
+   "Adidas",
+   "H & M",
+   "GrandLordCompany",
+   "Amazon"
+  ],
+  "account_name": [
+   "Income:Publisher:Scgolastic",
+   "Income:CitiBank:Interest",
+   "Liabilities:CreditCard:Apple",
+   "Expenses:PersonalDiet:Lunch",
+   "Income:GrandLordCompany:Salary",
+   "Expenses:Medical",
+   "Assets:WeChat",
+   "Expenses:Transportation",
+   "Income:Remuneration",
+   "Assets:Paypal"
+  ]
+ }
+}

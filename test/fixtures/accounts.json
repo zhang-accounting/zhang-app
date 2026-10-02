@@ -1,0 +1,49 @@
+{
+ "data": [
+  {
+   "name": "Liabilities:CreditCard:Apple",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "-474.229",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-382",
+     "USD": "-12.99"
+    }
+   }
+  },
+  {
+   "name": "Assets:Crypto",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "0",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "0",
+     "BTC": "0.01"
+    }
+   }
+  },
+  {
+   "name": "Assets:Paypal",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "132768.0",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "USD": "-260",
+     "CNY": "134614"
+    }
+   }
+  }
+ ]
+}

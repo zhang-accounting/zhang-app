@@ -1,0 +1,30 @@
+{
+ "data": [
+  {
+   "type": "Posting",
+   "datetime": "2023-09-03T12:30:00",
+   "timestamp": 1693711800,
+   "account": "Expenses:Groceries",
+   "trx_id": "107c541d-653f-cb3a-e16d-ae192ec3684c",
+   "payee": "Supermarket",
+   "narration": "Weekly groceries",
+   "inferred_unit": {
+    "number": "88.50",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "88.50",
+    "commodity": "CNY"
+   }
+  },
+  {
+   "type": "BudgetEvent",
+   "timestamp": 1693494000,
+   "amount": {
+    "number": "1000",
+    "commodity": "CNY"
+   },
+   "event_type": "AddAssignedAmount"
+  }
+ ]
+}

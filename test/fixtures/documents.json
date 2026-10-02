@@ -1,0 +1,28 @@
+{
+ "data": [
+  {
+   "datetime": "2026-10-02T18:30:00",
+   "filename": "photo.png",
+   "path": "attachments/13f9ced5-57ad-44ff-b2f6-d23fd7b2f329/photo.png",
+   "extension": "image/png",
+   "account": null,
+   "trx_id": "7c785595-5694-c51e-dd34-115dc2cddeb1"
+  },
+  {
+   "datetime": "2026-10-02T17:22:55",
+   "filename": "photo.png",
+   "path": "attachments/2a1363e0-7ac6-4bb8-b026-60656452284b/photo.png",
+   "extension": "image/png",
+   "account": "Assets:WeChat",
+   "trx_id": null
+  },
+  {
+   "datetime": "2023-09-07T00:00:00",
+   "filename": "receipt.txt",
+   "path": "attachments/receipt.txt",
+   "extension": "text/plain",
+   "account": "Assets:Paypal",
+   "trx_id": null
+  }
+ ]
+}

@@ -1,0 +1,55 @@
+{
+ "data": {
+  "info": {
+   "name": "USD",
+   "precision": 2,
+   "prefix": "$",
+   "suffix": null,
+   "rounding": "RoundDown",
+   "group": null,
+   "total_amount": "-272.99",
+   "latest_price_date": "2023-09-01T00:00:00",
+   "latest_price_amount": "7.25",
+   "latest_price_commodity": "CNY"
+  },
+  "lots": [
+   {
+    "account": "Assets:Paypal",
+    "amount": "-260",
+    "cost": null,
+    "price": null,
+    "acquisition_date": null
+   },
+   {
+    "account": "Liabilities:CreditCard:Apple",
+    "amount": "-12.99",
+    "cost": null,
+    "price": null,
+    "acquisition_date": null
+   },
+   {
+    "account": "Expenses:Clothing",
+    "amount": "12.99",
+    "cost": null,
+    "price": null,
+    "acquisition_date": null
+   }
+  ],
+  "prices": [
+   {
+    "datetime": "2023-09-01T00:00:00",
+    "amount": {
+     "number": "7.25",
+     "commodity": "CNY"
+    }
+   },
+   {
+    "datetime": "2023-06-10T00:00:00",
+    "amount": {
+     "number": "7.1",
+     "commodity": "CNY"
+    }
+   }
+  ]
+ }
+}

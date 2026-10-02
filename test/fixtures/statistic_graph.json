@@ -1,0 +1,106 @@
+{
+ "data": {
+  "from": "2023-08-31T15:00:00",
+  "to": "2023-09-05T14:59:59",
+  "balances": {
+   "2023-09-02": {
+    "calculated": {
+     "number": "444978",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "444978"
+    }
+   },
+   "2023-08-31": {
+    "calculated": {
+     "number": "445065",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "445065"
+    }
+   },
+   "2023-09-05": {
+    "calculated": {
+     "number": "444774.271",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "USD": "-12.99",
+     "CNY": "444866.50"
+    }
+   }
+  },
+  "changes": {
+   "2023-09-05": {
+    "Assets": {
+     "calculated": {
+      "number": "-16",
+      "commodity": "CNY"
+     },
+     "detail": {
+      "CNY": "-16"
+     }
+    },
+    "Expenses": {
+     "calculated": {
+      "number": "108.229",
+      "commodity": "CNY"
+     },
+     "detail": {
+      "CNY": "16",
+      "USD": "12.99"
+     }
+    },
+    "Liabilities": {
+     "calculated": {
+      "number": "-92.229",
+      "commodity": "CNY"
+     },
+     "detail": {
+      "USD": "-12.99"
+     }
+    }
+   },
+   "2023-09-01": {
+    "Expenses": {
+     "calculated": {
+      "number": "53",
+      "commodity": "CNY"
+     },
+     "detail": {
+      "CNY": "53"
+     }
+    },
+    "Income": {
+     "calculated": {
+      "number": "-200",
+      "commodity": "CNY"
+     },
+     "detail": {
+      "CNY": "-200"
+     }
+    },
+    "Liabilities": {
+     "calculated": {
+      "number": "-11",
+      "commodity": "CNY"
+     },
+     "detail": {
+      "CNY": "-11"
+     }
+    },
+    "Assets": {
+     "calculated": {
+      "number": "158",
+      "commodity": "CNY"
+     },
+     "detail": {
+      "CNY": "158"
+     }
+    }
+   }
+  }
+ }
+}
