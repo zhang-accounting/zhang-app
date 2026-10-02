@@ -1,18 +1,28 @@
 {
   "@@locale": "en",
   "appTitle": "Zhang",
-  "@appTitle": {"description": "Application name"},
+  "@appTitle": {
+    "description": "Application name"
+  },
   "tabHome": "Home",
   "tabJournal": "Journal",
   "tabReports": "Reports",
   "tabAccounts": "Accounts",
   "newTransaction": "New",
-  "@newTransaction": {"description": "Label of the centre FAB that records a new transaction"},
+  "@newTransaction": {
+    "description": "Label of the centre FAB that records a new transaction"
+  },
   "newTransactionTitle": "New transaction",
   "settingsTitle": "Settings",
   "comingSoon": "Coming soon",
   "activeLedger": "Ledger: {name}",
-  "@activeLedger": {"placeholders": {"name": {"type": "String"}}},
+  "@activeLedger": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "onboardingTitle": "Connect to your zhang server",
   "onboardingSubtitle": "Enter the address of your self-hosted zhang server. Credentials are stored securely on this device.",
   "profileNameLabel": "Name",
@@ -43,9 +53,24 @@
   "testConnection": "Test connection",
   "testingConnection": "Testing…",
   "connectionOk": "Connected to “{title}”",
-  "@connectionOk": {"placeholders": {"title": {"type": "String"}}},
+  "@connectionOk": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "connectionOkDetail": "zhang {version} · built {buildDate}",
-  "@connectionOkDetail": {"placeholders": {"version": {"type": "String"}, "buildDate": {"type": "String"}}},
+  "@connectionOkDetail": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "buildDate": {
+        "type": "String"
+      }
+    }
+  },
   "untitledLedger": "Untitled ledger",
   "save": "Save",
   "saveAndContinue": "Save and continue",
@@ -56,22 +81,49 @@
   "errorUnauthorized": "Authentication failed (401). Check your credentials.",
   "errorNotFound": "Not found (404).",
   "errorServer": "Server error {status}: {message}",
-  "@errorServer": {"placeholders": {"status": {"type": "int"}, "message": {"type": "String"}}},
+  "@errorServer": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "errorNetwork": "Cannot reach the server. Check the URL and your network.",
   "errorTimeout": "The server did not respond in time.",
   "errorCertificate": "The server's TLS certificate was rejected. Enable “Allow self-signed certificate” if you trust it.",
   "errorParse": "Unexpected response. Is this the address of a zhang server?",
   "errorUnknown": "Something went wrong: {message}",
-  "@errorUnknown": {"placeholders": {"message": {"type": "String"}}},
+  "@errorUnknown": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "serversSection": "Servers",
   "addServer": "Add server",
   "editServer": "Edit server",
   "activeBadge": "Active",
   "switchedTo": "Switched to {name}",
-  "@switchedTo": {"placeholders": {"name": {"type": "String"}}},
+  "@switchedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "deleteServerTitle": "Delete server?",
   "deleteServerMessage": "“{name}” and its saved credentials will be removed from this device.",
-  "@deleteServerMessage": {"placeholders": {"name": {"type": "String"}}},
+  "@deleteServerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "aboutSection": "About",
   "appVersion": "App version",
   "serverVersion": "Server version",
@@ -84,7 +136,13 @@
   "addSubcategory": "Sub-category",
   "addSubcategoryRequired": "required",
   "addNoCategories": "No open {root} accounts. Add an open directive to your ledger first.",
-  "@addNoCategories": {"placeholders": {"root": {"type": "String"}}},
+  "@addNoCategories": {
+    "placeholders": {
+      "root": {
+        "type": "String"
+      }
+    }
+  },
   "addFundingExpense": "Paid from",
   "addFundingIncome": "Deposit to",
   "addFrom": "From",
@@ -100,7 +158,9 @@
   "addToday": "Today",
   "addDate": "Date",
   "addSaveAndAnother": "Save & new",
-  "@addSaveAndAnother": {"description": "Keypad key: save and keep the screen open for another entry"},
+  "@addSaveAndAnother": {
+    "description": "Keypad key: save and keep the screen open for another entry"
+  },
   "addSaveAndAnotherLabel": "Save and add another",
   "addEvaluate": "Calculate",
   "addBackspace": "Backspace (long-press to clear)",
@@ -117,16 +177,37 @@
   "addHintSameAccount": "Source and destination must differ",
   "addHintCommodity": "Loading the ledger currency…",
   "addSavedSnack": "Recorded {amount} · {title}",
-  "@addSavedSnack": {"placeholders": {"amount": {"type": "String"}, "title": {"type": "String"}}},
+  "@addSavedSnack": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "addSavedCount": "{count, plural, =1{1 saved} other{{count} saved}}",
-  "@addSavedCount": {"placeholders": {"count": {"type": "int"}}},
+  "@addSavedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "addSaveFailed": "Could not save",
   "addDiscardTitle": "Discard this entry?",
   "addDiscardMessage": "What you entered will be lost.",
   "addDiscard": "Discard",
   "addKeepEditing": "Keep editing",
   "addLastAmount": "Last: {amount}",
-  "@addLastAmount": {"placeholders": {"amount": {"type": "String"}}},
+  "@addLastAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "addCommodity": "Currency",
   "addPickerSearch": "Search name, alias or segment",
   "addPickerFavourites": "Favourites",
@@ -139,5 +220,126 @@
   "addTypeLiabilities": "Liabilities",
   "addTypeEquity": "Equity",
   "addTypeIncome": "Income",
-  "addTypeExpenses": "Expenses"
+  "addTypeExpenses": "Expenses",
+  "homeExpense": "Expenses",
+  "homeIncome": "Income",
+  "homeNet": "Net",
+  "homePreviousMonth": "Previous month",
+  "homeNextMonth": "Next month",
+  "homeRecentTitle": "Recent transactions",
+  "homeSeeAll": "See all",
+  "homeEmptyLedger": "No transactions yet. Tap + to record your first one.",
+  "homeErrorCount": "{count, plural, =1{1 error} other{{count} errors}}",
+  "@homeErrorCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeErrorsTitle": "Ledger errors",
+  "homeErrorsMore": "Showing {shown} of {total}",
+  "@homeErrorsMore": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "homeErrorLocation": "{file} · byte {offset}",
+  "@homeErrorLocation": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      },
+      "offset": {
+        "type": "int"
+      }
+    }
+  },
+  "homeAuthBanner": "The server rejected the saved credentials.",
+  "homeAuthUpdate": "Update",
+  "homeLoadFailed": "Failed to load",
+  "journalFilterAll": "All",
+  "journalKindExpense": "Expense",
+  "journalKindIncome": "Income",
+  "journalKindTransfer": "Transfer",
+  "journalKindCompound": "Compound",
+  "journalKindAdjustment": "Adjustment",
+  "journalKindRefund": "Refund",
+  "journalBalanceCheck": "Balance check",
+  "journalBalancePad": "Balance pad",
+  "journalBalanceFailed": "Balance check failed",
+  "journalSearch": "Search",
+  "journalSearchHint": "Payee, narration, account, tag…",
+  "journalCloseSearch": "Close search",
+  "journalTags": "Tags",
+  "journalTagsTitle": "Filter by tag",
+  "journalNoTags": "No tags in the loaded transactions.",
+  "journalRemoveTag": "Remove tag filter {tag}",
+  "@journalRemoveTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "journalMonthExpense": "Exp {amount}",
+  "@journalMonthExpense": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "journalMonthIncome": "Inc {amount}",
+  "@journalMonthIncome": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "journalToday": "Today",
+  "journalYesterday": "Yesterday",
+  "journalEmpty": "No transactions yet",
+  "journalEmptyHint": "Tap + to record your first one.",
+  "journalNoMatch": "No matching transactions",
+  "journalClearFilters": "Clear filters",
+  "journalLoadMoreFailed": "Failed to load more",
+  "journalUnbalanced": "Unbalanced",
+  "journalPending": "Pending",
+  "journalAttachment": "Has attachments",
+  "trxTitle": "Transaction",
+  "trxPostings": "Postings",
+  "trxDetails": "Details",
+  "trxDate": "Date",
+  "trxFlag": "Flag",
+  "trxTags": "Tags",
+  "trxLinks": "Links",
+  "trxMetas": "Metadata",
+  "trxAuto": "auto",
+  "trxWritten": "written {amount}",
+  "@trxWritten": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "trxCopyText": "Copy as text",
+  "trxCopied": "Copied to clipboard",
+  "trxNotFound": "Transaction not found. Ids change when the ledger reloads – open it again from the list.",
+  "trxUnbalanced": "This transaction does not balance.",
+  "trxFilterByTag": "Show transactions tagged #{tag}",
+  "@trxFilterByTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  }
 }

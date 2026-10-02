@@ -408,4 +408,197 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get addTypeExpenses => '支出';
+
+  @override
+  String get homeExpense => '支出';
+
+  @override
+  String get homeIncome => '收入';
+
+  @override
+  String get homeNet => '结余';
+
+  @override
+  String get homePreviousMonth => '上个月';
+
+  @override
+  String get homeNextMonth => '下个月';
+
+  @override
+  String get homeRecentTitle => '最近交易';
+
+  @override
+  String get homeSeeAll => '全部';
+
+  @override
+  String get homeEmptyLedger => '还没有交易，点 ＋ 记第一笔。';
+
+  @override
+  String homeErrorCount(int count) {
+    return '$count 个错误';
+  }
+
+  @override
+  String get homeErrorsTitle => '账本错误';
+
+  @override
+  String homeErrorsMore(int shown, int total) {
+    return '显示 $shown / $total 条';
+  }
+
+  @override
+  String homeErrorLocation(String file, int offset) {
+    return '$file · 第 $offset 字节';
+  }
+
+  @override
+  String get homeAuthBanner => '服务器拒绝了保存的凭据。';
+
+  @override
+  String get homeAuthUpdate => '去更新';
+
+  @override
+  String get homeLoadFailed => '加载失败';
+
+  @override
+  String get journalFilterAll => '全部';
+
+  @override
+  String get journalKindExpense => '支出';
+
+  @override
+  String get journalKindIncome => '收入';
+
+  @override
+  String get journalKindTransfer => '转账';
+
+  @override
+  String get journalKindCompound => '复合';
+
+  @override
+  String get journalKindAdjustment => '调整';
+
+  @override
+  String get journalKindRefund => '退款';
+
+  @override
+  String get journalBalanceCheck => '余额断言';
+
+  @override
+  String get journalBalancePad => '余额填充';
+
+  @override
+  String get journalBalanceFailed => '余额断言失败';
+
+  @override
+  String get journalSearch => '搜索';
+
+  @override
+  String get journalSearchHint => '收款方、备注、账户、标签…';
+
+  @override
+  String get journalCloseSearch => '关闭搜索';
+
+  @override
+  String get journalTags => '标签';
+
+  @override
+  String get journalTagsTitle => '按标签筛选';
+
+  @override
+  String get journalNoTags => '已加载的交易中没有标签。';
+
+  @override
+  String journalRemoveTag(String tag) {
+    return '移除标签筛选 $tag';
+  }
+
+  @override
+  String journalMonthExpense(String amount) {
+    return '支出 $amount';
+  }
+
+  @override
+  String journalMonthIncome(String amount) {
+    return '收入 $amount';
+  }
+
+  @override
+  String get journalToday => '今天';
+
+  @override
+  String get journalYesterday => '昨天';
+
+  @override
+  String get journalEmpty => '还没有交易';
+
+  @override
+  String get journalEmptyHint => '点 ＋ 记第一笔。';
+
+  @override
+  String get journalNoMatch => '没有匹配的交易';
+
+  @override
+  String get journalClearFilters => '清除过滤';
+
+  @override
+  String get journalLoadMoreFailed => '加载更多失败';
+
+  @override
+  String get journalUnbalanced => '不平衡';
+
+  @override
+  String get journalPending => '待确认';
+
+  @override
+  String get journalAttachment => '有附件';
+
+  @override
+  String get trxTitle => '交易详情';
+
+  @override
+  String get trxPostings => '分录';
+
+  @override
+  String get trxDetails => '详情';
+
+  @override
+  String get trxDate => '日期';
+
+  @override
+  String get trxFlag => '标记';
+
+  @override
+  String get trxTags => '标签';
+
+  @override
+  String get trxLinks => '链接';
+
+  @override
+  String get trxMetas => '元数据';
+
+  @override
+  String get trxAuto => '自动';
+
+  @override
+  String trxWritten(String amount) {
+    return '记账金额 $amount';
+  }
+
+  @override
+  String get trxCopyText => '复制为文本';
+
+  @override
+  String get trxCopied => '已复制到剪贴板';
+
+  @override
+  String get trxNotFound => '找不到这笔交易。账本重载后 id 会变化，请从列表重新打开。';
+
+  @override
+  String get trxUnbalanced => '这笔交易不平衡。';
+
+  @override
+  String trxFilterByTag(String tag) {
+    return '查看带 #$tag 标签的交易';
+  }
 }
