@@ -42,7 +42,8 @@ class Commodity {
   final String? prefix;
   final String? suffix;
 
-  /// `RoundDown` / `RoundUp`.
+  /// `RoundDown` / `RoundUp` (zhang maps them to bigdecimal `HalfDown` /
+  /// `HalfUp`; the server default is `RoundDown`).
   final String? rounding;
   final String? group;
 
@@ -54,7 +55,8 @@ class Commodity {
   final Decimal? latestPriceAmount;
   final String? latestPriceCommodity;
 
-  /// Formats [value] of this commodity with its precision and prefix/suffix.
+  /// Formats [value] of this commodity with its precision, rounding and
+  /// prefix/suffix.
   String format(Decimal value, {bool signed = false}) => formatMoney(
     value,
     name,
@@ -62,6 +64,7 @@ class Commodity {
     signed: signed,
     prefix: prefix,
     suffix: suffix,
+    halfDown: rounding != 'RoundUp',
   );
 }
 

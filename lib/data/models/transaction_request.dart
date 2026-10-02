@@ -12,12 +12,16 @@ abstract final class TransactionFlag {
 /// A posting in a create/update request. `unit == null` lets the server infer
 /// the balancing amount (at most one such posting per transaction).
 class PostingRequest {
-  const PostingRequest({required this.account, this.unit});
+  const PostingRequest({required this.account, this.unit, this.scale});
 
   final String account;
   final Amount? unit;
 
-  Map<String, Object?> toJson() => {'account': account, 'unit': unit?.toJson()};
+  /// Minimum decimals written for [unit] (the commodity precision), so the
+  /// ledger gets `15.50 CNY` rather than `15.5 CNY`.
+  final int? scale;
+
+  Map<String, Object?> toJson() => {'account': account, 'unit': unit?.toJson(minScale: scale)};
 }
 
 /// Body of `POST /api/transactions` and `PUT /api/transactions/{id}`.

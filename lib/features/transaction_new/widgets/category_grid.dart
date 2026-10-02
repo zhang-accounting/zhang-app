@@ -63,6 +63,29 @@ final _camelBoundary = RegExp(r'(?<=[a-z0-9])(?=[A-Z])');
 /// instead of mid-word.
 String softWrapLabel(String label) => label.replaceAll(_camelBoundary, '\u200B');
 
+final _latinWord = RegExp(r'[A-Za-z0-9\u00C0-\u024F]+');
+
+/// Font scale (0.7 to 1) at which the widest Latin word of [label] fits into
+/// [maxWidth]: Flutter breaks a word wider than the line mid-word
+/// (`Transportati|on`), so long single words are shrunk instead. CJK text
+/// wraps between characters and is never scaled.
+@visibleForTesting
+double fitWordScale(String label, TextStyle? style, double maxWidth, {TextScaler textScaler = TextScaler.noScaling}) {
+  var widest = 0.0;
+  for (final word in _latinWord.allMatches(label)) {
+    final painter = TextPainter(
+      text: TextSpan(text: word[0], style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: textScaler,
+      maxLines: 1,
+    )..layout();
+    if (painter.width > widest) widest = painter.width;
+    painter.dispose();
+  }
+  // 2% slack: glyph advances do not shrink exactly linearly with the size.
+  return widest <= maxWidth ? 1.0 : (maxWidth / widest * 0.98).clamp(0.7, 1.0);
+}
+
 class _CategoryTile extends StatelessWidget {
   const _CategoryTile({super.key, required this.node, required this.selected, required this.onTap});
 
@@ -114,15 +137,33 @@ class _CategoryTile extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              Text(
-                softWrapLabel(node.label),
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: selected ? scheme.primary : scheme.onSurface,
-                  fontWeight: selected ? FontWeight.w600 : null,
-                ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final style = theme.textTheme.labelSmall?.copyWith(
+                    color: selected ? scheme.primary : scheme.onSurface,
+                    fontWeight: selected ? FontWeight.w600 : null,
+                  );
+                  final label = softWrapLabel(node.label);
+                  final scale = fitWordScale(
+                    label,
+                    style,
+                    constraints.maxWidth,
+                    textScaler: MediaQuery.textScalerOf(context),
+                  );
+                  return Text(
+                    label,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    // letterSpacing does not follow fontSize, so scale both.
+                    style: scale == 1.0
+                        ? style
+                        : style?.copyWith(
+                            fontSize: (style.fontSize ?? 11) * scale,
+                            letterSpacing: (style.letterSpacing ?? 0) * scale,
+                          ),
+                  );
+                },
               ),
             ],
           ),

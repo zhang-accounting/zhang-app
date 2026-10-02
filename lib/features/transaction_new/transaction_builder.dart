@@ -27,6 +27,7 @@ class EntryDraft {
     required this.amount,
     required this.commodity,
     required this.datetime,
+    this.precision,
     this.categoryChosen = false,
     this.categoryAccount,
     this.funding,
@@ -43,6 +44,9 @@ class EntryDraft {
   final Decimal? amount;
   final String? commodity;
   final DateTime datetime;
+
+  /// Decimals of [commodity]; amounts are written with at least this many.
+  final int? precision;
 
   /// A category tile is selected (expense / income).
   final bool categoryChosen;
@@ -108,19 +112,12 @@ CreateTransactionRequest buildTransactionRequest(EntryDraft draft) {
   final commodity = draft.commodity!;
   final plus = Amount(amount, commodity);
   final minus = Amount(-amount, commodity);
+  PostingRequest posting(String account, Amount unit) =>
+      PostingRequest(account: account, unit: unit, scale: draft.precision);
   final postings = switch (draft.mode) {
-    EntryMode.expense => [
-      PostingRequest(account: draft.funding!, unit: minus),
-      PostingRequest(account: draft.categoryAccount!, unit: plus),
-    ],
-    EntryMode.income => [
-      PostingRequest(account: draft.categoryAccount!, unit: minus),
-      PostingRequest(account: draft.funding!, unit: plus),
-    ],
-    EntryMode.transfer => [
-      PostingRequest(account: draft.from!, unit: minus),
-      PostingRequest(account: draft.to!, unit: plus),
-    ],
+    EntryMode.expense => [posting(draft.funding!, minus), posting(draft.categoryAccount!, plus)],
+    EntryMode.income => [posting(draft.categoryAccount!, minus), posting(draft.funding!, plus)],
+    EntryMode.transfer => [posting(draft.from!, minus), posting(draft.to!, plus)],
   };
   return CreateTransactionRequest(
     datetime: draft.datetime,
@@ -128,20 +125,26 @@ CreateTransactionRequest buildTransactionRequest(EntryDraft draft) {
     narration: draft.narration.trim(),
     postings: postings,
     tags: [
-      for (final t in draft.tags)
-        if (t.trim().isNotEmpty) t.trim(),
+      for (final t in draft.tags) ?normalizeTag(t),
     ],
     links: const [],
     metas: const [],
   );
 }
 
-/// Normalises user tag input: strips `#`, whitespace inside becomes `-`.
+/// Normalises user tag input: strips `#`; whitespace and the characters
+/// that end a bare word in zhang syntax (`"` `:` `(` `)` `,`) become `-`.
+/// The server writes tags verbatim (`#trip:2026`), and such a tag makes the
+/// ledger unparsable: every later reload fails silently and the server no
+/// longer starts.
 String? normalizeTag(String input) {
   var t = input.trim();
   while (t.startsWith('#')) {
     t = t.substring(1).trim();
   }
-  t = t.replaceAll(RegExp(r'\s+'), '-');
+  t = t.replaceAll(RegExp(r'[\s":(),]+'), '-');
+  while (t.startsWith('-') || t.endsWith('-')) {
+    t = t.startsWith('-') ? t.substring(1) : t.substring(0, t.length - 1);
+  }
   return t.isEmpty ? null : t;
 }

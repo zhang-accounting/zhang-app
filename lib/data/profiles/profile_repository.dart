@@ -117,12 +117,18 @@ class ProfileRepository {
     await _prefs.setString(profilesKey, jsonEncode(publics));
   }
 
-  /// Removes a profile and its secrets. Clears the active id if it pointed to it.
+  /// Removes a profile, its secrets and its per-profile preferences
+  /// (`zhang.<feature>.<id>.…`: account-picker favourites / recents, record
+  /// memory – they hold the ledger's account names). Clears the active id if
+  /// it pointed to it.
   Future<void> delete(String id) async {
     final publics = _readPublicList()..removeWhere((p) => p['id'] == id);
     await _prefs.setString(profilesKey, jsonEncode(publics));
     await _secrets.delete(secretKey(id));
     if (_prefs.getString(activeKey) == id) await _prefs.remove(activeKey);
+    for (final key in _prefs.getKeys().where((k) => k.startsWith('zhang.') && k.contains('.$id.')).toList()) {
+      await _prefs.remove(key);
+    }
   }
 
   Future<void> setActiveId(String? id) async {

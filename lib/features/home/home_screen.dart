@@ -59,7 +59,7 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const ActiveLedgerTitle(),
         actions: [
-          if ((errors.value?.totalCount ?? 0) > 0) _ErrorsChip(errors: errors.value!),
+          if (!errors.hasError && (errors.value?.totalCount ?? 0) > 0) _ErrorsChip(errors: errors.value!),
           const SettingsButton(),
         ],
       ),
@@ -72,7 +72,7 @@ class HomeScreen extends ConsumerWidget {
               child: ListView(
                 key: const Key('home.list'),
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 48),
+                padding: const EdgeInsets.only(bottom: 96), // clear the FAB
                 children: [
                   if (unauthorized) const _AuthBanner(),
                   const _MonthSwitcher(),
@@ -89,7 +89,12 @@ class HomeScreen extends ConsumerWidget {
   }
 
   List<Widget> _recentRows(BuildContext context, WidgetRef ref, AsyncValue<Pageable<JournalItem>> recent) {
+    // Errors first: after a profile switch the previous value belongs to the
+    // other ledger and must not be shown under this ledger's name.
     return switch (recent) {
+      AsyncValue(:final error?) => [
+        _InlineError(error: error, onRetry: () => ref.invalidate(homeRecentProvider)),
+      ],
       AsyncValue(:final value?, hasValue: true) when value.totalCount == 0 => [const _EmptyLedgerCard()],
       AsyncValue(:final value?, hasValue: true) => [
         for (final month in groupJournal(
@@ -107,9 +112,6 @@ class HomeScreen extends ConsumerWidget {
             for (final item in day.items)
               JournalItemTile(item: item, onTap: () => openHomeJournalDetail(context, item)),
           ],
-      ],
-      AsyncValue(:final error?) => [
-        _InlineError(error: error, onRetry: () => ref.invalidate(homeRecentProvider)),
       ],
       _ => [const SkeletonTileList(count: 5)],
     };
@@ -192,7 +194,9 @@ class _SummaryCard extends ConsumerWidget {
     final label = theme.textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant);
 
     Widget body;
-    if (summary.hasValue) {
+    // A previous value next to an error may belong to another ledger (profile
+    // switch): show the error instead.
+    if (summary.hasValue && !summary.hasError) {
       final commodities = ref.watch(commoditiesProvider).value;
       final f = HomeSummaryFigures.from(summary.requireValue);
       Widget figure(String name, String text, Color color, Key key) => Expanded(

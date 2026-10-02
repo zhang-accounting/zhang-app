@@ -5,6 +5,7 @@ import '../../data/models/journal.dart';
 import '../../data/models/ledger_error.dart';
 import '../../data/models/pageable.dart';
 import '../../data/models/statistic.dart';
+import '../../data/profiles/profile_providers.dart';
 import '../../data/repositories/journal_repository.dart';
 import '../../data/repositories/ledger_data_providers.dart';
 import '../../data/repositories/ledger_repository.dart';
@@ -68,8 +69,13 @@ final journalFilterProvider = NotifierProvider<JournalFilterController, JournalF
 );
 
 class JournalFilterController extends Notifier<JournalFilter> {
+  /// Starts empty and resets when the active profile changes (tags and
+  /// keywords of one ledger mean nothing in another).
   @override
-  JournalFilter build() => const JournalFilter();
+  JournalFilter build() {
+    ref.watch(activeProfileProvider.select((p) => p?.id));
+    return const JournalFilter();
+  }
 
   void setKeyword(String keyword) {
     final k = keyword.trim();

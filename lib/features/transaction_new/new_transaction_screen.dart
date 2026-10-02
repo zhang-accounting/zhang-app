@@ -120,9 +120,14 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     return _treeCache = CategoryTree.fromAccounts(accounts, root);
   }
 
+  /// The value unless the latest fetch failed: after a profile switch a
+  /// failing provider still carries the *previous ledger's* value, which
+  /// must never feed account names or the currency into a new entry.
+  static T? _fresh<T>(AsyncValue<T> value) => value.hasError ? null : value.value;
+
   _Resolved _resolve() {
-    final accounts = ref.watch(pickerAccountsProvider).value;
-    final options = ref.watch(ledgerOptionsProvider).value;
+    final accounts = _fresh(ref.watch(pickerAccountsProvider));
+    final options = _fresh(ref.watch(ledgerOptionsProvider));
     final commodities = ref.watch(commoditiesProvider).value ?? const <String, Commodity>{};
     final index = ref.watch(suggestionIndexProvider);
     final recordPrefs = ref.watch(recordPrefsProvider);
@@ -141,14 +146,18 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       index: index,
       openAccounts: open.keys.toList(),
       remembered: recordPrefs?.lastFunding,
+      commodity: commodity,
     );
-    final from = mode == EntryMode.transfer ? resolveTransferFrom(_form, isOpen: isOpen, index: index) : null;
+    final from = mode == EntryMode.transfer
+        ? resolveTransferFrom(_form, isOpen: isOpen, index: index, commodity: commodity)
+        : null;
     final to = mode == EntryMode.transfer && _form.to != null && isOpen(_form.to!) ? _form.to : null;
     final draft = EntryDraft(
       mode: mode,
       amount: _form.amount.value,
       commodity: commodity,
       datetime: _form.date ?? DateTime.now(),
+      precision: precision,
       categoryChosen: _form.category != null,
       categoryAccount: _form.categoryAccount,
       funding: funding,
@@ -209,6 +218,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       amount: _form.amount.value,
       commodity: r.draft.commodity,
       datetime: _form.date ?? DateTime.now(),
+      precision: r.precision,
       categoryChosen: r.draft.categoryChosen,
       categoryAccount: r.draft.categoryAccount,
       funding: r.draft.funding,

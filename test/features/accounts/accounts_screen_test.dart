@@ -39,7 +39,7 @@ void main() {
 
     // Net worth = Σ Assets + Σ Liabilities (calculated, CNY).
     expect(tester.widget<Text>(_key('accounts.netWorth')).data, '¥136,047.83');
-    expect(tester.widget<Text>(_key('accounts.netWorth.liabilities')).data, '-¥474.23');
+    expect(tester.widget<Text>(_key('accounts.netWorth.liabilities')).data, '−¥474.23');
     expect(find.text('Sum of account balances in CNY'), findsOneWidget);
 
     // Assets/Liabilities open to level 2; deeper parents and other types collapsed.
@@ -62,10 +62,10 @@ void main() {
     // Multi-currency row: converted total, expands into one line per commodity.
     final paypal = _key('accounts.row.Assets:Paypal');
     expect(find.descendant(of: paypal, matching: find.text('≈ ¥132,768.00')), findsOneWidget);
-    expect(find.text('-\$260.00'), findsNothing);
+    expect(find.text('−\$260.00'), findsNothing);
     await tester.tap(_key('accounts.commodities.Assets:Paypal'));
     await tester.pumpAndSettle();
-    expect(find.descendant(of: paypal, matching: find.text('-\$260.00')), findsOneWidget);
+    expect(find.descendant(of: paypal, matching: find.text('−\$260.00')), findsOneWidget);
     expect(find.descendant(of: paypal, matching: find.text('¥134,614.00')), findsOneWidget);
 
     // Closed accounts are behind the toggle.
@@ -107,7 +107,7 @@ void main() {
     await tester.scrollUntilVisible(_key('accountDetail.firstRow'), 200, scrollable: _scrollable('accountDetail.list'));
     final first = _key('accountDetail.firstRow');
     expect(find.descendant(of: first, matching: find.text('Github Restaurant')), findsOneWidget);
-    expect(find.descendant(of: first, matching: find.text('-¥25.00')), findsOneWidget);
+    expect(find.descendant(of: first, matching: find.text('−¥25.00')), findsOneWidget);
     expect(find.descendant(of: first, matching: find.text('¥59.00')), findsOneWidget); // running balance
     await tester.scrollUntilVisible(
       find.text('Balance check'),

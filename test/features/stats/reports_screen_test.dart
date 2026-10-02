@@ -77,7 +77,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: _key('reports.kpi.net'), matching: find.text('-¥360.73')),
+      find.descendant(of: _key('reports.kpi.net'), matching: find.text('−¥360.73')),
       findsOneWidget,
     );
 

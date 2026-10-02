@@ -1,8 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/models/journal.dart';
 import 'package:zhang_app/data/models/pageable.dart';
+import 'package:zhang_app/data/profiles/profile_providers.dart';
+import 'package:zhang_app/data/profiles/profile_repository.dart';
+import 'package:zhang_app/data/profiles/secret_store.dart';
+import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/ledger_revision.dart';
 import 'package:zhang_app/features/journals/journal_grouping.dart';
 import 'package:zhang_app/features/journals/journal_providers.dart';
@@ -179,5 +184,30 @@ void main() {
       final data = await container.read(journalListProvider.future);
       expect(data.items.map((i) => i.id), ['tagged']);
     });
+  });
+
+  test('the journal filter resets when the active profile changes', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    const other = ServerProfile(id: 'p2', name: 'Work', baseUrl: 'http://127.0.0.1:18031');
+    final container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        secretStoreProvider.overrideWithValue(InMemorySecretStore()),
+        initialProfilesStateProvider.overrideWithValue(
+          const ProfilesState(profiles: [testProfile, other], activeId: 'p1'),
+        ),
+      ],
+      retry: (_, _) => null,
+    );
+    addTearDown(container.dispose);
+    final sub = container.listen(journalFilterProvider, (_, _) {});
+    addTearDown(sub.close);
+    container.read(journalFilterProvider.notifier)
+      ..toggleTag('trip')
+      ..setKeyword('sushi');
+    expect(container.read(journalFilterProvider).isActive, isTrue);
+    await container.read(profilesProvider.notifier).activate('p2');
+    expect(container.read(journalFilterProvider), const JournalFilter());
   });
 }

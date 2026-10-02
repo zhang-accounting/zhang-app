@@ -129,10 +129,15 @@ void main() {
       expect(state.profiles.map((p) => p.name), ['Home 2', 'Work']);
 
       await repo.setActiveId('p1');
+      await prefs.setStringList('zhang.accountPicker.p1.recent.v1', ['Assets:Bank']);
+      await prefs.setString('zhang.record.p1.lastFunding.v1', '{}');
+      await prefs.setStringList('zhang.accountPicker.p2.recent.v1', ['Assets:Cash']);
       await repo.delete('p1');
       state = await repo.load();
       expect(state.profiles.map((p) => p.id), ['p2']);
       expect(secrets.values.containsKey(ProfileRepository.secretKey('p1')), isFalse);
+      expect(prefs.getKeys().where((k) => k.contains('.p1.')), isEmpty, reason: 'per-profile prefs removed');
+      expect(prefs.getStringList('zhang.accountPicker.p2.recent.v1'), ['Assets:Cash']);
       // Active id pointed at the deleted profile → falls back to the first one.
       expect(state.activeId, 'p2');
     });

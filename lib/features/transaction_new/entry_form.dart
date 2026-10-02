@@ -173,13 +173,14 @@ class EntryForm {
 /// explicit or autofilled choice → per-category memory → the category's last
 /// funding account in the history → the most recently used asset account →
 /// the first open asset account. Only open accounts allowed by the mode
-/// qualify.
+/// qualify; history fallbacks only use postings in [commodity] (when given).
 String? resolveFunding(
   EntryForm form, {
   required bool Function(String account) isOpen,
   required SuggestionIndex index,
   required List<String> openAccounts,
   String? Function(String category)? remembered,
+  String? commodity,
 }) {
   bool ok(String? a) => a != null && form.mode.allowsFunding(a) && isOpen(a);
   if (form.mode == EntryMode.transfer) return null;
@@ -191,10 +192,11 @@ String? resolveFunding(
     if (category != null && ok(remembered(category))) return remembered(category);
   }
   if (category != null) {
-    final fromHistory = index.lastFundingFor(leaf ?? category, form.mode.fundingTypes, where: ok);
+    final fromHistory =
+        index.lastFundingFor(leaf ?? category, form.mode.fundingTypes, where: ok, commodity: commodity);
     if (fromHistory != null) return fromHistory;
   }
-  final recent = index.mostRecentAccount(const {AccountType.assets}, where: ok);
+  final recent = index.mostRecentAccount(const {AccountType.assets}, where: ok, commodity: commodity);
   if (recent != null) return recent;
   for (final a in openAccounts) {
     if (AccountType.ofAccount(a) == AccountType.assets && ok(a)) return a;
@@ -206,11 +208,17 @@ String? resolveFunding(
 }
 
 /// Resolved transfer source: the chosen one, else the most recently used
-/// asset account (unless it is the destination).
-String? resolveTransferFrom(EntryForm form, {required bool Function(String account) isOpen, required SuggestionIndex index}) {
+/// asset account used with [commodity] (unless it is the destination).
+String? resolveTransferFrom(
+  EntryForm form, {
+  required bool Function(String account) isOpen,
+  required SuggestionIndex index,
+  String? commodity,
+}) {
   if (form.from != null) return isOpen(form.from!) ? form.from : null;
   return index.mostRecentAccount(
     const {AccountType.assets},
     where: (a) => isOpen(a) && a != form.to,
+    commodity: commodity,
   );
 }

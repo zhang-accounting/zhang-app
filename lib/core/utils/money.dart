@@ -16,24 +16,35 @@ import '../theme/app_colors.dart';
 ///   scale but at least 2 (so `21` → `21.00`, `0.00000001` stays intact).
 /// * [signed]: prefix positive values with `+` (negative values always get `-`).
 /// * [grouping]: insert `,` every three integer digits.
+/// * [halfDown]: round ties towards zero (`0.125` → `0.12`) like zhang's
+///   default commodity rounding `RoundDown` (bigdecimal `HalfDown`); the
+///   default rounds ties away from zero (`RoundUp` = `HalfUp`).
 String formatDecimal(
   Decimal value, {
   int? precision,
   bool signed = false,
   bool grouping = true,
+  bool halfDown = false,
 }) {
   final digits = precision ?? (value.scale > 2 ? value.scale : 2);
-  var text = value.abs().toStringAsFixed(digits);
+  final rounded = halfDown ? _roundHalfDown(value, digits) : value.round(scale: digits);
+  var text = rounded.abs().toStringAsFixed(digits);
   if (grouping) {
     final dot = text.indexOf('.');
     final intPart = dot < 0 ? text : text.substring(0, dot);
     final fracPart = dot < 0 ? '' : text.substring(dot);
     text = _group(intPart) + fracPart;
   }
-  final isZero = value.round(scale: digits) == Decimal.zero;
+  final isZero = rounded == Decimal.zero;
   if (value < Decimal.zero && !isZero) return '-$text';
   if (signed && value > Decimal.zero && !isZero) return '+$text';
   return text;
+}
+
+Decimal _roundHalfDown(Decimal value, int scale) {
+  final truncated = value.truncate(scale: scale);
+  final rest = (value - truncated).abs();
+  return rest > Decimal.parse('5e-${scale + 1}') ? value.round(scale: scale) : truncated;
 }
 
 String _group(String digits) {
@@ -48,11 +59,16 @@ String _group(String digits) {
   return buf.toString();
 }
 
-/// Formats an amount of a commodity.
+/// Minus sign for displayed amounts (U+2212, as wide as `+`; design §3.3).
+/// [formatDecimal] keeps the ASCII `-` for machine-readable text.
+const displayMinus = '−';
+
+/// Formats an amount of a commodity for display.
 ///
-/// Default output is `"-1,234.50 CNY"` (commodity suffix). Pass the commodity's
-/// display [prefix] (e.g. `"¥"`, from `Commodity.prefix`) to get `"-¥1,234.50"`
-/// instead; [suffix] (e.g. `Commodity.suffix`) replaces the commodity code.
+/// Default output is `"−1,234.50 CNY"` (commodity suffix, U+2212 minus). Pass
+/// the commodity's display [prefix] (e.g. `"¥"`, from `Commodity.prefix`) to
+/// get `"−¥1,234.50"` instead; [suffix] (e.g. `Commodity.suffix`) replaces the
+/// commodity code.
 String formatMoney(
   Decimal value,
   String? commodity, {
@@ -61,15 +77,18 @@ String formatMoney(
   bool grouping = true,
   String? prefix,
   String? suffix,
+  bool halfDown = false,
 }) {
-  final number = formatDecimal(
+  final plain = formatDecimal(
     value,
     precision: precision,
     signed: signed,
     grouping: grouping,
+    halfDown: halfDown,
   );
+  final number = plain.startsWith('-') ? '$displayMinus${plain.substring(1)}' : plain;
   if (prefix != null && prefix.isNotEmpty) {
-    final hasSign = number.startsWith('-') || number.startsWith('+');
+    final hasSign = number.startsWith(displayMinus) || number.startsWith('+');
     final sign = hasSign ? number[0] : '';
     final rest = hasSign ? number.substring(1) : number;
     return '$sign$prefix$rest';
