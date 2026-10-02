@@ -152,6 +152,21 @@ void main() {
     expect(normalizeTag(' # '), isNull);
   });
 
+  test('normalizeTag removes characters that would corrupt the ledger text', () {
+    // Verified against zhang: `#trip:2026` made data/2026/10.zhang unparsable
+    // (silent reload failure, server refuses to start).
+    expect(normalizeTag('trip:2026'), 'trip-2026');
+    expect(normalizeTag('a, b'), 'a-b');
+    expect(normalizeTag('(work)'), 'work');
+    expect(normalizeTag('say "hi"'), 'say-hi');
+    expect(normalizeTag('旅行'), '旅行');
+    expect(normalizeTag(':'), isNull);
+    final req = buildTransactionRequest(
+      draft(EntryMode.expense, category: 'Expenses:Food', funding: 'Assets:Cash', tags: ['trip:2026', ' ', 'ok']),
+    );
+    expect(req.toJson()['tags'], ['trip-2026', 'ok']);
+  });
+
   test('EntryMode funding types and query parsing', () {
     expect(EntryMode.expense.allowsFunding('Liabilities:Card'), isTrue);
     expect(EntryMode.income.allowsFunding('Liabilities:Card'), isFalse);
