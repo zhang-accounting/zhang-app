@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/account.dart';
 import '../../data/repositories/account_repository.dart';
 import '../../data/repositories/ledger_revision.dart';
+import '../account_picker/account_picker_data.dart';
 
-/// `GET /api/accounts` (all accounts incl. closed, sorted by name).
-final accountsListProvider = FutureProvider<List<Account>>((ref) {
-  ref.watch(ledgerRevisionProvider);
-  return ref.watch(accountRepositoryProvider).list();
-});
+/// `GET /api/accounts` (all accounts incl. closed, sorted by name). The same
+/// provider as the record flow's [pickerAccountsProvider], so both share one
+/// request and one cache.
+final accountsListProvider = pickerAccountsProvider;
 
 /// `GET /api/accounts/{name}`.
 final accountDetailProvider = FutureProvider.autoDispose.family<AccountDetail, String>((ref, name) {
