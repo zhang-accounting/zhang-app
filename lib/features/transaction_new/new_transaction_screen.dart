@@ -220,13 +220,20 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     );
     if (validateEntry(draft).isNotEmpty) return;
     final request = buildTransactionRequest(draft);
+    // Read everything needed after the request now: `ref` must not be used
+    // once the screen is gone (e.g. closed while saving).
+    final repository = ref.read(journalRepositoryProvider);
+    final history = ref.read(transactionHistoryProvider.notifier);
+    final recordPrefs = ref.read(recordPrefsProvider);
+    final pickerPrefs = ref.read(accountPickerPrefsProvider);
+    final category = _form.category;
     FocusScope.of(context).unfocus();
     setState(() {
       _submitting = true;
       _error = null;
     });
     try {
-      await ref.read(journalRepositoryProvider).create(request);
+      await repository.create(request);
     } catch (e) {
       if (!mounted) return;
       HapticFeedback.heavyImpact();
@@ -237,8 +244,8 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       return;
     }
     HapticFeedback.mediumImpact();
-    await _rememberAfterSave(draft);
-    ref.read(transactionHistoryProvider.notifier).addLocal(HistoryEntry.fromRequest(request));
+    history.addLocal(HistoryEntry.fromRequest(request));
+    await _rememberAfterSave(draft, category, recordPrefs, pickerPrefs);
     if (!mounted) return;
     final l10n = context.l10n;
     final sign = switch (draft.mode) {
@@ -279,18 +286,19 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     return sub?.label ?? category?.label ?? draft.categoryAccount ?? '';
   }
 
-  Future<void> _rememberAfterSave(EntryDraft draft) async {
+  static Future<void> _rememberAfterSave(
+    EntryDraft draft,
+    String? category,
+    RecordPrefs? recordPrefs,
+    AccountPickerPrefs? picker,
+  ) async {
     try {
-      final picker = ref.read(accountPickerPrefsProvider);
       if (draft.mode == EntryMode.transfer) {
         await picker?.pushRecent(draft.to!);
         await picker?.pushRecent(draft.from!);
         return;
       }
-      await ref.read(recordPrefsProvider)?.rememberFunding(
-        {_form.category!, draft.categoryAccount!},
-        draft.funding!,
-      );
+      await recordPrefs?.rememberFunding({?category, draft.categoryAccount!}, draft.funding!);
       await picker?.pushRecent(draft.funding!);
     } catch (_) {
       // Local memory is best effort; the transaction is already saved.

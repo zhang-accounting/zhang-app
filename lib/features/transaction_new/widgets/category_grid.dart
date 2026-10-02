@@ -56,6 +56,13 @@ class CategoryGrid extends StatelessWidget {
   }
 }
 
+final _camelBoundary = RegExp(r'(?<=[a-z0-9])(?=[A-Z])');
+
+/// Adds zero-width break opportunities at CamelCase boundaries so long
+/// account segments wrap between words (`PersonalDiet` → `Personal|Diet`)
+/// instead of mid-word.
+String softWrapLabel(String label) => label.replaceAll(_camelBoundary, '\u200B');
+
 class _CategoryTile extends StatelessWidget {
   const _CategoryTile({super.key, required this.node, required this.selected, required this.onTap});
 
@@ -108,7 +115,7 @@ class _CategoryTile extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                node.label,
+                softWrapLabel(node.label),
                 maxLines: 2,
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,

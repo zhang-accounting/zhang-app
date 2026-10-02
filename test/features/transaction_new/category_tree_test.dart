@@ -5,6 +5,7 @@ import 'package:zhang_app/core/category_icons.dart';
 import 'package:zhang_app/data/models/account.dart';
 import 'package:zhang_app/data/models/amount.dart';
 import 'package:zhang_app/features/transaction_new/category_tree.dart';
+import 'package:zhang_app/features/transaction_new/widgets/category_grid.dart';
 
 Account acc(String name, {bool open = true, String? alias}) => Account(
   name: name,
@@ -92,6 +93,13 @@ void main() {
       expect(accountLabel('Assets:CMB:Savings', alias: '  '), 'Savings');
       expect(accountLabel('Assets:CMB:Savings'), 'Savings');
     });
+  });
+
+  test('softWrapLabel breaks CamelCase labels between words only', () {
+    expect(softWrapLabel('PersonalDiet'), 'Personal\u200BDiet');
+    expect(softWrapLabel('GrandLordCompany'), 'Grand\u200BLord\u200BCompany');
+    expect(softWrapLabel('HSBC'), 'HSBC');
+    expect(softWrapLabel('餐饮'), '餐饮');
   });
 
   group('category icons', () {
