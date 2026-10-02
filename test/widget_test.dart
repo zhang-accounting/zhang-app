@@ -11,6 +11,7 @@ import 'package:zhang_app/data/profiles/profile_providers.dart';
 import 'package:zhang_app/data/profiles/profile_repository.dart';
 import 'package:zhang_app/data/profiles/secret_store.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
+import 'package:zhang_app/main.dart' show zhangRetryPolicy;
 
 class _FakeTester extends ConnectionTester {
   _FakeTester(this.handler);
@@ -43,6 +44,9 @@ Future<ProviderContainer> _pumpApp(
       initialProfilesStateProvider.overrideWithValue(initial),
       if (connectionTester != null) connectionTesterProvider.overrideWithValue(connectionTester),
     ],
+    // Same policy as bootstrap(): no Riverpod default retries (and their
+    // pending timers) for failing requests.
+    retry: zhangRetryPolicy,
   );
   addTearDown(container.dispose);
   await tester.pumpWidget(
@@ -170,6 +174,7 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
         secretStoreProvider.overrideWithValue(InMemorySecretStore()),
       ],
+      retry: zhangRetryPolicy,
     );
     addTearDown(container.dispose);
     await container.read(profilesProvider.notifier).save(_profile);
