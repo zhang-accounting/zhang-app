@@ -186,8 +186,8 @@ void main() {
     expect(json['payee'], 'Canteen');
     expect(json['narration'], '');
     expect(json['postings'], [
-      {'account': 'Liabilities:Card', 'unit': {'number': '-15.5', 'commodity': 'CNY'}},
-      {'account': 'Expenses:PersonalDiet:Lunch', 'unit': {'number': '15.5', 'commodity': 'CNY'}},
+      {'account': 'Liabilities:Card', 'unit': {'number': '-15.50', 'commodity': 'CNY'}},
+      {'account': 'Expenses:PersonalDiet:Lunch', 'unit': {'number': '15.50', 'commodity': 'CNY'}},
     ]);
     expect(find.text('open'), findsOneWidget, reason: 'screen popped');
     expect(find.text('Recorded −¥15.50 · Canteen'), findsOneWidget);

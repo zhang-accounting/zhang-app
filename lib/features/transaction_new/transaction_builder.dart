@@ -27,6 +27,7 @@ class EntryDraft {
     required this.amount,
     required this.commodity,
     required this.datetime,
+    this.precision,
     this.categoryChosen = false,
     this.categoryAccount,
     this.funding,
@@ -43,6 +44,9 @@ class EntryDraft {
   final Decimal? amount;
   final String? commodity;
   final DateTime datetime;
+
+  /// Decimals of [commodity]; amounts are written with at least this many.
+  final int? precision;
 
   /// A category tile is selected (expense / income).
   final bool categoryChosen;
@@ -108,19 +112,12 @@ CreateTransactionRequest buildTransactionRequest(EntryDraft draft) {
   final commodity = draft.commodity!;
   final plus = Amount(amount, commodity);
   final minus = Amount(-amount, commodity);
+  PostingRequest posting(String account, Amount unit) =>
+      PostingRequest(account: account, unit: unit, scale: draft.precision);
   final postings = switch (draft.mode) {
-    EntryMode.expense => [
-      PostingRequest(account: draft.funding!, unit: minus),
-      PostingRequest(account: draft.categoryAccount!, unit: plus),
-    ],
-    EntryMode.income => [
-      PostingRequest(account: draft.categoryAccount!, unit: minus),
-      PostingRequest(account: draft.funding!, unit: plus),
-    ],
-    EntryMode.transfer => [
-      PostingRequest(account: draft.from!, unit: minus),
-      PostingRequest(account: draft.to!, unit: plus),
-    ],
+    EntryMode.expense => [posting(draft.funding!, minus), posting(draft.categoryAccount!, plus)],
+    EntryMode.income => [posting(draft.categoryAccount!, minus), posting(draft.funding!, plus)],
+    EntryMode.transfer => [posting(draft.from!, minus), posting(draft.to!, plus)],
   };
   return CreateTransactionRequest(
     datetime: draft.datetime,

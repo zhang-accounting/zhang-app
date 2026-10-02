@@ -28,8 +28,10 @@ class Amount {
 
   Amount operator -() => Amount(-number, commodity);
 
-  /// Number serialised as a string (see [decimalToJson]).
-  Map<String, Object?> toJson() => {'number': decimalToJson(number), 'commodity': commodity};
+  /// Number serialised as a string (see [decimalToJson]), padded to at least
+  /// [minScale] decimals.
+  Map<String, Object?> toJson({int? minScale}) =>
+      {'number': decimalToJson(number, minScale: minScale), 'commodity': commodity};
 
   @override
   bool operator ==(Object other) =>

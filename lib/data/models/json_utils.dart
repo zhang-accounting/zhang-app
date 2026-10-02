@@ -70,8 +70,11 @@ Decimal? parseDecimalOrNull(Object? value, [String what = 'number']) =>
     value == null ? null : parseDecimal(value, what);
 
 /// Serialises a decimal for requests: always a JSON **string** in plain
-/// notation (never a JSON number, never exponent notation).
-String decimalToJson(Decimal value) => value.toString();
+/// notation (never a JSON number, never exponent notation). [minScale] pads
+/// the fraction (`15.5` → `15.50` for a precision-2 commodity); [Decimal]
+/// itself drops trailing zeros.
+String decimalToJson(Decimal value, {int? minScale}) =>
+    minScale != null && minScale > 0 && value.scale < minScale ? value.toStringAsFixed(minScale) : value.toString();
 
 DateTime reqNaiveDateTime(JsonMap json, String key) =>
     ZhangDates.parseNaive(reqString(json, key));

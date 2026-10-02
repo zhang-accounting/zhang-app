@@ -51,6 +51,27 @@ void main() {
       expect(json['datetime'], '2026-10-02T09:30:00Z');
     });
 
+    test('amounts are written with the commodity precision, never exponent notation', () {
+      EntryDraft withPrecision(String amount, String commodity, int precision) => EntryDraft(
+        mode: EntryMode.expense,
+        amount: Decimal.parse(amount),
+        commodity: commodity,
+        datetime: _when,
+        precision: precision,
+        categoryChosen: true,
+        categoryAccount: 'Expenses:Food',
+        funding: 'Assets:Cash',
+      );
+      List<Object?> numbers(EntryDraft d) => [
+        for (final p in buildTransactionRequest(d).toJson()['postings']! as List)
+          ((p as Map)['unit'] as Map)['number'],
+      ];
+      expect(numbers(withPrecision('15.50', 'CNY', 2)), ['-15.50', '15.50']);
+      expect(numbers(withPrecision('12', 'CNY', 2)), ['-12.00', '12.00']);
+      expect(numbers(withPrecision('1E-8', 'BTC', 8)), ['-0.00000001', '0.00000001']);
+      expect(numbers(withPrecision('1E+3', 'JPY', 0)), ['-1000', '1000']);
+    });
+
     test('income: category −A then funding +A', () {
       final req = buildTransactionRequest(
         draft(
