@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/widgets/app_shell.dart';
 import 'data/profiles/profile_providers.dart';
+import 'features/accounts/account_detail_screen.dart';
 import 'features/accounts/accounts_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/journals/journals_screen.dart';
@@ -79,6 +80,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.reports,
                 builder: (context, state) => const ReportsScreen(),
+                routes: [
+                  // Account detail opened from a report row (stays in this tab).
+                  GoRoute(
+                    path: 'accounts/:name',
+                    builder: (context, state) =>
+                        AccountDetailScreen(name: state.pathParameters['name']!),
+                  ),
+                ],
               ),
             ],
           ),
@@ -87,6 +96,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.accounts,
                 builder: (context, state) => const AccountsScreen(),
+                routes: [
+                  // `/accounts/<percent-encoded name>`, see accountDetailLocation().
+                  GoRoute(
+                    path: ':name',
+                    builder: (context, state) =>
+                        AccountDetailScreen(name: state.pathParameters['name']!),
+                  ),
+                ],
               ),
             ],
           ),

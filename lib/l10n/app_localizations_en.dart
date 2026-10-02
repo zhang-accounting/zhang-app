@@ -232,4 +232,185 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saved => 'Saved';
+
+  @override
+  String get accountsNetWorth => 'Net worth';
+
+  @override
+  String get accountsAssets => 'Assets';
+
+  @override
+  String get accountsLiabilities => 'Liabilities';
+
+  @override
+  String get accountsIncome => 'Income';
+
+  @override
+  String get accountsExpenses => 'Expenses';
+
+  @override
+  String get accountsEquity => 'Equity';
+
+  @override
+  String accountsNetWorthSource(String currency) {
+    return 'Sum of account balances in $currency';
+  }
+
+  @override
+  String accountsNotInTotal(String commodities) {
+    return 'Not in total (no price): $commodities';
+  }
+
+  @override
+  String get accountsSearch => 'Search accounts';
+
+  @override
+  String get accountsSearchHint => 'Name or alias';
+
+  @override
+  String get accountsCloseSearch => 'Close search';
+
+  @override
+  String get accountsShowClosed => 'Show closed accounts';
+
+  @override
+  String accountsClosedHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count closed accounts hidden',
+      one: '1 closed account hidden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountsClosedBadge => 'Closed';
+
+  @override
+  String get accountsOpenBadge => 'Open';
+
+  @override
+  String get accountsEmpty =>
+      'No accounts yet. Add open directives to your ledger to see them here.';
+
+  @override
+  String accountsNoMatches(String query) {
+    return 'No accounts match “$query”';
+  }
+
+  @override
+  String get accountsExpand => 'Expand';
+
+  @override
+  String get accountsCollapse => 'Collapse';
+
+  @override
+  String get accountsShowCommodities => 'Show each currency';
+
+  @override
+  String get accountsHideCommodities => 'Hide currencies';
+
+  @override
+  String accountsOpened(String date) {
+    return 'Opened $date';
+  }
+
+  @override
+  String accountsConvertedTotal(String amount) {
+    return '≈ $amount in total';
+  }
+
+  @override
+  String get accountsBalanceHistory => 'Balance history';
+
+  @override
+  String get accountsNoBalanceHistory => 'No balance history yet';
+
+  @override
+  String get accountsTransactions => 'Transactions';
+
+  @override
+  String get accountsRunningBalance => 'Balance';
+
+  @override
+  String get accountsNoTransactions => 'No transactions for this account yet';
+
+  @override
+  String get accountsBalanceCheck => 'Balance check';
+
+  @override
+  String get accountsBalancePad => 'Balance pad';
+
+  @override
+  String get accountsCopyName => 'Copy account name';
+
+  @override
+  String get accountsNameCopied => 'Account name copied';
+
+  @override
+  String get reportsPeriodWeek => 'Week';
+
+  @override
+  String get reportsPeriodMonth => 'Month';
+
+  @override
+  String get reportsPeriodYear => 'Year';
+
+  @override
+  String get reportsPeriodCustom => 'Custom';
+
+  @override
+  String get reportsPreviousPeriod => 'Previous period';
+
+  @override
+  String get reportsNextPeriod => 'Next period';
+
+  @override
+  String get reportsPickRange => 'Select a date range';
+
+  @override
+  String get reportsIncome => 'Income';
+
+  @override
+  String get reportsExpense => 'Expense';
+
+  @override
+  String get reportsNet => 'Net';
+
+  @override
+  String get reportsCashflowTitle => 'Income & expense';
+
+  @override
+  String get reportsNoData => 'No data for this period';
+
+  @override
+  String get reportsBreakdownTitle => 'Breakdown';
+
+  @override
+  String get reportsExpenses => 'Expenses';
+
+  @override
+  String get reportsIncomeSegment => 'Income';
+
+  @override
+  String get reportsOther => 'Other';
+
+  @override
+  String get reportsTotal => 'Total';
+
+  @override
+  String get reportsNoExpenses => 'No expenses in this period';
+
+  @override
+  String get reportsNoIncome => 'No income in this period';
+
+  @override
+  String get reportsUpOneLevel => 'Up one level';
+
+  @override
+  String get reportsShowSubAccounts => 'Show sub-accounts';
+
+  @override
+  String get reportsOpenAccount => 'Open account';
 }

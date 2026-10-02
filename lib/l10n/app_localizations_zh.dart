@@ -226,4 +226,183 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get saved => '已保存';
+
+  @override
+  String get accountsNetWorth => '净资产';
+
+  @override
+  String get accountsAssets => '资产';
+
+  @override
+  String get accountsLiabilities => '负债';
+
+  @override
+  String get accountsIncome => '收入';
+
+  @override
+  String get accountsExpenses => '支出';
+
+  @override
+  String get accountsEquity => '权益';
+
+  @override
+  String accountsNetWorthSource(String currency) {
+    return '按账户余额汇总（$currency）';
+  }
+
+  @override
+  String accountsNotInTotal(String commodities) {
+    return '未计入合计（无汇率）：$commodities';
+  }
+
+  @override
+  String get accountsSearch => '搜索账户';
+
+  @override
+  String get accountsSearchHint => '账户名或别名';
+
+  @override
+  String get accountsCloseSearch => '关闭搜索';
+
+  @override
+  String get accountsShowClosed => '显示已关闭账户';
+
+  @override
+  String accountsClosedHidden(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已隐藏 $count 个已关闭账户',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountsClosedBadge => '已关闭';
+
+  @override
+  String get accountsOpenBadge => '使用中';
+
+  @override
+  String get accountsEmpty => '账本里还没有账户。在账本中写入 open 指令后会显示在这里。';
+
+  @override
+  String accountsNoMatches(String query) {
+    return '没有匹配「$query」的账户';
+  }
+
+  @override
+  String get accountsExpand => '展开';
+
+  @override
+  String get accountsCollapse => '收起';
+
+  @override
+  String get accountsShowCommodities => '展开各币种';
+
+  @override
+  String get accountsHideCommodities => '收起币种';
+
+  @override
+  String accountsOpened(String date) {
+    return '开户于 $date';
+  }
+
+  @override
+  String accountsConvertedTotal(String amount) {
+    return '合计约 $amount';
+  }
+
+  @override
+  String get accountsBalanceHistory => '余额走势';
+
+  @override
+  String get accountsNoBalanceHistory => '暂无余额记录';
+
+  @override
+  String get accountsTransactions => '流水';
+
+  @override
+  String get accountsRunningBalance => '余额';
+
+  @override
+  String get accountsNoTransactions => '这个账户还没有流水';
+
+  @override
+  String get accountsBalanceCheck => '余额断言';
+
+  @override
+  String get accountsBalancePad => '余额填充';
+
+  @override
+  String get accountsCopyName => '复制账户名';
+
+  @override
+  String get accountsNameCopied => '已复制账户名';
+
+  @override
+  String get reportsPeriodWeek => '周';
+
+  @override
+  String get reportsPeriodMonth => '月';
+
+  @override
+  String get reportsPeriodYear => '年';
+
+  @override
+  String get reportsPeriodCustom => '自定义';
+
+  @override
+  String get reportsPreviousPeriod => '上一期';
+
+  @override
+  String get reportsNextPeriod => '下一期';
+
+  @override
+  String get reportsPickRange => '选择日期范围';
+
+  @override
+  String get reportsIncome => '收入';
+
+  @override
+  String get reportsExpense => '支出';
+
+  @override
+  String get reportsNet => '结余';
+
+  @override
+  String get reportsCashflowTitle => '收支趋势';
+
+  @override
+  String get reportsNoData => '本期间没有数据';
+
+  @override
+  String get reportsBreakdownTitle => '分类占比';
+
+  @override
+  String get reportsExpenses => '支出';
+
+  @override
+  String get reportsIncomeSegment => '收入';
+
+  @override
+  String get reportsOther => '其他';
+
+  @override
+  String get reportsTotal => '合计';
+
+  @override
+  String get reportsNoExpenses => '本期间没有支出';
+
+  @override
+  String get reportsNoIncome => '本期间没有收入';
+
+  @override
+  String get reportsUpOneLevel => '返回上一级';
+
+  @override
+  String get reportsShowSubAccounts => '查看子账户';
+
+  @override
+  String get reportsOpenAccount => '查看账户';
 }
