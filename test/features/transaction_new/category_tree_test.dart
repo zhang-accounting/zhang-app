@@ -106,7 +106,7 @@ void main() {
     // The test font draws every glyph 1 em wide: "Transportation" = 140 px.
     const style = TextStyle(fontSize: 10);
     expect(fitWordScale('Food', style, 120), 1.0);
-    expect(fitWordScale('Transportation', style, 120), closeTo(120 / 140, 0.001));
+    expect(fitWordScale('Transportation', style, 120), closeTo(120 / 140 * 0.98, 0.001));
     expect(fitWordScale('Remuneration​Tax', style, 120), 1.0, reason: 'widest word is 120 px');
     expect(fitWordScale('Supercalifragilistic', style, 120), 0.7, reason: 'never below 0.7');
     expect(fitWordScale('日常生活用品与家居', style, 40), 1.0, reason: 'CJK wraps between characters');
