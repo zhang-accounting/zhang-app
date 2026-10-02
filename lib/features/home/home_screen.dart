@@ -72,7 +72,7 @@ class HomeScreen extends ConsumerWidget {
               child: ListView(
                 key: const Key('home.list'),
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 48),
+                padding: const EdgeInsets.only(bottom: 96), // clear the FAB
                 children: [
                   if (unauthorized) const _AuthBanner(),
                   const _MonthSwitcher(),

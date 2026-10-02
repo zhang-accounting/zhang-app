@@ -332,8 +332,8 @@ class _JournalListState extends ConsumerState<_JournalList> {
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 4)),
           const SliverToBoxAdapter(child: _LoadMoreFooter()),
-          // Room for the centre FAB.
-          const SliverToBoxAdapter(child: SizedBox(height: 48)),
+          // Room for the FAB (56 + 16 margin) above the navigation bar.
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
     );
