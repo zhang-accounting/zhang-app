@@ -126,7 +126,8 @@ void main() {
     await tester.tap(find.byKey(const Key('add.key.save'))); // save
     await _waitFor(tester, find.byKey(const Key('shell.newTransaction')));
     expect(find.byKey(const Key('add.payee')), findsNothing, reason: 'screen closed after saving');
-    expect(find.textContaining(payee), findsOneWidget, reason: 'snackbar');
+    expect(find.descendant(of: find.byType(SnackBar), matching: find.textContaining(payee)), findsOneWidget,
+        reason: 'snackbar (Home may already list the new row too)');
     await _hold(tester, 'saved');
 
     // The server has the transaction (it reloads asynchronously → poll).
