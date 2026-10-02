@@ -199,6 +199,9 @@ class _StepChart extends StatelessWidget {
               showTitles: true,
               reservedSize: 24,
               interval: math.max(1, spanDays / 3),
+              // Forced min/max labels collide with the interval labels.
+              minIncluded: false,
+              maxIncluded: false,
               getTitlesWidget: (value, meta) => SideTitleWidget(
                 meta: meta,
                 fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
