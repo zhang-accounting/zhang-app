@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zhang_app/data/repositories/ledger_revision.dart';
 import 'package:zhang_app/features/home/home_screen.dart';
 
 import '../../helpers/fixtures.dart';
@@ -71,6 +72,22 @@ void main() {
     await tester.tap(find.text('Update'));
     await tester.pumpAndSettle();
     expect(find.text('Edit server'), findsWidgets);
+  });
+
+  testWidgets('home: a failing refetch shows the error, not the previous (other ledger) data', (tester) async {
+    // Same state shape as a profile switch to an unreachable / 401 ledger:
+    // AsyncError that still carries the previous value.
+    final server = FakeZhangServer(journals: generateExpenses(3));
+    final container = await pumpApp(tester, server);
+    expect(find.text('Payee 0'), findsOneWidget);
+    expect(find.text('¥796.73'), findsOneWidget);
+    server.unauthorized = true;
+    container.read(ledgerRevisionProvider.notifier).bump();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home.authBanner')), findsOneWidget);
+    expect(find.text('Payee 0'), findsNothing);
+    expect(find.text('¥796.73'), findsNothing);
+    expect(find.text('Failed to load'), findsNWidgets(2));
   });
 
   test('humanizeErrorType', () {

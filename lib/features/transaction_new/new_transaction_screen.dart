@@ -120,9 +120,14 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     return _treeCache = CategoryTree.fromAccounts(accounts, root);
   }
 
+  /// The value unless the latest fetch failed: after a profile switch a
+  /// failing provider still carries the *previous ledger's* value, which
+  /// must never feed account names or the currency into a new entry.
+  static T? _fresh<T>(AsyncValue<T> value) => value.hasError ? null : value.value;
+
   _Resolved _resolve() {
-    final accounts = ref.watch(pickerAccountsProvider).value;
-    final options = ref.watch(ledgerOptionsProvider).value;
+    final accounts = _fresh(ref.watch(pickerAccountsProvider));
+    final options = _fresh(ref.watch(ledgerOptionsProvider));
     final commodities = ref.watch(commoditiesProvider).value ?? const <String, Commodity>{};
     final index = ref.watch(suggestionIndexProvider);
     final recordPrefs = ref.watch(recordPrefsProvider);
