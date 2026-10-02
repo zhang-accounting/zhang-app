@@ -232,4 +232,192 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saved => 'Saved';
+
+  @override
+  String get addModeExpense => 'Expense';
+
+  @override
+  String get addModeIncome => 'Income';
+
+  @override
+  String get addModeTransfer => 'Transfer';
+
+  @override
+  String get addClose => 'Close';
+
+  @override
+  String get addSubcategory => 'Sub-category';
+
+  @override
+  String get addSubcategoryRequired => 'required';
+
+  @override
+  String addNoCategories(String root) {
+    return 'No open $root accounts. Add an open directive to your ledger first.';
+  }
+
+  @override
+  String get addFundingExpense => 'Paid from';
+
+  @override
+  String get addFundingIncome => 'Deposit to';
+
+  @override
+  String get addFrom => 'From';
+
+  @override
+  String get addTo => 'To';
+
+  @override
+  String get addSwap => 'Swap accounts';
+
+  @override
+  String get addChooseAccount => 'Choose account';
+
+  @override
+  String get addPayee => 'Payee';
+
+  @override
+  String get addNarration => 'Note';
+
+  @override
+  String get addTags => 'Tags';
+
+  @override
+  String get addTagHint => 'New tag';
+
+  @override
+  String get addTagAdd => 'Add';
+
+  @override
+  String get addDone => 'Done';
+
+  @override
+  String get addToday => 'Today';
+
+  @override
+  String get addDate => 'Date';
+
+  @override
+  String get addSaveAndAnother => 'Save & new';
+
+  @override
+  String get addSaveAndAnotherLabel => 'Save and add another';
+
+  @override
+  String get addEvaluate => 'Calculate';
+
+  @override
+  String get addBackspace => 'Backspace (long-press to clear)';
+
+  @override
+  String get addPlus => 'Plus';
+
+  @override
+  String get addMinus => 'Minus';
+
+  @override
+  String get addDecimalPoint => 'Decimal point';
+
+  @override
+  String get addHintAmount => 'Enter an amount';
+
+  @override
+  String get addHintAmountPositive => 'The amount must be greater than 0';
+
+  @override
+  String get addHintCategory => 'Choose a category';
+
+  @override
+  String get addHintSubcategory => 'Choose a sub-category';
+
+  @override
+  String get addHintFunding => 'Choose an account';
+
+  @override
+  String get addHintFrom => 'Choose the source account';
+
+  @override
+  String get addHintTo => 'Choose the destination account';
+
+  @override
+  String get addHintSameAccount => 'Source and destination must differ';
+
+  @override
+  String get addHintCommodity => 'Loading the ledger currency…';
+
+  @override
+  String addSavedSnack(String amount, String title) {
+    return 'Recorded $amount · $title';
+  }
+
+  @override
+  String addSavedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count saved',
+      one: '1 saved',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addSaveFailed => 'Could not save';
+
+  @override
+  String get addDiscardTitle => 'Discard this entry?';
+
+  @override
+  String get addDiscardMessage => 'What you entered will be lost.';
+
+  @override
+  String get addDiscard => 'Discard';
+
+  @override
+  String get addKeepEditing => 'Keep editing';
+
+  @override
+  String addLastAmount(String amount) {
+    return 'Last: $amount';
+  }
+
+  @override
+  String get addCommodity => 'Currency';
+
+  @override
+  String get addPickerSearch => 'Search name, alias or segment';
+
+  @override
+  String get addPickerFavourites => 'Favourites';
+
+  @override
+  String get addPickerRecent => 'Recent';
+
+  @override
+  String get addPickerAll => 'All';
+
+  @override
+  String get addPickerEmpty => 'No matching accounts';
+
+  @override
+  String get addPickerStarHint => 'Long-press an account to star it';
+
+  @override
+  String get addPickerStarred => 'Starred';
+
+  @override
+  String get addTypeAssets => 'Assets';
+
+  @override
+  String get addTypeLiabilities => 'Liabilities';
+
+  @override
+  String get addTypeEquity => 'Equity';
+
+  @override
+  String get addTypeIncome => 'Income';
+
+  @override
+  String get addTypeExpenses => 'Expenses';
 }
