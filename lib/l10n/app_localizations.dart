@@ -505,6 +505,360 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved'**
   String get saved;
+
+  /// No description provided for @homeExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get homeExpense;
+
+  /// No description provided for @homeIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get homeIncome;
+
+  /// No description provided for @homeNet.
+  ///
+  /// In en, this message translates to:
+  /// **'Net'**
+  String get homeNet;
+
+  /// No description provided for @homePreviousMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get homePreviousMonth;
+
+  /// No description provided for @homeNextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get homeNextMonth;
+
+  /// No description provided for @homeRecentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent transactions'**
+  String get homeRecentTitle;
+
+  /// No description provided for @homeSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get homeSeeAll;
+
+  /// No description provided for @homeEmptyLedger.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions yet. Tap + to record your first one.'**
+  String get homeEmptyLedger;
+
+  /// No description provided for @homeErrorCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 error} other{{count} errors}}'**
+  String homeErrorCount(int count);
+
+  /// No description provided for @homeErrorsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ledger errors'**
+  String get homeErrorsTitle;
+
+  /// No description provided for @homeErrorsMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {shown} of {total}'**
+  String homeErrorsMore(int shown, int total);
+
+  /// No description provided for @homeErrorLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'{file} · byte {offset}'**
+  String homeErrorLocation(String file, int offset);
+
+  /// No description provided for @homeAuthBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'The server rejected the saved credentials.'**
+  String get homeAuthBanner;
+
+  /// No description provided for @homeAuthUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get homeAuthUpdate;
+
+  /// No description provided for @homeLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load'**
+  String get homeLoadFailed;
+
+  /// No description provided for @journalFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get journalFilterAll;
+
+  /// No description provided for @journalKindExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get journalKindExpense;
+
+  /// No description provided for @journalKindIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get journalKindIncome;
+
+  /// No description provided for @journalKindTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer'**
+  String get journalKindTransfer;
+
+  /// No description provided for @journalKindCompound.
+  ///
+  /// In en, this message translates to:
+  /// **'Compound'**
+  String get journalKindCompound;
+
+  /// No description provided for @journalKindAdjustment.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment'**
+  String get journalKindAdjustment;
+
+  /// No description provided for @journalKindRefund.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund'**
+  String get journalKindRefund;
+
+  /// No description provided for @journalBalanceCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance check'**
+  String get journalBalanceCheck;
+
+  /// No description provided for @journalBalancePad.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance pad'**
+  String get journalBalancePad;
+
+  /// No description provided for @journalBalanceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance check failed'**
+  String get journalBalanceFailed;
+
+  /// No description provided for @journalSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get journalSearch;
+
+  /// No description provided for @journalSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Payee, narration, account, tag…'**
+  String get journalSearchHint;
+
+  /// No description provided for @journalCloseSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get journalCloseSearch;
+
+  /// No description provided for @journalTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get journalTags;
+
+  /// No description provided for @journalTagsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by tag'**
+  String get journalTagsTitle;
+
+  /// No description provided for @journalNoTags.
+  ///
+  /// In en, this message translates to:
+  /// **'No tags in the loaded transactions.'**
+  String get journalNoTags;
+
+  /// No description provided for @journalRemoveTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove tag filter {tag}'**
+  String journalRemoveTag(String tag);
+
+  /// No description provided for @journalMonthExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Exp {amount}'**
+  String journalMonthExpense(String amount);
+
+  /// No description provided for @journalMonthIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Inc {amount}'**
+  String journalMonthIncome(String amount);
+
+  /// No description provided for @journalToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get journalToday;
+
+  /// No description provided for @journalYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get journalYesterday;
+
+  /// No description provided for @journalEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions yet'**
+  String get journalEmpty;
+
+  /// No description provided for @journalEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to record your first one.'**
+  String get journalEmptyHint;
+
+  /// No description provided for @journalNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching transactions'**
+  String get journalNoMatch;
+
+  /// No description provided for @journalClearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get journalClearFilters;
+
+  /// No description provided for @journalLoadMoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load more'**
+  String get journalLoadMoreFailed;
+
+  /// No description provided for @journalUnbalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Unbalanced'**
+  String get journalUnbalanced;
+
+  /// No description provided for @journalPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get journalPending;
+
+  /// No description provided for @journalAttachment.
+  ///
+  /// In en, this message translates to:
+  /// **'Has attachments'**
+  String get journalAttachment;
+
+  /// No description provided for @trxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction'**
+  String get trxTitle;
+
+  /// No description provided for @trxPostings.
+  ///
+  /// In en, this message translates to:
+  /// **'Postings'**
+  String get trxPostings;
+
+  /// No description provided for @trxDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get trxDetails;
+
+  /// No description provided for @trxDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get trxDate;
+
+  /// No description provided for @trxFlag.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag'**
+  String get trxFlag;
+
+  /// No description provided for @trxTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get trxTags;
+
+  /// No description provided for @trxLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Links'**
+  String get trxLinks;
+
+  /// No description provided for @trxMetas.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata'**
+  String get trxMetas;
+
+  /// No description provided for @trxAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'auto'**
+  String get trxAuto;
+
+  /// No description provided for @trxWritten.
+  ///
+  /// In en, this message translates to:
+  /// **'written {amount}'**
+  String trxWritten(String amount);
+
+  /// No description provided for @trxCopyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as text'**
+  String get trxCopyText;
+
+  /// No description provided for @trxCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get trxCopied;
+
+  /// No description provided for @trxNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction not found. Ids change when the ledger reloads – open it again from the list.'**
+  String get trxNotFound;
+
+  /// No description provided for @trxUnbalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'This transaction does not balance.'**
+  String get trxUnbalanced;
+
+  /// No description provided for @trxFilterByTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Show transactions tagged #{tag}'**
+  String trxFilterByTag(String tag);
 }
 
 class _AppLocalizationsDelegate

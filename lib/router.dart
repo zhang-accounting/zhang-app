@@ -6,6 +6,7 @@ import 'core/widgets/app_shell.dart';
 import 'data/profiles/profile_providers.dart';
 import 'features/accounts/accounts_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/journals/journal_routes.dart';
 import 'features/journals/journals_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/settings/profile_edit_screen.dart';
@@ -63,7 +64,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(
             routes: [
-              GoRoute(path: AppRoutes.home, builder: (context, state) => const HomeScreen()),
+              GoRoute(
+                path: AppRoutes.home,
+                builder: (context, state) => const HomeScreen(),
+                routes: [JournalRoutes.homeDetailRoute()],
+              ),
             ],
           ),
           StatefulShellBranch(
@@ -71,6 +76,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.journals,
                 builder: (context, state) => const JournalsScreen(),
+                routes: [JournalRoutes.journalDetailRoute()],
               ),
             ],
           ),
