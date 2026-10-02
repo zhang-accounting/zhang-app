@@ -1207,6 +1207,330 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show transactions tagged #{tag}'**
   String trxFilterByTag(String tag);
+
+  /// No description provided for @accountsNetWorth.
+  ///
+  /// In en, this message translates to:
+  /// **'Net worth'**
+  String get accountsNetWorth;
+
+  /// No description provided for @accountsAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'Assets'**
+  String get accountsAssets;
+
+  /// No description provided for @accountsLiabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Liabilities'**
+  String get accountsLiabilities;
+
+  /// No description provided for @accountsIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get accountsIncome;
+
+  /// No description provided for @accountsExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get accountsExpenses;
+
+  /// No description provided for @accountsEquity.
+  ///
+  /// In en, this message translates to:
+  /// **'Equity'**
+  String get accountsEquity;
+
+  /// No description provided for @accountsNetWorthSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Sum of account balances in {currency}'**
+  String accountsNetWorthSource(String currency);
+
+  /// No description provided for @accountsNotInTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in total (no price): {commodities}'**
+  String accountsNotInTotal(String commodities);
+
+  /// No description provided for @accountsSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search accounts'**
+  String get accountsSearch;
+
+  /// No description provided for @accountsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Name or alias'**
+  String get accountsSearchHint;
+
+  /// No description provided for @accountsCloseSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get accountsCloseSearch;
+
+  /// No description provided for @accountsShowClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Show closed accounts'**
+  String get accountsShowClosed;
+
+  /// No description provided for @accountsClosedHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 closed account hidden} other{{count} closed accounts hidden}}'**
+  String accountsClosedHidden(int count);
+
+  /// No description provided for @accountsClosedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get accountsClosedBadge;
+
+  /// No description provided for @accountsOpenBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get accountsOpenBadge;
+
+  /// No description provided for @accountsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No accounts yet. Add open directives to your ledger to see them here.'**
+  String get accountsEmpty;
+
+  /// No description provided for @accountsNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No accounts match “{query}”'**
+  String accountsNoMatches(String query);
+
+  /// No description provided for @accountsExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get accountsExpand;
+
+  /// No description provided for @accountsCollapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get accountsCollapse;
+
+  /// No description provided for @accountsShowCommodities.
+  ///
+  /// In en, this message translates to:
+  /// **'Show each currency'**
+  String get accountsShowCommodities;
+
+  /// No description provided for @accountsHideCommodities.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide currencies'**
+  String get accountsHideCommodities;
+
+  /// No description provided for @accountsOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened {date}'**
+  String accountsOpened(String date);
+
+  /// No description provided for @accountsConvertedTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {amount} in total'**
+  String accountsConvertedTotal(String amount);
+
+  /// No description provided for @accountsBalanceHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance history'**
+  String get accountsBalanceHistory;
+
+  /// No description provided for @accountsNoBalanceHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No balance history yet'**
+  String get accountsNoBalanceHistory;
+
+  /// No description provided for @accountsTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'Transactions'**
+  String get accountsTransactions;
+
+  /// No description provided for @accountsRunningBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get accountsRunningBalance;
+
+  /// No description provided for @accountsNoTransactions.
+  ///
+  /// In en, this message translates to:
+  /// **'No transactions for this account yet'**
+  String get accountsNoTransactions;
+
+  /// No description provided for @accountsBalanceCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance check'**
+  String get accountsBalanceCheck;
+
+  /// No description provided for @accountsBalancePad.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance pad'**
+  String get accountsBalancePad;
+
+  /// No description provided for @accountsCopyName.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy account name'**
+  String get accountsCopyName;
+
+  /// No description provided for @accountsNameCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Account name copied'**
+  String get accountsNameCopied;
+
+  /// No description provided for @reportsPeriodWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get reportsPeriodWeek;
+
+  /// No description provided for @reportsPeriodMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get reportsPeriodMonth;
+
+  /// No description provided for @reportsPeriodYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get reportsPeriodYear;
+
+  /// No description provided for @reportsPeriodCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get reportsPeriodCustom;
+
+  /// No description provided for @reportsPreviousPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous period'**
+  String get reportsPreviousPeriod;
+
+  /// No description provided for @reportsNextPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Next period'**
+  String get reportsNextPeriod;
+
+  /// No description provided for @reportsPickRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a date range'**
+  String get reportsPickRange;
+
+  /// No description provided for @reportsIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get reportsIncome;
+
+  /// No description provided for @reportsExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get reportsExpense;
+
+  /// No description provided for @reportsNet.
+  ///
+  /// In en, this message translates to:
+  /// **'Net'**
+  String get reportsNet;
+
+  /// No description provided for @reportsCashflowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Income & expense'**
+  String get reportsCashflowTitle;
+
+  /// No description provided for @reportsNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data for this period'**
+  String get reportsNoData;
+
+  /// No description provided for @reportsBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakdown'**
+  String get reportsBreakdownTitle;
+
+  /// No description provided for @reportsExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get reportsExpenses;
+
+  /// No description provided for @reportsIncomeSegment.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get reportsIncomeSegment;
+
+  /// No description provided for @reportsOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get reportsOther;
+
+  /// No description provided for @reportsTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get reportsTotal;
+
+  /// No description provided for @reportsNoExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses in this period'**
+  String get reportsNoExpenses;
+
+  /// No description provided for @reportsNoIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'No income in this period'**
+  String get reportsNoIncome;
+
+  /// No description provided for @reportsUpOneLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Up one level'**
+  String get reportsUpOneLevel;
+
+  /// No description provided for @reportsShowSubAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Show sub-accounts'**
+  String get reportsShowSubAccounts;
+
+  /// No description provided for @reportsOpenAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Open account'**
+  String get reportsOpenAccount;
 }
 
 class _AppLocalizationsDelegate

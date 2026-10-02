@@ -341,5 +341,101 @@
         "type": "String"
       }
     }
-  }
+  },
+  "accountsNetWorth": "Net worth",
+  "accountsAssets": "Assets",
+  "accountsLiabilities": "Liabilities",
+  "accountsIncome": "Income",
+  "accountsExpenses": "Expenses",
+  "accountsEquity": "Equity",
+  "accountsNetWorthSource": "Sum of account balances in {currency}",
+  "@accountsNetWorthSource": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsNotInTotal": "Not in total (no price): {commodities}",
+  "@accountsNotInTotal": {
+    "placeholders": {
+      "commodities": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsSearch": "Search accounts",
+  "accountsSearchHint": "Name or alias",
+  "accountsCloseSearch": "Close search",
+  "accountsShowClosed": "Show closed accounts",
+  "accountsClosedHidden": "{count, plural, =1{1 closed account hidden} other{{count} closed accounts hidden}}",
+  "@accountsClosedHidden": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsClosedBadge": "Closed",
+  "accountsOpenBadge": "Open",
+  "accountsEmpty": "No accounts yet. Add open directives to your ledger to see them here.",
+  "accountsNoMatches": "No accounts match “{query}”",
+  "@accountsNoMatches": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsExpand": "Expand",
+  "accountsCollapse": "Collapse",
+  "accountsShowCommodities": "Show each currency",
+  "accountsHideCommodities": "Hide currencies",
+  "accountsOpened": "Opened {date}",
+  "@accountsOpened": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsConvertedTotal": "≈ {amount} in total",
+  "@accountsConvertedTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsBalanceHistory": "Balance history",
+  "accountsNoBalanceHistory": "No balance history yet",
+  "accountsTransactions": "Transactions",
+  "accountsRunningBalance": "Balance",
+  "accountsNoTransactions": "No transactions for this account yet",
+  "accountsBalanceCheck": "Balance check",
+  "accountsBalancePad": "Balance pad",
+  "accountsCopyName": "Copy account name",
+  "accountsNameCopied": "Account name copied",
+  "reportsPeriodWeek": "Week",
+  "reportsPeriodMonth": "Month",
+  "reportsPeriodYear": "Year",
+  "reportsPeriodCustom": "Custom",
+  "reportsPreviousPeriod": "Previous period",
+  "reportsNextPeriod": "Next period",
+  "reportsPickRange": "Select a date range",
+  "reportsIncome": "Income",
+  "reportsExpense": "Expense",
+  "reportsNet": "Net",
+  "reportsCashflowTitle": "Income & expense",
+  "reportsNoData": "No data for this period",
+  "reportsBreakdownTitle": "Breakdown",
+  "reportsExpenses": "Expenses",
+  "reportsIncomeSegment": "Income",
+  "reportsOther": "Other",
+  "reportsTotal": "Total",
+  "reportsNoExpenses": "No expenses in this period",
+  "reportsNoIncome": "No income in this period",
+  "reportsUpOneLevel": "Up one level",
+  "reportsShowSubAccounts": "Show sub-accounts",
+  "reportsOpenAccount": "Open account"
 }

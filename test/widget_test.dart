@@ -128,7 +128,7 @@ void main() {
 
     await tester.tap(find.text('Accounts'));
     await tester.pumpAndSettle();
-    expect(find.text('Ledger: Family'), findsOneWidget);
+    expect(find.byKey(const Key('accounts.search')), findsOneWidget); // real Accounts screen
 
     await tester.tap(find.byKey(const Key('shell.newTransaction')));
     await tester.pumpAndSettle();
