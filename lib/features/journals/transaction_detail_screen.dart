@@ -318,7 +318,7 @@ class _PostingTile extends StatelessWidget {
                 child: Text(notes.join(' · '), style: muted?.copyWith(fontStyle: FontStyle.italic)),
               ),
               const SizedBox(width: 8),
-              Flexible(
+              Expanded(
                 flex: 3,
                 child: Text(
                   '${fmt(p.accountBefore)} → ${fmt(p.accountAfter)}',
