@@ -226,4 +226,186 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get saved => '已保存';
+
+  @override
+  String get addModeExpense => '支出';
+
+  @override
+  String get addModeIncome => '收入';
+
+  @override
+  String get addModeTransfer => '转账';
+
+  @override
+  String get addClose => '关闭';
+
+  @override
+  String get addSubcategory => '子类目';
+
+  @override
+  String get addSubcategoryRequired => '必选';
+
+  @override
+  String addNoCategories(String root) {
+    return '账本里没有开设的 $root 账户，请先添加 open 指令。';
+  }
+
+  @override
+  String get addFundingExpense => '付款账户';
+
+  @override
+  String get addFundingIncome => '存入账户';
+
+  @override
+  String get addFrom => '转出';
+
+  @override
+  String get addTo => '转入';
+
+  @override
+  String get addSwap => '交换账户';
+
+  @override
+  String get addChooseAccount => '选择账户';
+
+  @override
+  String get addPayee => '商户 / 对方';
+
+  @override
+  String get addNarration => '备注';
+
+  @override
+  String get addTags => '标签';
+
+  @override
+  String get addTagHint => '新标签';
+
+  @override
+  String get addTagAdd => '添加';
+
+  @override
+  String get addDone => '完成';
+
+  @override
+  String get addToday => '今天';
+
+  @override
+  String get addDate => '日期';
+
+  @override
+  String get addSaveAndAnother => '再记';
+
+  @override
+  String get addSaveAndAnotherLabel => '保存并再记一笔';
+
+  @override
+  String get addEvaluate => '计算';
+
+  @override
+  String get addBackspace => '退格（长按清零）';
+
+  @override
+  String get addPlus => '加';
+
+  @override
+  String get addMinus => '减';
+
+  @override
+  String get addDecimalPoint => '小数点';
+
+  @override
+  String get addHintAmount => '请输入金额';
+
+  @override
+  String get addHintAmountPositive => '金额需大于 0';
+
+  @override
+  String get addHintCategory => '请选择类目';
+
+  @override
+  String get addHintSubcategory => '请选择子类目';
+
+  @override
+  String get addHintFunding => '请选择账户';
+
+  @override
+  String get addHintFrom => '请选择转出账户';
+
+  @override
+  String get addHintTo => '请选择转入账户';
+
+  @override
+  String get addHintSameAccount => '转出和转入不能是同一个账户';
+
+  @override
+  String get addHintCommodity => '正在读取账本币种…';
+
+  @override
+  String addSavedSnack(String amount, String title) {
+    return '已记账 $amount · $title';
+  }
+
+  @override
+  String addSavedCount(int count) {
+    return '本次已记 $count 笔';
+  }
+
+  @override
+  String get addSaveFailed => '未能保存';
+
+  @override
+  String get addDiscardTitle => '放弃这笔？';
+
+  @override
+  String get addDiscardMessage => '已填写的内容不会保存。';
+
+  @override
+  String get addDiscard => '放弃';
+
+  @override
+  String get addKeepEditing => '继续编辑';
+
+  @override
+  String addLastAmount(String amount) {
+    return '上次 $amount';
+  }
+
+  @override
+  String get addCommodity => '币种';
+
+  @override
+  String get addPickerSearch => '搜索名称 / 别名 / 任意一段';
+
+  @override
+  String get addPickerFavourites => '收藏';
+
+  @override
+  String get addPickerRecent => '最近';
+
+  @override
+  String get addPickerAll => '全部';
+
+  @override
+  String get addPickerEmpty => '没有匹配的账户';
+
+  @override
+  String get addPickerStarHint => '长按账户可加入收藏';
+
+  @override
+  String get addPickerStarred => '已收藏';
+
+  @override
+  String get addTypeAssets => '资产';
+
+  @override
+  String get addTypeLiabilities => '负债';
+
+  @override
+  String get addTypeEquity => '权益';
+
+  @override
+  String get addTypeIncome => '收入';
+
+  @override
+  String get addTypeExpenses => '支出';
 }

@@ -11,6 +11,7 @@ import 'features/onboarding/onboarding_screen.dart';
 import 'features/settings/profile_edit_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/stats/reports_screen.dart';
+import 'features/transaction_new/entry_mode.dart';
 import 'features/transaction_new/new_transaction_screen.dart';
 
 /// Every route path in one place. Use with `context.go` / `context.push`.
@@ -94,7 +95,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.newTransaction,
-        builder: (context, state) => const NewTransactionScreen(),
+        // `?mode=expense|income|transfer` preselects the entry mode.
+        builder: (context, state) => NewTransactionScreen(
+          initialMode: EntryMode.fromQuery(state.uri.queryParameters['mode']),
+        ),
       ),
       GoRoute(
         path: AppRoutes.settings,

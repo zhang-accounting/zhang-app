@@ -505,6 +505,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved'**
   String get saved;
+
+  /// No description provided for @addModeExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get addModeExpense;
+
+  /// No description provided for @addModeIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get addModeIncome;
+
+  /// No description provided for @addModeTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer'**
+  String get addModeTransfer;
+
+  /// No description provided for @addClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get addClose;
+
+  /// No description provided for @addSubcategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Sub-category'**
+  String get addSubcategory;
+
+  /// No description provided for @addSubcategoryRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'required'**
+  String get addSubcategoryRequired;
+
+  /// No description provided for @addNoCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'No open {root} accounts. Add an open directive to your ledger first.'**
+  String addNoCategories(String root);
+
+  /// No description provided for @addFundingExpense.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid from'**
+  String get addFundingExpense;
+
+  /// No description provided for @addFundingIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Deposit to'**
+  String get addFundingIncome;
+
+  /// No description provided for @addFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get addFrom;
+
+  /// No description provided for @addTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get addTo;
+
+  /// No description provided for @addSwap.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap accounts'**
+  String get addSwap;
+
+  /// No description provided for @addChooseAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose account'**
+  String get addChooseAccount;
+
+  /// No description provided for @addPayee.
+  ///
+  /// In en, this message translates to:
+  /// **'Payee'**
+  String get addPayee;
+
+  /// No description provided for @addNarration.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get addNarration;
+
+  /// No description provided for @addTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get addTags;
+
+  /// No description provided for @addTagHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New tag'**
+  String get addTagHint;
+
+  /// No description provided for @addTagAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addTagAdd;
+
+  /// No description provided for @addDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get addDone;
+
+  /// No description provided for @addToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get addToday;
+
+  /// No description provided for @addDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get addDate;
+
+  /// Keypad key: save and keep the screen open for another entry
+  ///
+  /// In en, this message translates to:
+  /// **'Save & new'**
+  String get addSaveAndAnother;
+
+  /// No description provided for @addSaveAndAnotherLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Save and add another'**
+  String get addSaveAndAnotherLabel;
+
+  /// No description provided for @addEvaluate.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate'**
+  String get addEvaluate;
+
+  /// No description provided for @addBackspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Backspace (long-press to clear)'**
+  String get addBackspace;
+
+  /// No description provided for @addPlus.
+  ///
+  /// In en, this message translates to:
+  /// **'Plus'**
+  String get addPlus;
+
+  /// No description provided for @addMinus.
+  ///
+  /// In en, this message translates to:
+  /// **'Minus'**
+  String get addMinus;
+
+  /// No description provided for @addDecimalPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal point'**
+  String get addDecimalPoint;
+
+  /// No description provided for @addHintAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount'**
+  String get addHintAmount;
+
+  /// No description provided for @addHintAmountPositive.
+  ///
+  /// In en, this message translates to:
+  /// **'The amount must be greater than 0'**
+  String get addHintAmountPositive;
+
+  /// No description provided for @addHintCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a category'**
+  String get addHintCategory;
+
+  /// No description provided for @addHintSubcategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a sub-category'**
+  String get addHintSubcategory;
+
+  /// No description provided for @addHintFunding.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an account'**
+  String get addHintFunding;
+
+  /// No description provided for @addHintFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the source account'**
+  String get addHintFrom;
+
+  /// No description provided for @addHintTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the destination account'**
+  String get addHintTo;
+
+  /// No description provided for @addHintSameAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Source and destination must differ'**
+  String get addHintSameAccount;
+
+  /// No description provided for @addHintCommodity.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the ledger currency…'**
+  String get addHintCommodity;
+
+  /// No description provided for @addSavedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded {amount} · {title}'**
+  String addSavedSnack(String amount, String title);
+
+  /// No description provided for @addSavedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 saved} other{{count} saved}}'**
+  String addSavedCount(int count);
+
+  /// No description provided for @addSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save'**
+  String get addSaveFailed;
+
+  /// No description provided for @addDiscardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this entry?'**
+  String get addDiscardTitle;
+
+  /// No description provided for @addDiscardMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'What you entered will be lost.'**
+  String get addDiscardMessage;
+
+  /// No description provided for @addDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get addDiscard;
+
+  /// No description provided for @addKeepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get addKeepEditing;
+
+  /// No description provided for @addLastAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Last: {amount}'**
+  String addLastAmount(String amount);
+
+  /// No description provided for @addCommodity.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get addCommodity;
+
+  /// No description provided for @addPickerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search name, alias or segment'**
+  String get addPickerSearch;
+
+  /// No description provided for @addPickerFavourites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get addPickerFavourites;
+
+  /// No description provided for @addPickerRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get addPickerRecent;
+
+  /// No description provided for @addPickerAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get addPickerAll;
+
+  /// No description provided for @addPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching accounts'**
+  String get addPickerEmpty;
+
+  /// No description provided for @addPickerStarHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press an account to star it'**
+  String get addPickerStarHint;
+
+  /// No description provided for @addPickerStarred.
+  ///
+  /// In en, this message translates to:
+  /// **'Starred'**
+  String get addPickerStarred;
+
+  /// No description provided for @addTypeAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'Assets'**
+  String get addTypeAssets;
+
+  /// No description provided for @addTypeLiabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Liabilities'**
+  String get addTypeLiabilities;
+
+  /// No description provided for @addTypeEquity.
+  ///
+  /// In en, this message translates to:
+  /// **'Equity'**
+  String get addTypeEquity;
+
+  /// No description provided for @addTypeIncome.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get addTypeIncome;
+
+  /// No description provided for @addTypeExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get addTypeExpenses;
 }
 
 class _AppLocalizationsDelegate
