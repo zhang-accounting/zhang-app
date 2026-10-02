@@ -311,10 +311,12 @@ class _RankRow extends StatelessWidget {
                   borderRadius: BorderRadius.circular(3),
                   child: SizedBox(
                     height: 6,
+                    width: double.infinity, // full-width track; the fill is a fraction of it
                     child: Stack(
                       children: [
                         Positioned.fill(child: ColoredBox(color: scheme.surfaceContainerHighest)),
                         FractionallySizedBox(
+                          alignment: AlignmentDirectional.centerStart,
                           widthFactor: barFraction,
                           heightFactor: 1,
                           child: ColoredBox(color: color),

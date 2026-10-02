@@ -173,12 +173,14 @@ class _CashflowChart extends StatelessWidget {
     final expense = [for (final b in buckets) b.expense.toDouble()];
     final net = [for (final b in buckets) b.net.toDouble()];
 
-    var maxY = [0.0, ...income, ...expense, ...net].reduce(math.max);
-    var minY = [0.0, ...net, ...income, ...expense].reduce(math.min);
-    final interval = niceStep(maxY - minY);
-    maxY = (maxY / interval).ceil() * interval;
-    minY = (minY / interval).floor() * interval;
-    if (maxY == minY) maxY = minY + interval;
+    final rawMax = [0.0, ...income, ...expense, ...net].reduce(math.max);
+    final rawMin = [0.0, ...net, ...income, ...expense].reduce(math.min);
+    final interval = niceStep(rawMax - rawMin);
+    // Top snaps to a grid line; a negative bottom only gets a little padding
+    // (snapping it would waste a whole step for a small negative net day).
+    var maxY = (rawMax / interval).ceil() * interval;
+    if (maxY <= 0) maxY = interval;
+    final minY = rawMin < 0 ? rawMin - (maxY - rawMin) * 0.04 : 0.0;
 
     final axisStyle = theme.textTheme.labelSmall?.copyWith(color: scheme.onSurfaceVariant);
     final labelEvery = math.max(1, (n / 8).ceil());
@@ -203,6 +205,8 @@ class _CashflowChart extends StatelessWidget {
           showTitles: true,
           reservedSize: _kLeftReserved,
           interval: interval,
+          // A padded negative minimum is not a round number; 0 is still labelled.
+          minIncluded: minY == 0,
           getTitlesWidget: visible ? leftTitle : empty,
         ),
       ),
