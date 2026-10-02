@@ -233,8 +233,12 @@ final forNewTransactionProvider = FutureProvider<ForNewTransaction>((ref) {
 /// Suggestion index over the cached history + server payees. Usable while
 /// either source is still loading or failed (suggestions are optional).
 final suggestionIndexProvider = Provider<SuggestionIndex>((ref) {
-  final history = ref.watch(transactionHistoryProvider).value ?? const <HistoryEntry>[];
-  final payees = ref.watch(forNewTransactionProvider).value?.payees ?? const <String>[];
+  // Ignore values whose latest fetch failed: after a profile switch they
+  // still hold the previous ledger's payees and accounts.
+  final historyAsync = ref.watch(transactionHistoryProvider);
+  final serverAsync = ref.watch(forNewTransactionProvider);
+  final history = (historyAsync.hasError ? null : historyAsync.value) ?? const <HistoryEntry>[];
+  final payees = (serverAsync.hasError ? null : serverAsync.value)?.payees ?? const <String>[];
   if (history.isEmpty && payees.isEmpty) return SuggestionIndex.empty;
   return SuggestionIndex.build(history, serverPayees: payees);
 });
