@@ -27,6 +27,16 @@ void main() {
       expect(formatDecimal(d('1234.5'), grouping: false), '1234.50');
     });
 
+    test('halfDown rounds ties towards zero (zhang RoundDown)', () {
+      expect(formatDecimal(d('0.125'), precision: 2), '0.13');
+      expect(formatDecimal(d('0.125'), precision: 2, halfDown: true), '0.12');
+      expect(formatDecimal(d('-0.125'), precision: 2, halfDown: true), '-0.12');
+      expect(formatDecimal(d('0.1251'), precision: 2, halfDown: true), '0.13');
+      expect(formatDecimal(d('-474.229'), precision: 2, halfDown: true), '-474.23');
+      expect(formatDecimal(d('88.5'), precision: 0, halfDown: true), '88');
+      expect(formatDecimal(d('-0.005'), precision: 2, halfDown: true), '0.00');
+    });
+
     test('handles huge numbers without double precision loss', () {
       expect(formatDecimal(d('12345678901234567890.12')), '12,345,678,901,234,567,890.12');
     });

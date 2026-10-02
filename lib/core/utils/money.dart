@@ -16,24 +16,35 @@ import '../theme/app_colors.dart';
 ///   scale but at least 2 (so `21` → `21.00`, `0.00000001` stays intact).
 /// * [signed]: prefix positive values with `+` (negative values always get `-`).
 /// * [grouping]: insert `,` every three integer digits.
+/// * [halfDown]: round ties towards zero (`0.125` → `0.12`) like zhang's
+///   default commodity rounding `RoundDown` (bigdecimal `HalfDown`); the
+///   default rounds ties away from zero (`RoundUp` = `HalfUp`).
 String formatDecimal(
   Decimal value, {
   int? precision,
   bool signed = false,
   bool grouping = true,
+  bool halfDown = false,
 }) {
   final digits = precision ?? (value.scale > 2 ? value.scale : 2);
-  var text = value.abs().toStringAsFixed(digits);
+  final rounded = halfDown ? _roundHalfDown(value, digits) : value.round(scale: digits);
+  var text = rounded.abs().toStringAsFixed(digits);
   if (grouping) {
     final dot = text.indexOf('.');
     final intPart = dot < 0 ? text : text.substring(0, dot);
     final fracPart = dot < 0 ? '' : text.substring(dot);
     text = _group(intPart) + fracPart;
   }
-  final isZero = value.round(scale: digits) == Decimal.zero;
+  final isZero = rounded == Decimal.zero;
   if (value < Decimal.zero && !isZero) return '-$text';
   if (signed && value > Decimal.zero && !isZero) return '+$text';
   return text;
+}
+
+Decimal _roundHalfDown(Decimal value, int scale) {
+  final truncated = value.truncate(scale: scale);
+  final rest = (value - truncated).abs();
+  return rest > Decimal.parse('5e-${scale + 1}') ? value.round(scale: scale) : truncated;
 }
 
 String _group(String digits) {
@@ -66,12 +77,14 @@ String formatMoney(
   bool grouping = true,
   String? prefix,
   String? suffix,
+  bool halfDown = false,
 }) {
   final plain = formatDecimal(
     value,
     precision: precision,
     signed: signed,
     grouping: grouping,
+    halfDown: halfDown,
   );
   final number = plain.startsWith('-') ? '$displayMinus${plain.substring(1)}' : plain;
   if (prefix != null && prefix.isNotEmpty) {
