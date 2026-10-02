@@ -141,8 +141,11 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       index: index,
       openAccounts: open.keys.toList(),
       remembered: recordPrefs?.lastFunding,
+      commodity: commodity,
     );
-    final from = mode == EntryMode.transfer ? resolveTransferFrom(_form, isOpen: isOpen, index: index) : null;
+    final from = mode == EntryMode.transfer
+        ? resolveTransferFrom(_form, isOpen: isOpen, index: index, commodity: commodity)
+        : null;
     final to = mode == EntryMode.transfer && _form.to != null && isOpen(_form.to!) ? _form.to : null;
     final draft = EntryDraft(
       mode: mode,

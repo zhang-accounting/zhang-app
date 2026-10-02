@@ -143,10 +143,12 @@ class SuggestionIndex {
       _accounts.ranked().where((a) => types.contains(AccountType.ofAccount(a))).toList();
 
   /// The most recently used account of [types] (default funding account).
-  String? mostRecentAccount(Set<AccountType> types, {bool Function(String account)? where}) {
+  /// With [commodity], only postings in that commodity count (so a CNY entry
+  /// does not default to the BTC wallet that was used last).
+  String? mostRecentAccount(Set<AccountType> types, {bool Function(String account)? where, String? commodity}) {
     for (final entry in _history) {
       for (final p in entry.postings) {
-        if (types.contains(p.type) && (where == null || where(p.account))) return p.account;
+        if (types.contains(p.type) && _matches(p, where, commodity)) return p.account;
       }
     }
     return null;
@@ -154,17 +156,25 @@ class SuggestionIndex {
 
   /// Funding account (of [types]) of the latest transaction that posted to
   /// [category] or to one of its sub-accounts (P-07 fallback when nothing is
-  /// remembered locally).
-  String? lastFundingFor(String category, Set<AccountType> types, {bool Function(String account)? where}) {
+  /// remembered locally); [commodity] as in [mostRecentAccount].
+  String? lastFundingFor(
+    String category,
+    Set<AccountType> types, {
+    bool Function(String account)? where,
+    String? commodity,
+  }) {
     for (final entry in _history) {
       final hit = entry.postings.any((p) => p.account == category || p.account.startsWith('$category:'));
       if (!hit) continue;
       for (final p in entry.postings) {
-        if (types.contains(p.type) && (where == null || where(p.account))) return p.account;
+        if (types.contains(p.type) && _matches(p, where, commodity)) return p.account;
       }
     }
     return null;
   }
+
+  static bool _matches(HistoryPosting p, bool Function(String account)? where, String? commodity) =>
+      (commodity == null || p.commodity == commodity) && (where == null || where(p.account));
 }
 
 /// Up to [limit] items of [ranked] matching [query]: prefix matches first,

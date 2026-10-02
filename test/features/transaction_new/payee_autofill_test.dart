@@ -215,5 +215,25 @@ void main() {
         isNull,
       );
     });
+
+    test('history fallbacks skip accounts last used with another commodity', () {
+      // The newest posting is a BTC wallet; a CNY entry must not default to it.
+      final mixed = SuggestionIndex.build([
+        HistoryEntry(
+          datetime: DateTime(2026, 10, 2),
+          payee: 'Satoshi',
+          postings: [HistoryPosting('Assets:WeChat', Decimal.parse('0.00000001'), 'BTC')],
+        ),
+        entry({'Assets:Bank': '-5', 'Expenses:Clothing': '5'}, daysAgo: 3),
+      ]);
+      String? cny(EntryForm f) => resolveFunding(f, isOpen: _isOpen, index: mixed, openAccounts: open, commodity: 'CNY');
+      expect(cny(const EntryForm()), 'Assets:Bank');
+      expect(resolveFunding(const EntryForm(), isOpen: _isOpen, index: mixed, openAccounts: open), 'Assets:WeChat',
+          reason: 'without a commodity the newest posting wins');
+      expect(
+        resolveTransferFrom(const EntryForm(mode: EntryMode.transfer), isOpen: _isOpen, index: mixed, commodity: 'CNY'),
+        'Assets:Bank',
+      );
+    });
   });
 }
