@@ -220,7 +220,7 @@ void main() {
       final list = parseList(fixtureData('commodities.json'), Commodity.fromJson);
       final cny = list.first;
       expect(cny.prefix, '¥');
-      expect(cny.format(d('-1234.5')), '-¥1,234.50');
+      expect(cny.format(d('-1234.5')), '−¥1,234.50');
       final usd = list[1];
       expect(usd.latestPriceAmount, d('7.25'));
       expect(usd.latestPriceDate, DateTime(2023, 9, 1));

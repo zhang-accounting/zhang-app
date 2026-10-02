@@ -34,13 +34,14 @@ void main() {
 
   group('formatMoney', () {
     test('commodity suffix by default', () {
-      expect(formatMoney(d('-1234.5'), 'CNY'), '-1,234.50 CNY');
+      expect(formatMoney(d('-1234.5'), 'CNY'), '−1,234.50 CNY');
       expect(formatMoney(d('0.01'), 'BTC', precision: 8), '0.01000000 BTC');
       expect(formatMoney(d('5'), null), '5.00');
+      expect(formatMoney(d('-0.001'), 'CNY', precision: 2), '0.00 CNY', reason: 'no −0.00');
     });
 
     test('prefix symbol goes after the sign', () {
-      expect(formatMoney(d('-1234.5'), 'CNY', prefix: '¥'), '-¥1,234.50');
+      expect(formatMoney(d('-1234.5'), 'CNY', prefix: '¥'), '−¥1,234.50');
       expect(formatMoney(d('3'), 'USD', prefix: r'$', signed: true), r'+$3.00');
     });
   });

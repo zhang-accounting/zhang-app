@@ -48,11 +48,16 @@ String _group(String digits) {
   return buf.toString();
 }
 
-/// Formats an amount of a commodity.
+/// Minus sign for displayed amounts (U+2212, as wide as `+`; design §3.3).
+/// [formatDecimal] keeps the ASCII `-` for machine-readable text.
+const displayMinus = '−';
+
+/// Formats an amount of a commodity for display.
 ///
-/// Default output is `"-1,234.50 CNY"` (commodity suffix). Pass the commodity's
-/// display [prefix] (e.g. `"¥"`, from `Commodity.prefix`) to get `"-¥1,234.50"`
-/// instead; [suffix] (e.g. `Commodity.suffix`) replaces the commodity code.
+/// Default output is `"−1,234.50 CNY"` (commodity suffix, U+2212 minus). Pass
+/// the commodity's display [prefix] (e.g. `"¥"`, from `Commodity.prefix`) to
+/// get `"−¥1,234.50"` instead; [suffix] (e.g. `Commodity.suffix`) replaces the
+/// commodity code.
 String formatMoney(
   Decimal value,
   String? commodity, {
@@ -62,14 +67,15 @@ String formatMoney(
   String? prefix,
   String? suffix,
 }) {
-  final number = formatDecimal(
+  final plain = formatDecimal(
     value,
     precision: precision,
     signed: signed,
     grouping: grouping,
   );
+  final number = plain.startsWith('-') ? '$displayMinus${plain.substring(1)}' : plain;
   if (prefix != null && prefix.isNotEmpty) {
-    final hasSign = number.startsWith('-') || number.startsWith('+');
+    final hasSign = number.startsWith(displayMinus) || number.startsWith('+');
     final sign = hasSign ? number[0] : '';
     final rest = hasSign ? number.substring(1) : number;
     return '$sign$prefix$rest';
