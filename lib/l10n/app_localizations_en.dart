@@ -516,6 +516,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeAuthUpdate => 'Update';
 
   @override
+  String get homeReloadFailed =>
+      'The ledger failed to reload. The server still shows the previous version until the files are fixed.';
+
+  @override
   String get homeLoadFailed => 'Failed to load';
 
   @override

@@ -149,6 +149,7 @@
   "homeErrorLocation": "{file} 第 {line} 行",
   "homeAuthBanner": "服务器拒绝了保存的凭据。",
   "homeAuthUpdate": "去更新",
+  "homeReloadFailed": "账本重新加载失败。在修复文件之前，服务器仍显示上一个版本。",
   "homeLoadFailed": "加载失败",
   "journalFilterAll": "全部",
   "journalKindExpense": "支出",

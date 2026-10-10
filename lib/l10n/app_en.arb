@@ -306,6 +306,7 @@
   },
   "homeAuthBanner": "The server rejected the saved credentials.",
   "homeAuthUpdate": "Update",
+  "homeReloadFailed": "The ledger failed to reload. The server still shows the previous version until the files are fixed.",
   "homeLoadFailed": "Failed to load",
   "journalFilterAll": "All",
   "journalKindExpense": "Expense",

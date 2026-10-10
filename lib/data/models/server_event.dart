@@ -4,7 +4,9 @@ import 'json_utils.dart';
 
 /// A `data:` payload of the `GET /api/sse` event stream.
 ///
-/// On [ServerReload] refetch everything that is displayed (ids change).
+/// On [ServerReload] refetch everything that is displayed (ids change). On
+/// [ServerReloadFailed] the server keeps serving the version it loaded
+/// before (zhang ≥ 0.2).
 sealed class ServerEvent {
   const ServerEvent();
 
@@ -14,6 +16,7 @@ sealed class ServerEvent {
     return switch (type) {
       'Connected' => const ServerConnected(),
       'Reload' => const ServerReload(),
+      'ReloadFailed' => ServerReloadFailed(file: optString(m, 'file'), message: optString(m, 'message') ?? ''),
       'NewVersionFound' => ServerNewVersionFound(optString(m, 'version') ?? ''),
       _ => ServerUnknownEvent(type),
     };
@@ -30,6 +33,14 @@ final class ServerConnected extends ServerEvent {
 /// The ledger reloaded successfully (after a write or a file change).
 final class ServerReload extends ServerEvent {
   const ServerReload();
+}
+
+/// The ledger failed to reload (a file does not parse, …).
+final class ServerReloadFailed extends ServerEvent {
+  const ServerReloadFailed({this.file, required this.message});
+
+  final String? file;
+  final String message;
 }
 
 final class ServerNewVersionFound extends ServerEvent {

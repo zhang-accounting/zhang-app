@@ -7,6 +7,7 @@ import 'data/api/api_exception.dart';
 import 'data/profiles/profile_providers.dart';
 import 'data/profiles/profile_repository.dart';
 import 'data/profiles/secret_store.dart';
+import 'data/repositories/ledger_events.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,8 @@ Future<Widget> bootstrap() async {
       sharedPreferencesProvider.overrideWithValue(prefs),
       secretStoreProvider.overrideWithValue(secrets),
       initialProfilesStateProvider.overrideWithValue(initial),
+      // Refresh on the server's SSE `Reload` events.
+      ledgerEventsEnabledProvider.overrideWithValue(true),
     ],
     retry: zhangRetryPolicy,
     child: const ZhangApp(),

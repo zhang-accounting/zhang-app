@@ -7,6 +7,7 @@ export 'commodity_repository.dart';
 export 'document_repository.dart';
 export 'journal_repository.dart';
 export 'ledger_data_providers.dart';
+export 'ledger_events.dart';
 export 'ledger_repository.dart';
 export 'ledger_revision.dart';
 export 'statistic_repository.dart';

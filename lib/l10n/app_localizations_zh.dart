@@ -497,6 +497,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeAuthUpdate => '去更新';
 
   @override
+  String get homeReloadFailed => '账本重新加载失败。在修复文件之前，服务器仍显示上一个版本。';
+
+  @override
   String get homeLoadFailed => '加载失败';
 
   @override

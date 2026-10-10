@@ -36,6 +36,9 @@ class FakeZhangServer {
   /// When true every request answers 401.
   bool unauthorized = false;
 
+  /// `/api/info.reload_failure` to report (`{file, message}`), if any.
+  Map<String, Object?>? reloadFailure;
+
   late final adapter = FakeAdapter(_handle);
 
   late final client = ZhangApiClient(
@@ -66,7 +69,17 @@ class FakeZhangServer {
     }
     final builtin = builtins.handle(o);
     if (builtin != null) return builtin;
-    if (path.endsWith('/info')) return jsonResponse(fixture('info.json'));
+    if (path.endsWith('/info')) {
+      final info = fixture('info.json')! as Map<String, Object?>;
+      return jsonResponse({
+        'data': {...(info['data']! as Map<String, Object?>), 'reload_failure': reloadFailure},
+      });
+    }
+    if (path.endsWith('/reload') && o.method == 'POST') {
+      return reloadFailure == null
+          ? jsonResponse({'data': 'Ok'})
+          : jsonResponse({'message': 'the ledger failed to reload: ${reloadFailure!['message']}'}, status: 409);
+    }
     if (path.endsWith('/options')) return jsonResponse(fixture('options.json'));
     if (path.endsWith('/commodities')) return jsonResponse(fixture('commodities.json'));
     return jsonResponse({'message': 'not found'}, status: 404);

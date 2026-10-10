@@ -8,11 +8,14 @@ import '../../core/utils/money.dart';
 import '../../core/widgets/error_view.dart';
 import '../../core/widgets/ledger_widgets.dart';
 import '../../data/api/api_exception.dart';
+import '../../data/models/info.dart';
 import '../../data/models/journal.dart';
 import '../../data/models/ledger_error.dart';
 import '../../data/models/pageable.dart';
 import '../../data/profiles/profile_providers.dart';
 import '../../data/repositories/ledger_data_providers.dart';
+import '../../data/repositories/ledger_events.dart';
+import '../../data/repositories/ledger_repository.dart';
 import '../../data/repositories/ledger_revision.dart';
 import '../../l10n/l10n.dart';
 import '../../router.dart';
@@ -25,8 +28,9 @@ import '../journals/widgets/skeleton.dart';
 import 'home_providers.dart';
 
 /// Home tab (S02): month summary card, ledger-error chip, recent
-/// transactions; pull-to-refresh, skeleton / empty / card-level error states
-/// and a banner when the server rejects the credentials (401).
+/// transactions; pull-to-refresh, skeleton / empty / card-level error states,
+/// a banner when the server rejects the credentials (401) and one while the
+/// ledger fails to reload (SSE `ReloadFailed` / `/api/info.reload_failure`).
 ///
 /// Keep `ActiveLedgerTitle` + `SettingsButton` in the app bar: settings are
 /// only reachable from here.
@@ -53,6 +57,11 @@ class HomeScreen extends ConsumerWidget {
     final recent = ref.watch(homeRecentProvider);
     final errors = ref.watch(ledgerErrorsProvider);
     final unauthorized = [summary, recent, errors].any((v) => v.error is ApiUnauthorized);
+    final events = ref.watch(ledgerEventsProvider);
+    // The stream knows best once it saw a reload; before that, /api/info.
+    final reloadFailure = events.sawReloadEvent
+        ? events.reloadFailure
+        : ref.watch(serverInfoProvider.select((i) => i.value?.reloadFailure));
     final refreshing = (recent.isLoading && recent.hasValue) || (summary.isLoading && summary.hasValue);
 
     return Scaffold(
@@ -75,6 +84,7 @@ class HomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 96), // clear the FAB
                 children: [
                   if (unauthorized) const _AuthBanner(),
+                  if (reloadFailure != null) _ReloadFailedBanner(failure: reloadFailure),
                   const _MonthSwitcher(),
                   const _SummaryCard(),
                   const _RecentHeader(),
@@ -136,6 +146,55 @@ class _AuthBanner extends ConsumerWidget {
           onPressed: () =>
               context.push(profile == null ? AppRoutes.settings : AppRoutes.editProfile(profile.id)),
           child: Text(l10n.homeAuthUpdate),
+        ),
+      ],
+    );
+  }
+}
+
+/// `MaterialBanner` while the ledger fails to reload: the server keeps
+/// showing the version it loaded before. "Retry" asks it to reload now.
+class _ReloadFailedBanner extends ConsumerWidget {
+  const _ReloadFailedBanner({required this.failure});
+
+  final ReloadFailure failure;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    return MaterialBanner(
+      key: const Key('home.reloadFailedBanner'),
+      backgroundColor: scheme.errorContainer,
+      leading: Icon(Icons.sync_problem, color: scheme.onErrorContainer),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.homeReloadFailed, style: TextStyle(color: scheme.onErrorContainer, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(
+            failure.message,
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          key: const Key('home.reloadRetry'),
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            try {
+              await ref.read(ledgerRepositoryProvider).reload();
+            } catch (e) {
+              if (context.mounted) {
+                messenger.showSnackBar(SnackBar(content: Text(describeApiError(context.l10n, e))));
+              }
+            }
+            ref.invalidate(serverInfoProvider);
+          },
+          child: Text(l10n.retry),
         ),
       ],
     );

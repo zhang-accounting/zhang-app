@@ -84,6 +84,28 @@ void main() {
     expect(find.text('Failed to load'), findsNWidgets(2));
   });
 
+  testWidgets('home: a failed reload shows a banner; retry reloads', (tester) async {
+    final server = FakeZhangServer(journals: generateExpenses(3))
+      ..reloadFailure = {
+        'file': 'data/2023/12.zhang',
+        'message': 'cannot parse data/2023/12.zhang: unexpected input at line 44, column 1',
+      };
+    await pumpApp(tester, server);
+    expect(find.byKey(const Key('home.reloadFailedBanner')), findsOneWidget);
+    expect(find.textContaining('unexpected input at line 44'), findsOneWidget);
+    // Still failing: the 409 message is shown.
+    await tester.tap(find.byKey(const Key('home.reloadRetry')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Server error 409'), findsOneWidget);
+    // Fixed: the banner goes away after the reload.
+    server.reloadFailure = null;
+    await tester.tap(find.byKey(const Key('home.reloadRetry')));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('home.reloadFailedBanner')), findsNothing);
+    expect(server.adapter.requests.where((r) => r.uri.path == '/api/reload'), hasLength(2));
+  });
+
   test('humanizeErrorType', () {
     expect(humanizeErrorType('UnbalancedTransaction'), 'Unbalanced transaction');
     expect(humanizeErrorType('AccountBalanceCheckError'), 'Account balance check error');

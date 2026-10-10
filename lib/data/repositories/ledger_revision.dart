@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'ledger_events.dart';
+
 /// A counter that every server-data provider should `ref.watch` so it can be
 /// refetched in one go:
 ///
@@ -10,14 +12,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// });
 /// ```
 ///
-/// Repositories bump it automatically after successful writes (with a short
-/// delay because the server reloads asynchronously, docs §1.7). Bump it
-/// manually for pull-to-refresh, or when an SSE `Reload` event arrives.
+/// It is bumped when the server reloads the ledger (SSE `Reload`, see
+/// [ledgerEventsProvider]), after successful writes ([bumpAfterWrite]) and
+/// for pull-to-refresh ([bump]).
 final ledgerRevisionProvider = NotifierProvider<LedgerRevision, int>(LedgerRevision.new);
 
 class LedgerRevision extends Notifier<int> {
-  /// How long to wait after a write before refetching.
+  /// Without the event stream: how long to wait after a write before
+  /// refetching (the server reloads after answering).
   static const writeSettleDelay = Duration(milliseconds: 600);
+
+  /// With the event stream: refetch anyway if no `Reload` arrived this long
+  /// after a write (a lost event).
+  static const eventSafetyDelay = Duration(seconds: 5);
 
   @override
   int build() => 0;
@@ -25,10 +32,16 @@ class LedgerRevision extends Notifier<int> {
   /// Refetch now.
   void bump() => state = state + 1;
 
-  /// Refetch after the server had time to reload the ledger.
+  /// Refetch once the server has reloaded after a write: on its SSE `Reload`
+  /// event when the stream is connected (with [eventSafetyDelay] as a safety
+  /// net), else after [delay].
   Future<void> bumpAfterWrite([Duration delay = writeSettleDelay]) async {
-    await Future<void>.delayed(delay);
-    if (ref.mounted) bump();
+    final connected = ref.read(ledgerEventsProvider).connected;
+    final before = state;
+    await Future<void>.delayed(connected ? eventSafetyDelay : delay);
+    if (!ref.mounted) return;
+    if (connected && state != before) return; // the Reload event refetched
+    bump();
   }
 }
 

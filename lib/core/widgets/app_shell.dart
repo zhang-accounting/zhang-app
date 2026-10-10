@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/repositories/ledger_data_providers.dart';
+import '../../data/repositories/ledger_events.dart';
 import '../../l10n/l10n.dart';
 import '../../router.dart';
 import 'ledger_widgets.dart';
@@ -36,7 +37,8 @@ final shellDestinations = <ShellDestination>[
 /// server is known ([serverGateProvider]). A server older than zhang 0.2 (no
 /// `format` key) gets [ServerTooOldView] instead, and nothing else is
 /// requested from it. When `/api/info` itself fails (offline, 401) the tabs
-/// are shown and report the error themselves.
+/// are shown and report the error themselves. While the tabs are shown the
+/// SSE stream ([ledgerEventsProvider]) drives the refreshes.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -64,6 +66,8 @@ class AppShell extends ConsumerWidget {
       body = navigationShell;
     }
     final ready = identical(body, navigationShell);
+    // Keep the server-event stream open while the tabs are shown.
+    if (ready) ref.watch(ledgerEventsProvider.select((s) => s.connected));
     return Scaffold(
       body: body,
       floatingActionButton: ready

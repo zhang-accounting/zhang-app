@@ -992,6 +992,12 @@ abstract class AppLocalizations {
   /// **'Update'**
   String get homeAuthUpdate;
 
+  /// No description provided for @homeReloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The ledger failed to reload. The server still shows the previous version until the files are fixed.'**
+  String get homeReloadFailed;
+
   /// No description provided for @homeLoadFailed.
   ///
   /// In en, this message translates to:
