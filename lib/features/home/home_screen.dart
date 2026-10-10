@@ -13,6 +13,7 @@ import '../../data/models/journal.dart';
 import '../../data/models/ledger_error.dart';
 import '../../data/models/pageable.dart';
 import '../../data/profiles/profile_providers.dart';
+import '../../data/profiles/server_profile.dart';
 import '../../data/repositories/ledger_data_providers.dart';
 import '../../data/repositories/ledger_events.dart';
 import '../../data/repositories/ledger_repository.dart';
@@ -25,12 +26,15 @@ import '../journals/journal_routes.dart';
 import '../journals/widgets/amount_format.dart';
 import '../journals/widgets/journal_tile.dart';
 import '../journals/widgets/skeleton.dart';
+import '../settings/session_actions.dart';
 import 'home_providers.dart';
 
 /// Home tab (S02): month summary card, ledger-error chip, recent
 /// transactions; pull-to-refresh, skeleton / empty / card-level error states,
-/// a banner when the server rejects the credentials (401) and one while the
-/// ledger fails to reload (SSE `ReloadFailed` / `/api/info.reload_failure`).
+/// a banner when the server rejects the credentials (401; "Sign in again" for
+/// browser sign-in profiles), one when such a session ends within
+/// [sessionExpiryWarning], and one while the ledger fails to reload (SSE
+/// `ReloadFailed` / `/api/info.reload_failure`).
 ///
 /// Keep `ActiveLedgerTitle` + `SettingsButton` in the app bar: settings are
 /// only reachable from here.
@@ -63,6 +67,8 @@ class HomeScreen extends ConsumerWidget {
         ? events.reloadFailure
         : ref.watch(serverInfoProvider.select((i) => i.value?.reloadFailure));
     final refreshing = (recent.isLoading && recent.hasValue) || (summary.isLoading && summary.hasValue);
+    final profile = ref.watch(activeProfileProvider);
+    final sessionExpiring = !unauthorized && (profile?.sessionExpiresWithin(sessionExpiryWarning) ?? false);
 
     return Scaffold(
       appBar: AppBar(
@@ -84,6 +90,7 @@ class HomeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 96), // clear the FAB
                 children: [
                   if (unauthorized) const _AuthBanner(),
+                  if (sessionExpiring) _SessionExpiringBanner(profile: profile!),
                   if (reloadFailure != null) _ReloadFailedBanner(failure: reloadFailure),
                   const _MonthSwitcher(),
                   const _SummaryCard(),
@@ -129,7 +136,8 @@ class HomeScreen extends ConsumerWidget {
 }
 
 /// `MaterialBanner` shown while the server answers 401 – links to editing
-/// the active profile in Settings.
+/// the active profile in Settings; browser sign-in profiles get "Sign in
+/// again" (re-runs the browser flow and stores the new session).
 class _AuthBanner extends ConsumerWidget {
   const _AuthBanner();
 
@@ -137,19 +145,72 @@ class _AuthBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final profile = ref.watch(activeProfileProvider);
+    final session = profile?.authType == AuthType.session;
     return MaterialBanner(
       key: const Key('home.authBanner'),
       leading: const Icon(Icons.lock_outline),
-      content: Text(l10n.homeAuthBanner),
+      content: Text(session ? l10n.homeSessionBanner : l10n.homeAuthBanner),
       actions: [
         TextButton(
           onPressed: () =>
               context.push(profile == null ? AppRoutes.settings : AppRoutes.editProfile(profile.id)),
           child: Text(l10n.homeAuthUpdate),
         ),
+        if (session) _SignInAgainButton(profile: profile!),
       ],
     );
   }
+}
+
+/// `MaterialBanner` when the browser sign-in session of the active profile
+/// ends within [sessionExpiryWarning] (device clock: `expires_at` is an
+/// absolute UTC instant).
+class _SessionExpiringBanner extends StatelessWidget {
+  const _SessionExpiringBanner({required this.profile});
+
+  final ServerProfile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialBanner(
+      key: const Key('home.sessionExpiringBanner'),
+      leading: const Icon(Icons.timer_outlined),
+      content: Text(context.l10n.homeSessionExpiring(formatSessionExpiry(profile.sessionExpiresAt!))),
+      actions: [_SignInAgainButton(profile: profile)],
+    );
+  }
+}
+
+/// "Sign in again": browser sign-in for [profile], spinner while it runs.
+class _SignInAgainButton extends ConsumerStatefulWidget {
+  const _SignInAgainButton({required this.profile});
+
+  final ServerProfile profile;
+
+  @override
+  ConsumerState<_SignInAgainButton> createState() => _SignInAgainButtonState();
+}
+
+class _SignInAgainButtonState extends ConsumerState<_SignInAgainButton> {
+  bool _busy = false;
+
+  Future<void> _run() async {
+    setState(() => _busy = true);
+    try {
+      await signInAgain(context, ref, widget.profile);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+    key: const Key('home.signInAgain'),
+    onPressed: _busy ? null : _run,
+    child: _busy
+        ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
+        : Text(context.l10n.signInAgain),
+  );
 }
 
 /// `MaterialBanner` while the ledger fails to reload: the server keeps
