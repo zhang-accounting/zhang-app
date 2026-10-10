@@ -7,6 +7,7 @@
 2. **账本请放在 git 下**：v0.2 会拒绝写不回去的名字（400），记一笔前会先调 `POST /api/transactions/preview`，但服务器本身仍会写入不平衡 / 账户不存在或已关闭的交易（其他客户端、PUT 编辑没有 preview）。
 
 ## P1
+- 版本门禁只挡住界面，挡不住 provider：从 v0.2 profile 切到旧服务器（zhang < 0.2）时，切换那一刻仍被监听的 provider 会先向旧服务器发只读请求（实测：`ledger.now`、`journals.errors`、`/info`、`/options`、`/journals`、`/commodities`、`/sse`），之后才显示「服务器版本过旧」。只读、不写入，界面正确。建议：数据 provider 依赖一个先等 `serverGateProvider` 通过、否则抛 `ApiServerTooOld` 的 client provider，或按 profile 重建 ProviderScope（与上面「必须先修」第 1 条一起做）。
 - 鉴权类型互斥：decisions.md §7 要求 Basic 可与自定义 Header 叠加（Cloudflare Access + zhang Basic），现在 `authHeaders()` 只按单一类型发（lib/data/profiles/server_profile.dart）。需要改表单与模型。
 - 只有 passkey 登录的服务器（`ZHANG_PASSKEY` 不带 `ZHANG_AUTH`）用不了：连接测试会提示开启密码登录。App 不打算做 WebAuthn。
 - 明文 http 发送凭据没有提示（S01 要求显式 opt-in）。
@@ -25,7 +26,7 @@
 - 账户树的「未计入总额（无价格）」提示是启发式：账户的 `calculated` 恰好等于其本位币余额、且外币没有直接价格时才提示。
 
 ## 已修（供参考）
-- v0.2 迁移（2026-10-10）：版本门禁（`/api/info.format`）+ 「服务器版本过旧」提示；连接测试遇到 401 时查 `/api/auth/status` 解释 passkey-only；汇总 / 排行 / 余额历史 / 错误 / 表单建议 / 预算 / 文档改用内置查询；余额断言显示 `asserted` 并用 `passed` 标记失败；`balance … with pad` 的检查折叠进 pad 行；账户页显示子账户并可点开交易；请求时间按账本墙钟发送；「今天 / 本月」按 `ledger.now`；写入后由 SSE `Reload` 触发刷新（600 ms 定时器只在 SSE 未连接时兜底）；`ReloadFailed` / `reload_failure` 在首页显示横幅并可重试 `POST /api/reload`；保存前先 preview。
+- v0.2 迁移（2026-10-10）：版本门禁（`/api/info.format`）+ 「服务器版本过旧」提示；连接测试遇到 401 时查 `/api/auth/status` 解释 passkey-only；汇总 / 排行 / 余额历史 / 错误 / 表单建议 / 预算 / 文档改用内置查询；余额断言显示 `asserted` 并用 `passed` 标记失败；`balance … with pad` 的检查折叠进 pad 行；账户页显示子账户并可点开交易；请求时间按账本墙钟发送；「今天 / 本月」按 `ledger.now`；写入后由 SSE `Reload` 触发刷新（600 ms 定时器只在 SSE 未连接时兜底）；`ReloadFailed` / `reload_failure` 在首页显示横幅并可重试 `POST /api/reload`；保存前先 preview（字段被拒、不平衡、账户未开立 / 已关闭会阻止保存，其他账本错误 / 提示如未声明的商品只警告，可「仍然保存」）；SSE 换 profile 不再重连旧服务器、静默 45 s 视为断线重连、断线 / 离线启动后连上会刷新并重查版本门禁、一次写入的两个 Reload 只刷新一次（700 ms 防抖）。
 - 更早：标签转义（未转义会把账本文件写坏，P0）、切换账本残留数据/筛选、删除 profile 不清偏好、U+2212 负号、商品 rounding、写入按币种精度、类目名换行、FAB 遮挡最后一行、funding 默认账户跨币种、测试 retry policy、重复 accounts provider。
 
 ## zhang server 侧（见 decisions.md 末尾与 zhang-api.md §5）
