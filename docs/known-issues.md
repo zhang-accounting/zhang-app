@@ -1,27 +1,33 @@
-# 已知问题与下一步（审查结论，2026-10-02）
+# 已知问题与下一步（2026-10-10 更新：迁移到 zhang v0.2 之后）
 
-来源：合并 A/B/C 三条线后的 fresh-eyes 审查（15 个修复已合入 feat/mvp，257 个测试通过，4 个真机集成测试通过）。
+来源：2026-10-02 的 fresh-eyes 审查，加上 v0.2 迁移（只支持 zhang ≥ 0.2，见 docs/compat-v0.2.md、docs/zhang-api.md）。
 
 ## 必须先修（日常使用前）
-1. **写入后刷新是固定 600 ms 一次**（lib/data/ledger_revision.dart）。大账本 reload 超过 600 ms 时，保存后各屏会显示旧数据。建议：监听 `/api/sse` 的 `{"type":"Reload"}` 再刷新，或轮询到新交易出现为止。
-2. **切换 profile 时 Riverpod 仍短暂保留上一个账本的值**（所有 ledger provider）。已修「出错时不再显示旧账本数据」，但加载窗口内仍可能用上一个账本的账户名保存。建议：在 `bootstrap()` 里按 active profile id 重建 ProviderScope，或把数据 provider 按 profile 做 family。
-3. **账本请放在 git 下**：zhang server 写入时不做任何校验（金额、账户是否存在、是否已 close 都不查）。
+1. **切换 profile 时 Riverpod 仍短暂保留上一个账本的值**（所有 ledger provider）。已修「出错时不再显示旧账本数据」，版本门禁（`serverGateProvider`）在切换时会先显示加载态，但数据 provider 的加载窗口内仍可能用上一个账本的账户名保存。建议：在 `bootstrap()` 里按 active profile id 重建 ProviderScope，或把数据 provider 按 profile 做 family。
+2. **账本请放在 git 下**：v0.2 会拒绝写不回去的名字（400），记一笔前会先调 `POST /api/transactions/preview`，但服务器本身仍会写入不平衡 / 账户不存在或已关闭的交易（其他客户端、PUT 编辑没有 preview）。
 
 ## P1
 - 鉴权类型互斥：decisions.md §7 要求 Basic 可与自定义 Header 叠加（Cloudflare Access + zhang Basic），现在 `authHeaders()` 只按单一类型发（lib/data/profiles/server_profile.dart）。需要改表单与模型。
-- 月份/期间按设备时区计算，服务器按账本 `timezone` 切日，两者不同时边界日会偏。需要 timezone 数据库（`timezone` 包）。
+- 只有 passkey 登录的服务器（`ZHANG_PASSKEY` 不带 `ZHANG_AUTH`）用不了：连接测试会提示开启密码登录。App 不打算做 WebAuthn。
 - 明文 http 发送凭据没有提示（S01 要求显式 opt-in）。
 - 收入模式不能选 Liabilities 作为入账账户。
+- 账本时钟：`ledger.now` 与设备时钟的差值每个 profile 只取一次（取整到 15 分钟）。App 运行期间账本时区或设备时区切换夏令时，「今天 / 本月」会差一小时，直到重启或切换 profile。
+- 从账户页打开交易：`trx_id` 是真实交易 id，但没有按 id 取交易的接口，App 用 `/api/journals?keyword=<payee>` 最多翻 5 页（每页 100）去找；同名 payee 极多的老交易可能显示「找不到」。可改用 `journals.page` + `journals.postings{ids}`。
+- 预算、文档只有 repository（`budgets.*`、`journals.documents` / `accounts.documents`），还没有界面。
 
 ## P2
 - 切换币种后不重新校验已输入的小数位（可输入 12.34 JPY）。
 - 键盘：`3−5=` 之后再输数字会变成 −20。
-- 罕见标签过滤会把整个账本翻一遍（服务器不支持 `tags[]`，客户端过滤）。
-- 报表净额线画到了未来日期。
+- 标签过滤仍在客户端做（服务器依旧忽略百分号编码的 `tags%5B0%5D`，Dart 会重新编码 `[]`），罕见标签会把整个账本翻一遍、`total_count` 是未过滤的数。可改用内置查询 `journals.page{tags}`。
+- 报表净额线画到了未来日期；账户余额阶梯图的终点用设备时钟（`balance_history_chart.dart`）。
 - 两个 `formatAmount` helper 重复；`journal_providers` 直接 import main.dart。
+- 记一笔的 preview 只在新建时调用；编辑（PUT）还没有界面，以后应调 `POST /api/transactions/{id}/preview`。
+- 账户树的「未计入总额（无价格）」提示是启发式：账户的 `calculated` 恰好等于其本位币余额、且外币没有直接价格时才提示。
 
 ## 已修（供参考）
-标签转义（未转义会把账本文件写坏，P0）、切换账本残留数据/筛选、删除 profile 不清偏好、U+2212 负号、商品 rounding、写入按币种精度、类目名换行、FAB 遮挡最后一行、funding 默认账户跨币种、测试 retry policy、重复 accounts provider。
+- v0.2 迁移（2026-10-10）：版本门禁（`/api/info.format`）+ 「服务器版本过旧」提示；连接测试遇到 401 时查 `/api/auth/status` 解释 passkey-only；汇总 / 排行 / 余额历史 / 错误 / 表单建议 / 预算 / 文档改用内置查询；余额断言显示 `asserted` 并用 `passed` 标记失败；`balance … with pad` 的检查折叠进 pad 行；账户页显示子账户并可点开交易；请求时间按账本墙钟发送；「今天 / 本月」按 `ledger.now`；写入后由 SSE `Reload` 触发刷新（600 ms 定时器只在 SSE 未连接时兜底）；`ReloadFailed` / `reload_failure` 在首页显示横幅并可重试 `POST /api/reload`；保存前先 preview。
+- 更早：标签转义（未转义会把账本文件写坏，P0）、切换账本残留数据/筛选、删除 profile 不清偏好、U+2212 负号、商品 rounding、写入按币种精度、类目名换行、FAB 遮挡最后一行、funding 默认账户跨币种、测试 retry policy、重复 accounts provider。
 
 ## zhang server 侧（见 decisions.md 末尾与 zhang-api.md §5）
-缺 DELETE 交易、POST 不返回 id、posting 无 cost/price、无幂等键、journals 不支持日期/账户过滤、`size=0` 崩溃、`tags[]` 查询被 Dart 编码后被忽略、换算用最早价格而非最新。
+仍缺：DELETE 交易、POST 不返回 id、无幂等键、无预算写接口；`/api/journals` 的 `tags[]` 百分号编码被静默忽略；`--auth` 不带 `:` 会静默关闭鉴权；不平衡 / 未开户的交易仍会写入；源码构建的版本号仍是 `0.1.0`。
+v0.2 已修（App 已去掉对应 workaround）：`size=0` 崩溃、最早价格而非最新、无直接价格的商品算 0、`1E-8` 指数写法、未知 `/api` 路径返回 200、账户流水 `trx_id` 是 posting id、含 `/` 的 base64 文档无法下载、未知商品崩溃、预算月份 13 崩溃、for-new-transaction 混入 Balance Check / Pad、交易数含余额项、graph 忽略 interval 且用 UTC 日期、PUT 丢 cost/price/comment、失败的余额检查重置余额、reload 失败无提示、Basic scheme 大小写敏感。

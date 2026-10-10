@@ -27,8 +27,8 @@ ServerProfile {
 }
 ```
 - 支持多个 profile，可切换；敏感字段只进 secure storage。
-- 「测试连接」= GET `/api/info`，成功显示 server 版本与 ledger 标题；401 提示鉴权失败。
-- 所有请求相对 `baseUrl` 拼接 `/api/...`；SSE `/api/sse` 用于在前台时自动刷新（P1）。
+- 「测试连接」= GET `/api/info`，成功显示 server 版本与 ledger 标题；没有 `format` 字段（zhang < 0.2）提示「服务器版本过旧」；401 时查 `/api/auth/status`，只开 passkey 的服务器单独提示，否则提示鉴权失败。
+- 所有请求相对 `baseUrl` 拼接 `/api/...`；报表、错误、表单建议、预算、文档走内置查询 `POST /api/query/builtins`；SSE `/api/sse` 的 `Reload` 驱动刷新，`ReloadFailed` 在首页显示横幅。
 
 ## 目录结构
 ```

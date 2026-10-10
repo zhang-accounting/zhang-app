@@ -24,9 +24,9 @@
 ## 上游 zhang API 缺口（需要在 zhang 仓库解决，记录给作者）
 - 缺 `DELETE /api/transactions/:id`（无法做滑动删除 / 撤销）。
 - `POST /api/transactions` 不返回新交易 id（附件上传要绕路）。
-- posting 不支持 cost / price（跨币种交易做不了）。
+- ~~posting 不支持 cost / price~~：v0.2 已支持写 cost / price / comment / metas（App 尚未使用）。
 - 无幂等键（离线重试可能重复记账）。
-- `/api/journals` 不支持按日期 / 账户 / 金额过滤。
+- `/api/journals` 仍不支持按日期 / 账户 / 金额过滤；v0.2 可用 BQL（`POST /api/query`、`postings.between` 等内置查询）代替。
 - 无预算写接口（budget-add / budget-transfer）。
-- `/api/for-new-transaction` 无使用频次信号；账户不暴露允许的币种。
-- 另见 docs/zhang-api.md §5 列出的服务器 bug（`size=0` 崩溃、`1E-8` 金额、最早价格而非最新价格等）。
+- 表单建议（`journals.payees`）无使用频次信号；账户不暴露允许的币种。
+- 2026-10-10 起 App 只支持 zhang ≥ 0.2（内置查询 API），见 docs/compat-v0.2.md；仍存在的服务器问题见 docs/zhang-api.md §5。

@@ -2,6 +2,11 @@
 
 Date: 2026-10-10. Audited by running the new server and the app's own tests; no Dart code was changed.
 
+> **Status (2026-10-10, later):** the app now targets v0.2 only and implements the fixes below (version gate on
+> `format`, built-in queries for #1–#8, balance assertions #9–#11, ledger-local graph #12, error shapes #13, preview
+> before saving #14, SSE refresh). The current contract is [`zhang-api.md`](zhang-api.md); open items are in
+> [`known-issues.md`](known-issues.md). This file is kept as the audit record.
+
 | | |
 |---|---|
 | App | `feat/mvp` @ `acb27c6` |
