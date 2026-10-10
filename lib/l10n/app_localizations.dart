@@ -1615,6 +1615,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open account'**
   String get reportsOpenAccount;
+
+  /// Auth type segment: sign in on the server's login page in the system browser
+  ///
+  /// In en, this message translates to:
+  /// **'Browser'**
+  String get authSession;
+
+  /// No description provided for @authSessionHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with a passkey or password in the browser'**
+  String get authSessionHelper;
+
+  /// No description provided for @signInWithBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with browser'**
+  String get signInWithBrowser;
+
+  /// No description provided for @signingIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing in…'**
+  String get signingIn;
+
+  /// No description provided for @signInAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get signInAgain;
+
+  /// No description provided for @signOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOut;
+
+  /// No description provided for @signedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed out of {name}'**
+  String signedOut(String name);
+
+  /// No description provided for @signedInAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {user}, valid until {date}'**
+  String signedInAs(String user, String date);
+
+  /// No description provided for @signedInSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {user}'**
+  String signedInSnack(String user);
+
+  /// Settings: signed-in user and session expiry of a browser sign-in server
+  ///
+  /// In en, this message translates to:
+  /// **'{user} · until {date}'**
+  String sessionSubtitle(String user, String date);
+
+  /// No description provided for @notSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get notSignedIn;
+
+  /// No description provided for @signInFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with the browser first.'**
+  String get signInFirst;
+
+  /// No description provided for @signInNotNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'This server does not require sign-in. Choose “None” instead.'**
+  String get signInNotNeeded;
+
+  /// No description provided for @signInNotSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This server does not support app sign-in yet; upgrade zhang (PR #786).'**
+  String get signInNotSupported;
+
+  /// No description provided for @signInCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in was cancelled.'**
+  String get signInCancelled;
+
+  /// No description provided for @signInBrowserFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the browser for sign-in.'**
+  String get signInBrowserFailed;
+
+  /// No description provided for @signInMalformedCallback.
+  ///
+  /// In en, this message translates to:
+  /// **'The server returned an invalid sign-in response.'**
+  String get signInMalformedCallback;
+
+  /// No description provided for @signInCodeRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'The sign-in expired or was already used. Sign in again.'**
+  String get signInCodeRejected;
+
+  /// No description provided for @signInRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many sign-in attempts. Try again in {seconds} s.'**
+  String signInRateLimited(int seconds);
+
+  /// No description provided for @signInRateLimitedLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many sign-in attempts. Try again later.'**
+  String get signInRateLimitedLater;
+
+  /// No description provided for @homeSessionBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in has ended. Sign in again in the browser.'**
+  String get homeSessionBanner;
+
+  /// No description provided for @homeSessionExpiring.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in expires on {date}. Sign in again to stay connected.'**
+  String homeSessionExpiring(String date);
+
+  /// No description provided for @errorPasskeyOnlyBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'This server only allows passkey sign-in. Choose “Browser” to sign in with a passkey.'**
+  String get errorPasskeyOnlyBrowser;
 }
 
 class _AppLocalizationsDelegate

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../../data/api/api_exception.dart';
+import '../../data/auth/browser_sign_in.dart';
 import '../../l10n/l10n.dart';
 
 /// Localised, user-facing description of any error thrown by the data layer.
 String describeApiError(AppLocalizations l10n, Object error) {
   return switch (error) {
+    BrowserSignInException() => describeSignInFailure(l10n, error),
     ApiServerTooOld() => l10n.errorServerTooOld,
+    ApiPasskeyOnly(appLogin: true) => l10n.errorPasskeyOnlyBrowser,
     ApiPasskeyOnly() => l10n.errorPasskeyOnly,
+    ApiRateLimited(:final retryAfter) => _rateLimited(l10n, retryAfter),
     ZhangApiException(isMissingRoute: true, :final message) => l10n.errorApiMismatch(message),
     ApiUnauthorized() => l10n.errorUnauthorized,
     ApiNotFound() => l10n.errorNotFound,
@@ -20,8 +24,31 @@ String describeApiError(AppLocalizations l10n, Object error) {
   };
 }
 
+/// Localised reason a browser sign-in failed.
+String describeSignInFailure(AppLocalizations l10n, BrowserSignInException error) => switch (error.kind) {
+  BrowserSignInFailure.notNeeded => l10n.signInNotNeeded,
+  BrowserSignInFailure.notSupported => l10n.signInNotSupported,
+  BrowserSignInFailure.cancelled => l10n.signInCancelled,
+  BrowserSignInFailure.browserFailed => l10n.signInBrowserFailed,
+  BrowserSignInFailure.malformedCallback => l10n.signInMalformedCallback,
+  BrowserSignInFailure.codeRejected => l10n.signInCodeRejected,
+  BrowserSignInFailure.rateLimited => _rateLimited(l10n, error.retryAfter),
+};
+
+String _rateLimited(AppLocalizations l10n, Duration? retryAfter) {
+  if (retryAfter == null) return l10n.signInRateLimitedLater;
+  // Round up: "0 s" would invite an immediate (refused) retry.
+  final seconds = (retryAfter.inMilliseconds / 1000).ceil();
+  return seconds <= 0 ? l10n.signInRateLimitedLater : l10n.signInRateLimited(seconds);
+}
+
 /// Icon matching an error (lock for 401, cloud-off for network, …).
 IconData iconForApiError(Object error) => switch (error) {
+  BrowserSignInException(kind: BrowserSignInFailure.notNeeded) => Icons.info_outline,
+  BrowserSignInException(kind: BrowserSignInFailure.notSupported) => Icons.update,
+  BrowserSignInException(kind: BrowserSignInFailure.rateLimited) => Icons.hourglass_bottom,
+  BrowserSignInException() => Icons.lock_outline,
+  ApiRateLimited() => Icons.hourglass_bottom,
   ApiServerTooOld() => Icons.update,
   ZhangApiException(isMissingRoute: true) => Icons.update,
   ApiUnauthorized() || ApiPasskeyOnly() => Icons.lock_outline,

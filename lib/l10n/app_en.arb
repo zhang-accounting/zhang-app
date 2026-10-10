@@ -514,5 +514,80 @@
   "reportsNoIncome": "No income in this period",
   "reportsUpOneLevel": "Up one level",
   "reportsShowSubAccounts": "Show sub-accounts",
-  "reportsOpenAccount": "Open account"
+  "reportsOpenAccount": "Open account",
+  "authSession": "Browser",
+  "@authSession": {
+    "description": "Auth type segment: sign in on the server's login page in the system browser"
+  },
+  "authSessionHelper": "Sign in with a passkey or password in the browser",
+  "signInWithBrowser": "Sign in with browser",
+  "signingIn": "Signing in…",
+  "signInAgain": "Sign in again",
+  "signOut": "Sign out",
+  "signedOut": "Signed out of {name}",
+  "@signedOut": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "signedInAs": "Signed in as {user}, valid until {date}",
+  "@signedInAs": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "signedInSnack": "Signed in as {user}",
+  "@signedInSnack": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionSubtitle": "{user} · until {date}",
+  "@sessionSubtitle": {
+    "description": "Settings: signed-in user and session expiry of a browser sign-in server",
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "notSignedIn": "Not signed in",
+  "signInFirst": "Sign in with the browser first.",
+  "signInNotNeeded": "This server does not require sign-in. Choose “None” instead.",
+  "signInNotSupported": "This server does not support app sign-in yet; upgrade zhang (PR #786).",
+  "signInCancelled": "Sign-in was cancelled.",
+  "signInBrowserFailed": "Could not open the browser for sign-in.",
+  "signInMalformedCallback": "The server returned an invalid sign-in response.",
+  "signInCodeRejected": "The sign-in expired or was already used. Sign in again.",
+  "signInRateLimited": "Too many sign-in attempts. Try again in {seconds} s.",
+  "@signInRateLimited": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "signInRateLimitedLater": "Too many sign-in attempts. Try again later.",
+  "homeSessionBanner": "Your sign-in has ended. Sign in again in the browser.",
+  "homeSessionExpiring": "Your sign-in expires on {date}. Sign in again to stay connected.",
+  "@homeSessionExpiring": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "errorPasskeyOnlyBrowser": "This server only allows passkey sign-in. Choose “Browser” to sign in with a passkey."
 }

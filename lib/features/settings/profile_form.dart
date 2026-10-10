@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/error_view.dart';
 import '../../data/api/zhang_api_client.dart';
+import '../../data/auth/browser_sign_in.dart';
 import '../../data/models/info.dart';
 import '../../data/profiles/profile_repository.dart';
 import '../../data/profiles/server_profile.dart';
 import '../../l10n/l10n.dart';
+import 'session_actions.dart';
 
 /// Colours offered for tagging a ledger (ARGB). `null` = theme primary.
 const List<int> kProfilePalette = [
@@ -24,6 +26,11 @@ const List<int> kProfilePalette = [
 /// Shared add/edit form for a [ServerProfile] (onboarding + settings):
 /// name, URL, auth type with matching fields, self-signed toggle, colour,
 /// "Test connection" (GET /api/info) and a submit button.
+///
+/// The "Browser" auth type ([AuthType.session]) has no credential fields: a
+/// "Sign in with browser" button runs [BrowserSignIn.signIn] and the form
+/// keeps the session it returns; saving is only possible with a session for
+/// the URL currently entered.
 class ProfileForm extends ConsumerStatefulWidget {
   const ProfileForm({
     super.key,
@@ -75,6 +82,15 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
   ServerInfo? _testInfo;
   Object? _testError;
 
+  // Browser sign-in session ([AuthType.session]) and the normalised URL it
+  // belongs to: a session is only used while that URL is entered.
+  String? _sessionToken;
+  DateTime? _sessionExpiresAt;
+  String? _sessionUser;
+  String? _sessionBaseUrl;
+  bool _signingIn = false;
+  Object? _signInError;
+
   @override
   void initState() {
     super.initState();
@@ -92,7 +108,20 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     _authType = p?.authType ?? AuthType.none;
     _allowSelfSigned = p?.allowSelfSigned ?? false;
     _color = p?.color;
+    if (p != null && p.hasSession) {
+      _sessionToken = p.sessionToken;
+      _sessionExpiresAt = p.sessionExpiresAt;
+      _sessionUser = p.sessionUser;
+      _sessionBaseUrl = p.baseUrl;
+    }
   }
+
+  /// A browser sign-in session for the URL currently entered.
+  bool get _hasSession =>
+      _sessionToken != null && _sessionBaseUrl == ServerProfile.normalizeBaseUrl(_url.text);
+
+  /// Saving a "Browser" profile needs a session first.
+  bool get _needsSignIn => _authType == AuthType.session && !_hasSession;
 
   @override
   void dispose() {
@@ -120,6 +149,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     final baseUrl = ServerProfile.normalizeBaseUrl(_url.text);
     final host = Uri.tryParse(baseUrl)?.host ?? baseUrl;
     final name = _name.text.trim().isEmpty ? host : _name.text.trim();
+    final session = _authType == AuthType.session && _hasSession;
     return ServerProfile(
       id: widget.initial?.id ?? ProfileRepository.newId(),
       name: name,
@@ -134,6 +164,9 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
                 if (h.name.text.trim().isNotEmpty) h.name.text.trim(): h.value.text,
             }
           : const {},
+      sessionToken: session ? _sessionToken : null,
+      sessionExpiresAt: session ? _sessionExpiresAt : null,
+      sessionUser: session ? _sessionUser : null,
       allowSelfSigned: _allowSelfSigned,
       color: _color,
     );
@@ -169,8 +202,44 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     }
   }
 
+  /// "Sign in with browser": `/api/auth/status`, then the browser handoff.
+  Future<void> _signIn() async {
+    final urlError = _validateUrl(_url.text);
+    if (urlError != null) {
+      _formKey.currentState?.validate();
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    final baseUrl = ServerProfile.normalizeBaseUrl(_url.text);
+    setState(() {
+      _signingIn = true;
+      _signInError = null;
+      _testInfo = null;
+      _testError = null;
+    });
+    try {
+      final grant = await ref
+          .read(browserSignInProvider)
+          .signIn(baseUrl, allowSelfSigned: _allowSelfSigned);
+      if (!mounted) return;
+      setState(() {
+        _sessionToken = grant.token;
+        _sessionExpiresAt = grant.expiresAt;
+        _sessionUser = grant.user;
+        _sessionBaseUrl = baseUrl;
+      });
+    } on BrowserSignInException catch (e) {
+      if (mounted && e.kind != BrowserSignInFailure.cancelled) setState(() => _signInError = e);
+    } catch (e) {
+      if (mounted) setState(() => _signInError = e);
+    } finally {
+      if (mounted) setState(() => _signingIn = false);
+    }
+  }
+
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_needsSignIn) return;
     FocusScope.of(context).unfocus();
     setState(() => _saving = true);
     try {
@@ -217,25 +286,40 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
               helperText: l10n.serverUrlHelper,
             ),
             validator: _validateUrl,
-            onChanged: (_) => _resetTest(),
+            onChanged: (_) {
+              _resetTest();
+              // The session belongs to one server: re-evaluate it.
+              if (_authType == AuthType.session) {
+                setState(() => _signInError = null);
+              }
+            },
           ),
           gap,
           Text(l10n.authTypeLabel, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
-          SegmentedButton<AuthType>(
-            key: const Key('profileForm.authType'),
-            showSelectedIcon: false,
-            segments: [
-              ButtonSegment(value: AuthType.none, label: Text(l10n.authNone)),
-              ButtonSegment(value: AuthType.basic, label: Text(l10n.authBasic)),
-              ButtonSegment(value: AuthType.bearer, label: Text(l10n.authBearer)),
-              ButtonSegment(value: AuthType.headers, label: Text(l10n.authHeaders)),
-            ],
-            selected: {_authType},
-            onSelectionChanged: (s) {
-              setState(() => _authType = s.first);
-              _resetTest();
-            },
+          // Five segments do not fit a phone's width: scroll sideways.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SegmentedButton<AuthType>(
+              key: const Key('profileForm.authType'),
+              showSelectedIcon: false,
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
+              segments: [
+                ButtonSegment(value: AuthType.none, label: Text(l10n.authNone)),
+                ButtonSegment(value: AuthType.basic, label: Text(l10n.authBasic)),
+                ButtonSegment(value: AuthType.bearer, label: Text(l10n.authBearer)),
+                ButtonSegment(value: AuthType.headers, label: Text(l10n.authHeaders)),
+                ButtonSegment(value: AuthType.session, label: Text(l10n.authSession)),
+              ],
+              selected: {_authType},
+              onSelectionChanged: (s) {
+                setState(() {
+                  _authType = s.first;
+                  _signInError = null;
+                });
+                _resetTest();
+              },
+            ),
           ),
           gap,
           ..._authFields(l10n),
@@ -259,7 +343,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
           const SizedBox(height: 24),
           OutlinedButton.icon(
             key: const Key('profileForm.test'),
-            onPressed: _testing || _saving ? null : _test,
+            onPressed: _testing || _saving || _signingIn || _needsSignIn ? null : _test,
             icon: _testing
                 ? const SizedBox.square(
                     dimension: 18,
@@ -275,7 +359,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
           const SizedBox(height: 12),
           FilledButton(
             key: const Key('profileForm.submit'),
-            onPressed: _saving ? null : _submit,
+            onPressed: _saving || _signingIn || _needsSignIn ? null : _submit,
             child: _saving
                 ? const SizedBox.square(
                     dimension: 18,
@@ -298,6 +382,8 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     switch (_authType) {
       case AuthType.none:
         return const [];
+      case AuthType.session:
+        return _sessionFields(l10n);
       case AuthType.basic:
         return [
           TextFormField(
@@ -385,6 +471,85 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
           gap,
         ];
     }
+  }
+
+  List<Widget> _sessionFields(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final signedIn = _hasSession;
+    return [
+      Text(
+        l10n.authSessionHelper,
+        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      const SizedBox(height: 12),
+      FilledButton.tonalIcon(
+        key: const Key('profileForm.signIn'),
+        onPressed: _signingIn || _saving ? null : _signIn,
+        icon: _signingIn
+            ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.login),
+        label: Text(
+          _signingIn ? l10n.signingIn : (signedIn ? l10n.signInAgain : l10n.signInWithBrowser),
+        ),
+      ),
+      const SizedBox(height: 12),
+      if (_signInError != null)
+        _StatusCard(
+          key: const Key('profileForm.signInError'),
+          ok: false,
+          icon: iconForApiError(_signInError!),
+          title: describeApiError(l10n, _signInError!),
+        )
+      else if (signedIn)
+        _StatusCard(
+          key: const Key('profileForm.signedIn'),
+          ok: true,
+          icon: Icons.verified_user_outlined,
+          title: l10n.signedInAs(
+            _sessionUser ?? '',
+            _sessionExpiresAt == null ? '—' : formatSessionExpiry(_sessionExpiresAt!),
+          ),
+        )
+      else
+        Text(
+          l10n.signInFirst,
+          key: const Key('profileForm.signInFirst'),
+          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+      const SizedBox(height: 16),
+    ];
+  }
+}
+
+/// Green (ok) / red result card under the sign-in button.
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({super.key, required this.ok, required this.icon, required this.title});
+
+  final bool ok;
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.zhangColors;
+    final foreground = ok ? colors.onIncomeContainer : colors.onExpenseContainer;
+    return Card(
+      color: ok ? colors.incomeContainer : colors.expenseContainer,
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: foreground),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(title, style: TextStyle(color: foreground, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

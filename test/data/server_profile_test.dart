@@ -19,6 +19,17 @@ const _full = ServerProfile(
   color: 0xFF3949AB,
 );
 
+/// A browser sign-in profile (session token from `POST /api/auth/app/exchange`).
+final _session = ServerProfile(
+  id: 'p3',
+  name: 'Passkey',
+  baseUrl: 'https://pk.example.com',
+  authType: AuthType.session,
+  sessionToken: 'eyJ1c2VyIjoiZGVtbyJ9.c2lnbmF0dXJl',
+  sessionExpiresAt: DateTime.utc(2026, 11, 9, 3, 7, 29),
+  sessionUser: 'demo',
+);
+
 void main() {
   group('normalizeBaseUrl', () {
     final cases = {
@@ -66,6 +77,48 @@ void main() {
       expect(ServerProfile.fromJson(public, secret), _full);
     });
 
+    test('session: token, expiry and user only in the secret JSON; round-trips', () {
+      final public = jsonEncode(_session.toPublicJson());
+      expect(public, isNot(contains('eyJ1c2VyIjoiZGVtbyJ9')));
+      expect(public, isNot(contains('2026-11-09')));
+      expect(public, isNot(contains('demo')));
+      expect(public, contains('"authType":"session"'));
+      expect(_session.toString(), isNot(contains('eyJ1c2VyIjoiZGVtbyJ9')));
+
+      final secret = jsonDecode(jsonEncode(_session.toSecretJson())) as Map<String, Object?>;
+      expect(secret, {
+        'sessionToken': 'eyJ1c2VyIjoiZGVtbyJ9.c2lnbmF0dXJl',
+        'sessionExpiresAt': '2026-11-09T03:07:29.000Z',
+        'sessionUser': 'demo',
+      });
+      final back = ServerProfile.fromJson(jsonDecode(public) as Map<String, Object?>, secret);
+      expect(back, _session);
+      expect(back.sessionExpiresAt!.isUtc, isTrue);
+    });
+
+    test('session without secrets loads signed out', () {
+      final p = ServerProfile.fromJson(_session.toPublicJson());
+      expect(p.authType, AuthType.session);
+      expect(p.hasSession, isFalse);
+      expect(p.authHeaders(), isEmpty);
+    });
+
+    test('withoutSession clears the session, keeps the rest', () {
+      final out = _session.withoutSession();
+      expect(out.sessionToken, isNull);
+      expect(out.sessionExpiresAt, isNull);
+      expect(out.sessionUser, isNull);
+      expect(out.authType, AuthType.session);
+      expect(out.baseUrl, _session.baseUrl);
+      expect(out.toSecretJson(), isEmpty);
+      expect(out == _session, isFalse);
+    });
+
+    test('unknown authType falls back to none', () {
+      final p = ServerProfile.fromJson({..._session.toPublicJson(), 'authType': 'kerberos'});
+      expect(p.authType, AuthType.none);
+    });
+
     test('without secrets header values are empty, passwords null', () {
       final p = ServerProfile.fromJson(_full.toPublicJson());
       expect(p.basicPassword, isNull);
@@ -88,6 +141,24 @@ void main() {
     test('bearer', () {
       final p = base.copyWith(authType: AuthType.bearer, bearerToken: 'abc');
       expect(p.authHeaders(), {'Authorization': 'Bearer abc'});
+    });
+
+    test('session sends the token as Bearer; nothing when signed out', () {
+      expect(_session.authHeaders(), {'Authorization': 'Bearer eyJ1c2VyIjoiZGVtbyJ9.c2lnbmF0dXJl'});
+      expect(_session.withoutSession().authHeaders(), isEmpty);
+      expect(_session.copyWith(sessionToken: '').authHeaders(), isEmpty);
+    });
+
+    test('session expiry window', () {
+      final now = DateTime.utc(2026, 11, 1);
+      expect(_session.sessionExpiresWithin(const Duration(days: 3), now: now), isFalse);
+      expect(_session.sessionExpiresWithin(const Duration(days: 9), now: now), isTrue);
+      expect(
+        _session.sessionExpiresWithin(const Duration(days: 3), now: DateTime.utc(2026, 12)),
+        isTrue,
+        reason: 'already expired',
+      );
+      expect(_session.withoutSession().sessionExpiresWithin(const Duration(days: 365), now: now), isFalse);
     });
 
     test('custom headers (blank names dropped)', () {
@@ -140,6 +211,19 @@ void main() {
       expect(prefs.getStringList('zhang.accountPicker.p2.recent.v1'), ['Assets:Cash']);
       // Active id pointed at the deleted profile → falls back to the first one.
       expect(state.activeId, 'p2');
+    });
+
+    test('session secrets stay out of shared_preferences', () async {
+      await repo.upsert(_session);
+      final stored = prefs.getString(ProfileRepository.profilesKey)!;
+      expect(stored, isNot(contains('eyJ1c2VyIjoiZGVtbyJ9')));
+      expect(secrets.values[ProfileRepository.secretKey('p3')], contains('eyJ1c2VyIjoiZGVtbyJ9'));
+      expect((await repo.load()).profiles, [_session]);
+
+      // Signing out deletes the secret entry altogether.
+      await repo.upsert(_session.withoutSession());
+      expect(secrets.values.containsKey(ProfileRepository.secretKey('p3')), isFalse);
+      expect((await repo.load()).profiles.single.hasSession, isFalse);
     });
 
     test('corrupt prefs do not crash loading', () async {

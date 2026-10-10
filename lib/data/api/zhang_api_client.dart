@@ -197,6 +197,12 @@ class ZhangApiClient {
           return ApiUnauthorized(status: status, message: message);
         }
         if (status == 404) return ApiNotFound(message);
+        if (status == 429) {
+          return ApiRateLimited(
+            message: message,
+            retryAfter: ApiRateLimited.parseRetryAfter(e.response?.headers.value('retry-after')),
+          );
+        }
         return ApiServerError(status, message);
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -309,8 +315,13 @@ class ConnectionTester {
     try {
       return await client.supportedInfo();
     } on ApiUnauthorized {
+      // A browser sign-in profile is refused because its session ended (or
+      // it is signed out), not because of the sign-in methods.
+      if (profile.authType == AuthType.session) rethrow;
       final status = await _authStatus(client);
-      if (status != null && status.isPasskeyOnly) throw const ApiPasskeyOnly();
+      if (status != null && status.isPasskeyOnly) {
+        throw ApiPasskeyOnly(appLogin: status.supportsAppLogin);
+      }
       rethrow;
     } finally {
       client.close();

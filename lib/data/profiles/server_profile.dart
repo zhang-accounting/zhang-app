@@ -15,7 +15,12 @@ enum AuthType {
 
   /// Arbitrary headers sent verbatim (e.g. `CF-Access-Client-Id` /
   /// `CF-Access-Client-Secret` for Cloudflare Access).
-  headers;
+  headers,
+
+  /// zhang's own session token, obtained by signing in (passkey or password)
+  /// on the server's login page in the system browser and sent as
+  /// `Authorization: Bearer <token>` (see `BrowserSignIn`, zhang-api.md §1.3).
+  session;
 
   static AuthType fromName(String? name) => AuthType.values.firstWhere(
     (t) => t.name == name,
@@ -26,8 +31,10 @@ enum AuthType {
 /// A configured zhang server ("ledger") the app can connect to.
 ///
 /// Non-secret fields are persisted in shared_preferences via [toPublicJson];
-/// secrets ([basicPassword], [bearerToken], the *values* of [customHeaders])
-/// live in secure storage via [toSecretJson]. See `ProfileRepository`.
+/// secrets ([basicPassword], [bearerToken], the *values* of [customHeaders],
+/// the browser sign-in session: [sessionToken], [sessionExpiresAt],
+/// [sessionUser]) live in secure storage via [toSecretJson]. See
+/// `ProfileRepository`.
 @immutable
 class ServerProfile {
   const ServerProfile({
@@ -39,6 +46,9 @@ class ServerProfile {
     this.basicPassword,
     this.bearerToken,
     this.customHeaders = const {},
+    this.sessionToken,
+    this.sessionExpiresAt,
+    this.sessionUser,
     this.allowSelfSigned = false,
     this.color,
   });
@@ -57,6 +67,16 @@ class ServerProfile {
   /// Header name → value, sent verbatim when [authType] is [AuthType.headers].
   final Map<String, String> customHeaders;
 
+  /// zhang session token from the browser sign-in ([AuthType.session]);
+  /// `null` when signed out.
+  final String? sessionToken;
+
+  /// When [sessionToken] stops working (UTC, from the server's `expires_at`).
+  final DateTime? sessionExpiresAt;
+
+  /// The user the server signed in for [sessionToken].
+  final String? sessionUser;
+
   /// Accept self-signed / invalid TLS certificates for this server's host.
   final bool allowSelfSigned;
 
@@ -70,6 +90,21 @@ class ServerProfile {
   /// Host part of [baseUrl] (empty if unparsable).
   String get host => Uri.tryParse(baseUrl)?.host ?? '';
 
+  /// A browser sign-in profile that currently holds a session token.
+  bool get hasSession =>
+      authType == AuthType.session && (sessionToken?.isNotEmpty ?? false);
+
+  /// Whether the session ends within [within] of [now] (or already ended).
+  /// `false` without a session or a known expiry.
+  bool sessionExpiresWithin(Duration within, {DateTime? now}) {
+    final expires = sessionExpiresAt;
+    if (!hasSession || expires == null) return false;
+    return expires.isBefore((now ?? DateTime.now()).add(within));
+  }
+
+  /// This profile signed out: session token, expiry and user removed.
+  ServerProfile withoutSession() => copyWith(clearSession: true);
+
   ServerProfile copyWith({
     String? id,
     String? name,
@@ -79,6 +114,10 @@ class ServerProfile {
     String? basicPassword,
     String? bearerToken,
     Map<String, String>? customHeaders,
+    String? sessionToken,
+    DateTime? sessionExpiresAt,
+    String? sessionUser,
+    bool clearSession = false,
     bool? allowSelfSigned,
     int? color,
     bool clearColor = false,
@@ -92,6 +131,9 @@ class ServerProfile {
       basicPassword: basicPassword ?? this.basicPassword,
       bearerToken: bearerToken ?? this.bearerToken,
       customHeaders: customHeaders ?? this.customHeaders,
+      sessionToken: clearSession ? null : (sessionToken ?? this.sessionToken),
+      sessionExpiresAt: clearSession ? null : (sessionExpiresAt ?? this.sessionExpiresAt),
+      sessionUser: clearSession ? null : (sessionUser ?? this.sessionUser),
       allowSelfSigned: allowSelfSigned ?? this.allowSelfSigned,
       color: clearColor ? null : (color ?? this.color),
     );
@@ -116,6 +158,10 @@ class ServerProfile {
     if (basicPassword != null) 'basicPassword': basicPassword,
     if (bearerToken != null) 'bearerToken': bearerToken,
     if (customHeaders.isNotEmpty) 'customHeaders': customHeaders,
+    if (sessionToken != null) 'sessionToken': sessionToken,
+    if (sessionExpiresAt != null)
+      'sessionExpiresAt': sessionExpiresAt!.toUtc().toIso8601String(),
+    if (sessionUser != null) 'sessionUser': sessionUser,
   };
 
   /// Rebuilds a profile from [toPublicJson] output plus optional
@@ -141,6 +187,7 @@ class ServerProfile {
       headers.putIfAbsent(e.key, () => e.value);
     }
     final color = public['color'];
+    final expires = secret?['sessionExpiresAt'];
     return ServerProfile(
       id: public['id'] as String,
       name: (public['name'] as String?) ?? '',
@@ -150,6 +197,9 @@ class ServerProfile {
       basicPassword: secret?['basicPassword'] as String?,
       bearerToken: secret?['bearerToken'] as String?,
       customHeaders: headers,
+      sessionToken: secret?['sessionToken'] as String?,
+      sessionExpiresAt: expires is String ? DateTime.tryParse(expires)?.toUtc() : null,
+      sessionUser: secret?['sessionUser'] as String?,
       allowSelfSigned: public['allowSelfSigned'] == true,
       color: color is int ? color : null,
     );
@@ -173,6 +223,11 @@ class ServerProfile {
           for (final e in customHeaders.entries)
             if (e.key.trim().isNotEmpty) e.key.trim(): e.value,
         };
+      case AuthType.session:
+        // Signed out: send nothing, the server answers 401 → "Sign in again".
+        final token = sessionToken;
+        if (token == null || token.isEmpty) return const {};
+        return {'Authorization': 'Bearer $token'};
     }
   }
 
@@ -226,6 +281,9 @@ class ServerProfile {
       other.basicPassword == basicPassword &&
       other.bearerToken == bearerToken &&
       mapEquals(other.customHeaders, customHeaders) &&
+      other.sessionToken == sessionToken &&
+      other.sessionExpiresAt == sessionExpiresAt &&
+      other.sessionUser == sessionUser &&
       other.allowSelfSigned == allowSelfSigned &&
       other.color == color;
 
@@ -241,6 +299,9 @@ class ServerProfile {
     Object.hashAllUnordered(
       customHeaders.entries.map((e) => Object.hash(e.key, e.value)),
     ),
+    sessionToken,
+    sessionExpiresAt,
+    sessionUser,
     allowSelfSigned,
     color,
   );

@@ -12,6 +12,7 @@ import '../../data/profiles/server_profile.dart';
 import '../../data/repositories/ledger_data_providers.dart';
 import '../../l10n/l10n.dart';
 import '../../router.dart';
+import 'session_actions.dart';
 
 /// Installed app version (`1.0.0 (1)`).
 final appVersionProvider = FutureProvider<String>((ref) async {
@@ -68,7 +69,7 @@ class _SectionHeader extends StatelessWidget {
   );
 }
 
-enum _ProfileAction { edit, test, delete }
+enum _ProfileAction { edit, test, signIn, signOut, delete }
 
 class _ProfileTile extends ConsumerWidget {
   const _ProfileTile({required this.profile, required this.active});
@@ -81,7 +82,16 @@ class _ProfileTile extends ConsumerWidget {
     AuthType.basic => l10n.authBasic,
     AuthType.bearer => l10n.authBearer,
     AuthType.headers => l10n.authHeaders,
+    AuthType.session => l10n.authSession,
   };
+
+  /// Browser sign-in profiles: who is signed in and until when.
+  String? _sessionLine(AppLocalizations l10n) {
+    if (profile.authType != AuthType.session) return null;
+    if (!profile.hasSession) return l10n.notSignedIn;
+    final expires = profile.sessionExpiresAt;
+    return l10n.sessionSubtitle(profile.sessionUser ?? '', expires == null ? '—' : formatSessionExpiry(expires));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -117,7 +127,15 @@ class _ProfileTile extends ConsumerWidget {
           ],
         ],
       ),
-      subtitle: Text('${profile.baseUrl} · ${_authLabel(l10n)}', overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        [
+          '${profile.baseUrl} · ${_authLabel(l10n)}',
+          ?_sessionLine(l10n),
+        ].join('\n'),
+        key: Key('settings.profileSubtitle.${profile.id}'),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
       selected: active,
       onTap: active
           ? null
@@ -135,6 +153,18 @@ class _ProfileTile extends ConsumerWidget {
         itemBuilder: (context) => [
           PopupMenuItem(value: _ProfileAction.edit, child: Text(l10n.edit)),
           PopupMenuItem(value: _ProfileAction.test, child: Text(l10n.testConnection)),
+          if (profile.authType == AuthType.session)
+            profile.hasSession
+                ? PopupMenuItem(
+                    key: Key('settings.signOut.${profile.id}'),
+                    value: _ProfileAction.signOut,
+                    child: Text(l10n.signOut),
+                  )
+                : PopupMenuItem(
+                    key: Key('settings.signIn.${profile.id}'),
+                    value: _ProfileAction.signIn,
+                    child: Text(l10n.signInWithBrowser),
+                  ),
           PopupMenuItem(value: _ProfileAction.delete, child: Text(l10n.delete)),
         ],
       ),
@@ -152,6 +182,10 @@ class _ProfileTile extends ConsumerWidget {
           context: context,
           builder: (context) => _TestDialog(future: future, title: profile.name),
         );
+      case _ProfileAction.signIn:
+        await signInAgain(context, ref, profile);
+      case _ProfileAction.signOut:
+        await signOut(context, ref, profile);
       case _ProfileAction.delete:
         final confirmed = await showDialog<bool>(
           context: context,

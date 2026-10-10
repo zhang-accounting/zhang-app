@@ -27,6 +27,19 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<!-- Browser sign-in: the zhang login page returns to zhang-app://auth/callback?code=…
+		     (ASWebAuthenticationSession also catches it without this; listed for completeness). -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>me.kilerd.zhangApp.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>zhang-app</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>NSAppTransportSecurity</key>

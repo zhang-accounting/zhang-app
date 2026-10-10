@@ -842,4 +842,85 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get reportsOpenAccount => '查看账户';
+
+  @override
+  String get authSession => '浏览器登录';
+
+  @override
+  String get authSessionHelper => '在浏览器中用通行密钥（passkey）或密码登录';
+
+  @override
+  String get signInWithBrowser => '用浏览器登录';
+
+  @override
+  String get signingIn => '正在登录…';
+
+  @override
+  String get signInAgain => '重新登录';
+
+  @override
+  String get signOut => '退出登录';
+
+  @override
+  String signedOut(String name) {
+    return '已退出「$name」';
+  }
+
+  @override
+  String signedInAs(String user, String date) {
+    return '已登录为 $user，有效期至 $date';
+  }
+
+  @override
+  String signedInSnack(String user) {
+    return '已登录为 $user';
+  }
+
+  @override
+  String sessionSubtitle(String user, String date) {
+    return '$user · 有效期至 $date';
+  }
+
+  @override
+  String get notSignedIn => '未登录';
+
+  @override
+  String get signInFirst => '请先用浏览器登录。';
+
+  @override
+  String get signInNotNeeded => '该服务器无需登录，请选择「无」。';
+
+  @override
+  String get signInNotSupported => '该服务器尚不支持 App 登录，请升级 zhang（PR #786）。';
+
+  @override
+  String get signInCancelled => '已取消登录。';
+
+  @override
+  String get signInBrowserFailed => '无法打开浏览器登录。';
+
+  @override
+  String get signInMalformedCallback => '服务器返回的登录结果无效。';
+
+  @override
+  String get signInCodeRejected => '登录凭证已过期或已被使用，请重新登录。';
+
+  @override
+  String signInRateLimited(int seconds) {
+    return '登录尝试次数过多，请 $seconds 秒后再试。';
+  }
+
+  @override
+  String get signInRateLimitedLater => '登录尝试次数过多，请稍后再试。';
+
+  @override
+  String get homeSessionBanner => '登录已失效，请在浏览器中重新登录。';
+
+  @override
+  String homeSessionExpiring(String date) {
+    return '登录将于 $date 过期，请重新登录以保持连接。';
+  }
+
+  @override
+  String get errorPasskeyOnlyBrowser => '该服务器只允许通行密钥（passkey）登录，请选择「浏览器登录」。';
 }

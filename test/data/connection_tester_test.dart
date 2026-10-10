@@ -94,6 +94,71 @@ void main() {
     expect(paths, ['/api/info', '/api/auth/status']);
   });
 
+  test('401 on a passkey-only server with the app handoff → ApiPasskeyOnly(appLogin)', () async {
+    final tester = _tester((o) {
+      if (o.uri.path == '/api/auth/status') {
+        return jsonResponse({
+          'data': {
+            'enabled': true,
+            'authenticated': false,
+            'methods': {'password': false, 'passkey': true},
+            'passkey_registered': true,
+            'user': null,
+            'title': 'My Accounting',
+            'app_login': true,
+            'app_return_schemes': ['zhang-app'],
+          },
+        });
+      }
+      return rawJsonResponse(fixtureText('err_unauthorized.json'), status: 401);
+    }, []);
+    await expectLater(
+      tester.test(_profile),
+      throwsA(isA<ApiPasskeyOnly>().having((e) => e.appLogin, 'appLogin', isTrue)),
+    );
+  });
+
+  test('browser sign-in profile: Bearer session on /api/info; 401 is not "passkey only"', () async {
+    final paths = <String>[];
+    final headers = <Object?>[];
+    final session = _profile.copyWith(authType: AuthType.session, sessionToken: 'tok.sig');
+    final ok = ConnectionTester(
+      createClient: (profile) {
+        final client = ZhangApiClient(profile);
+        client.dio.httpClientAdapter = FakeAdapter((o) {
+          paths.add(o.uri.path);
+          headers.add(o.headers['Authorization']);
+          return jsonResponse(fixture('info.json'));
+        });
+        return client;
+      },
+    );
+    await ok.test(session);
+    expect(paths, ['/api/info']);
+    expect(headers, ['Bearer tok.sig']);
+
+    paths.clear();
+    final expired = _tester((_) => rawJsonResponse(fixtureText('err_unauthorized.json'), status: 401), paths);
+    await expectLater(expired.test(session), throwsA(isA<ApiUnauthorized>()));
+    expect(paths, ['/api/info'], reason: 'no auth/status lookup for a session profile');
+  });
+
+  test('auth status: app_login fields (zhang PR #786) and their absence', () {
+    final withHandoff = AuthStatus.fromJson({
+      'enabled': true,
+      'authenticated': false,
+      'methods': {'password': true, 'passkey': false},
+      'app_login': true,
+      'app_return_schemes': ['zhang-app'],
+    });
+    expect(withHandoff.appLogin, isTrue);
+    expect(withHandoff.appReturnSchemes, ['zhang-app']);
+    expect(withHandoff.supportsAppLogin, isTrue);
+    final old = AuthStatus.fromJson(fixtureData('auth_status.json'));
+    expect(old.appLogin, isFalse);
+    expect(old.supportsAppLogin, isFalse);
+  });
+
   test('auth status fixture (no auth) parses', () {
     final status = AuthStatus.fromJson(fixtureData('auth_status.json'));
     expect(status.enabled, isFalse);

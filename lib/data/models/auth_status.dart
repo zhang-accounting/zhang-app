@@ -10,6 +10,8 @@ class AuthStatus {
     required this.passkey,
     this.user,
     this.title,
+    this.appLogin = false,
+    this.appReturnSchemes = const [],
   });
 
   factory AuthStatus.fromJson(Object? json) {
@@ -22,6 +24,8 @@ class AuthStatus {
       passkey: optBool(methods, 'passkey'),
       user: optString(m, 'user'),
       title: optString(m, 'title'),
+      appLogin: optBool(m, 'app_login'),
+      appReturnSchemes: stringList(m['app_return_schemes']),
     );
   }
 
@@ -38,6 +42,20 @@ class AuthStatus {
   final String? user;
   final String? title;
 
-  /// Passkeys only: the app (HTTP Basic) cannot sign in.
+  /// The server supports the browser sign-in handoff: its login page accepts
+  /// `?return_to=` and `POST /api/auth/app/exchange` trades the returned
+  /// one-time code for a session token (zhang PR #786).
+  final bool appLogin;
+
+  /// URL schemes the login page may return to (`["zhang-app"]` by default,
+  /// `ZHANG_APP_RETURN_SCHEMES`).
+  final List<String> appReturnSchemes;
+
+  /// Passkeys only: HTTP Basic cannot sign in.
   bool get isPasskeyOnly => enabled && !password;
+
+  /// The app can sign in through the browser: the handoff is on and accepts
+  /// the app's `zhang-app` scheme (an empty list is taken as the default).
+  bool get supportsAppLogin =>
+      appLogin && (appReturnSchemes.isEmpty || appReturnSchemes.contains('zhang-app'));
 }

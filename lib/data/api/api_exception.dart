@@ -1,3 +1,5 @@
+import 'dart:io' show HttpDate, HttpException;
+
 /// Errors thrown by `ZhangApiClient` and every repository.
 ///
 /// UI code should switch over the sealed hierarchy (or use
@@ -7,6 +9,7 @@
 /// switch (error) {
 ///   ApiUnauthorized() => ...,  // 401/403: wrong credentials
 ///   ApiNotFound() => ...,      // 404
+///   ApiRateLimited(:final retryAfter) => ..., // 429 (an ApiServerError)
 ///   ApiServerError(:final statusCode, :final message) => ...,
 ///   ApiNetworkError(:final kind) => ...,   // offline, timeout, TLS, crash
 ///   ApiParseError() => ...,    // not a zhang server / unexpected payload
@@ -58,8 +61,8 @@ final class ApiNotFound extends ZhangApiException {
 }
 
 /// Any other non-2xx answer (400 bad parameter, 405 wrong method, 409 reload
-/// failed, 415, 422, 500…). [message] is the server's JSON `message`, else
-/// the plain-text body, else `HTTP <status>`.
+/// failed, 415, 422, 429, 500…). [message] is the server's JSON `message`,
+/// else the plain-text body, else `HTTP <status>`.
 final class ApiServerError extends ZhangApiException {
   const ApiServerError(this.status, super.message);
 
@@ -67,6 +70,32 @@ final class ApiServerError extends ZhangApiException {
 
   @override
   int get statusCode => status;
+}
+
+/// 429: too many failed sign-in attempts from this client (zhang counts 5
+/// per 15 minutes for the password login and the app code exchange).
+/// [retryAfter] comes from the `Retry-After` header when present.
+final class ApiRateLimited extends ApiServerError {
+  const ApiRateLimited({String message = 'too many attempts', this.retryAfter})
+    : super(429, message);
+
+  final Duration? retryAfter;
+
+  /// Parses a `Retry-After` header: delay seconds or an HTTP date.
+  static Duration? parseRetryAfter(String? value, {DateTime? now}) {
+    if (value == null || value.trim().isEmpty) return null;
+    final seconds = int.tryParse(value.trim());
+    if (seconds != null) return seconds < 0 ? null : Duration(seconds: seconds);
+    try {
+      final date = HttpDate.parse(value.trim());
+      final wait = date.difference(now ?? DateTime.now());
+      return wait.isNegative ? Duration.zero : wait;
+    } on FormatException {
+      return null;
+    } on HttpException {
+      return null;
+    }
+  }
 }
 
 enum NetworkErrorKind {
@@ -111,9 +140,14 @@ final class ApiServerTooOld extends ZhangApiException {
 }
 
 /// The server only allows passkey sign-in (`ZHANG_PASSKEY` without
-/// `ZHANG_AUTH`): it refuses HTTP Basic, and the app cannot do WebAuthn.
+/// `ZHANG_AUTH`): it refuses HTTP Basic. The app signs in with a passkey only
+/// through the browser (`AuthType.session`); [appLogin] tells whether the
+/// server supports that (`/api/auth/status.app_login`).
 final class ApiPasskeyOnly extends ZhangApiException {
-  const ApiPasskeyOnly() : super('the server only allows passkey sign-in');
+  const ApiPasskeyOnly({this.appLogin = false}) : super('the server only allows passkey sign-in');
+
+  /// The server supports the browser sign-in ("Browser" auth type).
+  final bool appLogin;
 
   @override
   int get statusCode => 401;

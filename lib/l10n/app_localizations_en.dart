@@ -865,4 +865,93 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsOpenAccount => 'Open account';
+
+  @override
+  String get authSession => 'Browser';
+
+  @override
+  String get authSessionHelper =>
+      'Sign in with a passkey or password in the browser';
+
+  @override
+  String get signInWithBrowser => 'Sign in with browser';
+
+  @override
+  String get signingIn => 'Signing in…';
+
+  @override
+  String get signInAgain => 'Sign in again';
+
+  @override
+  String get signOut => 'Sign out';
+
+  @override
+  String signedOut(String name) {
+    return 'Signed out of $name';
+  }
+
+  @override
+  String signedInAs(String user, String date) {
+    return 'Signed in as $user, valid until $date';
+  }
+
+  @override
+  String signedInSnack(String user) {
+    return 'Signed in as $user';
+  }
+
+  @override
+  String sessionSubtitle(String user, String date) {
+    return '$user · until $date';
+  }
+
+  @override
+  String get notSignedIn => 'Not signed in';
+
+  @override
+  String get signInFirst => 'Sign in with the browser first.';
+
+  @override
+  String get signInNotNeeded =>
+      'This server does not require sign-in. Choose “None” instead.';
+
+  @override
+  String get signInNotSupported =>
+      'This server does not support app sign-in yet; upgrade zhang (PR #786).';
+
+  @override
+  String get signInCancelled => 'Sign-in was cancelled.';
+
+  @override
+  String get signInBrowserFailed => 'Could not open the browser for sign-in.';
+
+  @override
+  String get signInMalformedCallback =>
+      'The server returned an invalid sign-in response.';
+
+  @override
+  String get signInCodeRejected =>
+      'The sign-in expired or was already used. Sign in again.';
+
+  @override
+  String signInRateLimited(int seconds) {
+    return 'Too many sign-in attempts. Try again in $seconds s.';
+  }
+
+  @override
+  String get signInRateLimitedLater =>
+      'Too many sign-in attempts. Try again later.';
+
+  @override
+  String get homeSessionBanner =>
+      'Your sign-in has ended. Sign in again in the browser.';
+
+  @override
+  String homeSessionExpiring(String date) {
+    return 'Your sign-in expires on $date. Sign in again to stay connected.';
+  }
+
+  @override
+  String get errorPasskeyOnlyBrowser =>
+      'This server only allows passkey sign-in. Choose “Browser” to sign in with a passkey.';
 }

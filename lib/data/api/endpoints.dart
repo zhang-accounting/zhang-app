@@ -6,6 +6,8 @@ import 'zhang_api_client.dart';
 abstract final class ZhangEndpoints {
   static const info = '/info';
   static const authStatus = '/auth/status';
+  static const authAppExchange = '/auth/app/exchange';
+  static const authLogout = '/auth/logout';
   static const builtinQueries = '/query/builtins';
   static const options = '/options';
   static const reload = '/reload';
