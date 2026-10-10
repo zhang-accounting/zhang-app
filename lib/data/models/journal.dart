@@ -50,7 +50,7 @@ class JournalPosting {
 /// }
 /// ```
 ///
-/// Ids and [sequence] are NOT stable across ledger reloads (docs §1.6):
+/// Ids and [sequence] are NOT stable across ledger reloads (docs/zhang-api.md §1.6):
 /// never persist them; refetch after every mutation.
 sealed class JournalItem {
   const JournalItem({

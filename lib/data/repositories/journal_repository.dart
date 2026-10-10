@@ -49,7 +49,7 @@ class JournalQuery {
 
   /// Hand-built query string. `tags`/`links` need literal brackets
   /// (`tags[0]=x`): the server silently ignores percent-encoded brackets and
-  /// rejects `tags=x` (docs §3.3), so dio's `queryParameters` cannot be used.
+  /// rejects `tags=x` (docs/zhang-api.md §4.1), so dio's `queryParameters` cannot be used.
   String toQueryString() {
     final parts = <String>['page=${page < 1 ? 1 : page}', 'size=${size.clamp(1, 1000)}'];
     final kw = keyword;
