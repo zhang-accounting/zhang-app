@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
@@ -16,8 +17,9 @@ Future<void> main() async {
 
 /// Loads persisted profiles before the first frame (so the router can decide
 /// synchronously between onboarding and the main shell) and returns the root
-/// widget wrapped in a [ProviderScope]. Also used by integration tests.
-Future<Widget> bootstrap() async {
+/// widget wrapped in a [ProviderScope]. Also used by integration tests, which
+/// may add [overrides] (e.g. `webAuthLauncherProvider` instead of a browser).
+Future<Widget> bootstrap({List<Override> overrides = const []}) async {
   final prefs = await SharedPreferences.getInstance();
   final secrets = SecureSecretStore();
   final initial = await ProfileRepository(prefs: prefs, secrets: secrets).load();
@@ -28,6 +30,7 @@ Future<Widget> bootstrap() async {
       initialProfilesStateProvider.overrideWithValue(initial),
       // Refresh on the server's SSE `Reload` events.
       ledgerEventsEnabledProvider.overrideWithValue(true),
+      ...overrides,
     ],
     retry: zhangRetryPolicy,
     child: const ZhangApp(),
