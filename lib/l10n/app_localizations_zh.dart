@@ -393,6 +393,22 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get addPreviewWarning => '账本会报告以下问题（尚未保存）：';
+
+  @override
+  String get addSaveAnyway => '仍然保存';
+
+  @override
+  String addPreviewCommodityUndeclared(String commodity) {
+    return '账本中没有声明商品 $commodity。';
+  }
+
+  @override
+  String addPreviewCommodityNotAllowed(String account, String commodity) {
+    return '账户 $account 的开户指令没有列出 $commodity。';
+  }
+
+  @override
   String get addDiscardTitle => '放弃这笔？';
 
   @override

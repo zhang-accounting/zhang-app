@@ -405,6 +405,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get addPreviewWarning =>
+      'The ledger would report (the entry is not saved yet):';
+
+  @override
+  String get addSaveAnyway => 'Save anyway';
+
+  @override
+  String addPreviewCommodityUndeclared(String commodity) {
+    return 'Commodity $commodity is not declared in the ledger.';
+  }
+
+  @override
+  String addPreviewCommodityNotAllowed(String account, String commodity) {
+    return 'Account $account does not list $commodity in its open directive.';
+  }
+
+  @override
   String get addDiscardTitle => 'Discard this entry?';
 
   @override
