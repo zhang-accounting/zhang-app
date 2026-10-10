@@ -122,12 +122,14 @@ class LedgerEvents extends Notifier<LedgerEventsState> {
   void _handle(ServerEvent event) {
     switch (event) {
       case ServerConnected():
+        // Events may have been missed while disconnected, or the screens
+        // failed while the server was unreachable (failed attempts before the
+        // first connect): refetch. `/api/info.reload_failure`, refetched by
+        // the bump, is the reload state again until the next reload event.
+        final missed = _wasConnected || _failures > 0;
         _failures = 0;
-        // Events may have been missed while disconnected (a ReloadFailed
-        // among them): `/api/info.reload_failure`, refetched by the bump, is
-        // the source again until the next reload event.
-        state = _wasConnected ? const LedgerEventsState(connected: true) : state.copyWith(connected: true);
-        if (_wasConnected) _bumpSoon();
+        state = missed ? const LedgerEventsState(connected: true) : state.copyWith(connected: true);
+        if (missed) _bumpSoon();
         _wasConnected = true;
       case ServerReload():
         state = state.copyWith(sawReloadEvent: true, clearFailure: true);

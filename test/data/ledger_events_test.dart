@@ -138,6 +138,34 @@ void main() {
     );
   });
 
+  test('the first connect after failed attempts (server was unreachable) refetches', () async {
+    final streams = <_Stream>[];
+    var attempts = 0;
+    final adapter = FakeAdapter((o) {
+      if (attempts++ == 0) {
+        throw DioException.connectionError(requestOptions: o, reason: 'offline');
+      }
+      final s = _Stream();
+      streams.add(s);
+      return s.body;
+    });
+    final client = ZhangApiClient(_profile)..dio.httpClientAdapter = adapter;
+    final container = ProviderContainer(
+      overrides: [
+        zhangApiClientProvider.overrideWithValue(client),
+        ledgerEventsEnabledProvider.overrideWithValue(true),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(ledgerEventsProvider, (_, _) {});
+    await _wait(1200); // first attempt fails, retried after 1 s
+    expect(streams, hasLength(1));
+    streams.single.send('{"type":"Connected"}');
+    await _wait(LedgerEvents.reloadDebounce.inMilliseconds + 100);
+    expect(container.read(ledgerEventsProvider).connected, isTrue);
+    expect(container.read(ledgerRevisionProvider), 1);
+  });
+
   test('a profile switch closes the old stream and never reconnects to the old server', () async {
     final oldStreams = <_Stream>[];
     final newStreams = <_Stream>[];
