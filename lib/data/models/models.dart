@@ -15,6 +15,7 @@ export 'journal.dart';
 export 'ledger_error.dart';
 export 'options.dart';
 export 'pageable.dart';
+export 'query_result.dart';
 export 'server_event.dart';
 export 'statistic.dart';
 export 'transaction_request.dart';

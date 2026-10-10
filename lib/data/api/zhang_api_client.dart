@@ -12,6 +12,7 @@ import '../profiles/profile_providers.dart';
 import '../profiles/server_profile.dart';
 import 'api_exception.dart';
 import 'auth_interceptor.dart';
+import 'endpoints.dart';
 
 /// Decodes the payload inside the `{"data": …}` envelope.
 typedef DataDecoder<T> = T Function(Object? data);
@@ -70,11 +71,11 @@ class ZhangApiClient {
   }
 
   /// `GET /api/info` – cheapest health/identity/credentials check.
-  Future<ServerInfo> info() => get('/info', decode: ServerInfo.fromJson);
+  Future<ServerInfo> info() => get(ZhangEndpoints.info, decode: ServerInfo.fromJson);
 
   /// `GET /api/auth/status` – sign-in methods of the server; needs no
   /// credentials (zhang ≥ 0.2).
-  Future<AuthStatus> authStatus() => get('/auth/status', decode: AuthStatus.fromJson);
+  Future<AuthStatus> authStatus() => get(ZhangEndpoints.authStatus, decode: AuthStatus.fromJson);
 
   /// `GET /api/info`, then the version gate: throws [ApiServerTooOld] when
   /// the server predates the v0.2 API (no `format` key).
