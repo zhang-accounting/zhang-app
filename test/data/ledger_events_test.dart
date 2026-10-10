@@ -105,10 +105,15 @@ void main() {
     unawaited(container.read(ledgerRevisionProvider.notifier).bumpAfterWrite(const Duration(milliseconds: 10)));
     await _wait(100);
     expect(revision(), 0, reason: 'no fixed timer while the stream is connected');
+    // zhang sends two Reloads per write, ~550 ms apart.
     streams.first.send('{"type":"Reload"}');
+    await _wait(550);
+    expect(revision(), 0, reason: 'trailing debounce');
     streams.first.send('{"type":"Reload"}');
-    await _wait(LedgerEvents.reloadDebounce.inMilliseconds + 100);
-    expect(revision(), 1, reason: 'a burst of Reload events refetches once');
+    await _wait(LedgerEvents.reloadDebounce.inMilliseconds - 200);
+    expect(revision(), 0, reason: 'the second Reload restarts the debounce');
+    await _wait(300);
+    expect(revision(), 1, reason: 'the two Reload events of a write refetch once');
 
     streams.first.send('{"type":"ReloadFailed","file":"data/2023/12.zhang","message":"cannot parse"}');
     await _wait(LedgerEvents.reloadDebounce.inMilliseconds + 100);

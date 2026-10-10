@@ -49,9 +49,10 @@ class LedgerEventsState {
 final ledgerEventsProvider = NotifierProvider<LedgerEvents, LedgerEventsState>(LedgerEvents.new);
 
 class LedgerEvents extends Notifier<LedgerEventsState> {
-  /// Coalesces bursts of `Reload` events (a batch write reloads once per
-  /// file) into one refetch.
-  static const reloadDebounce = Duration(milliseconds: 150);
+  /// Coalesces bursts of `Reload` events into one refetch (trailing): zhang
+  /// sends two per write about 550 ms apart (the write's own reload, then
+  /// the file watcher's), and a batch write one per file.
+  static const reloadDebounce = Duration(milliseconds: 700);
   static const _backoff = [Duration(seconds: 1), Duration(seconds: 3), Duration(seconds: 10), Duration(seconds: 30)];
 
   /// zhang sends a `: ping` comment every ~10 s; a stream silent for this
