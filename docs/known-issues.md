@@ -8,7 +8,10 @@
 
 ## P1
 - 鉴权类型互斥：decisions.md §7 要求 Basic 可与自定义 Header 叠加（Cloudflare Access + zhang Basic），现在 `authHeaders()` 只按单一类型发（lib/data/profiles/server_profile.dart）。需要改表单与模型。
-- 只有 passkey 登录的服务器（`ZHANG_PASSKEY` 不带 `ZHANG_AUTH`）用不了：连接测试会提示开启密码登录。App 不打算做 WebAuthn。
+- 浏览器登录（「浏览器登录」鉴权方式，docs/passkey-login.md）只防开放重定向（scheme 白名单）和重放（单次 60 s code），**没有 PKCE / state**：同一设备上另一个注册了 `zhang-app://` 的 App 理论上能截获回调里的 code 并抢先兑换。后续需与 server 协同：App 生成 `code_verifier`，`/login?return_to=…&code_challenge=…`，`app/exchange` 带 `code_verifier`（或至少回传 `state` 由 App 校验）。
+- 浏览器登录的 token 是无状态 30 天 HMAC：「退出登录」只在本地删除 token，`POST /api/auth/logout` 不吊销；server 没有按 token 吊销的接口。
+- 只有 passkey 且 server 早于 PR #786（无 `app_login`）时仍用不了：连接测试提示开启密码登录；有 `app_login` 的 server 提示改用「浏览器登录」。
+- 浏览器登录的 iOS `ASWebAuthenticationSession` / Android Custom Tabs 不认 `allowSelfSigned`：自签名证书的 server 在浏览器里会被拦（App 内的 API 请求仍按 profile 放行）。
 - 明文 http 发送凭据没有提示（S01 要求显式 opt-in）。
 - 收入模式不能选 Liabilities 作为入账账户。
 - 账本时钟：`ledger.now` 与设备时钟的差值每个 profile 只取一次（取整到 15 分钟）。App 运行期间账本时区或设备时区切换夏令时，「今天 / 本月」会差一小时，直到重启或切换 profile。

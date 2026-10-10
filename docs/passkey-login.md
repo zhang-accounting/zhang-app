@@ -1,6 +1,6 @@
 # Passkey 登录设计：浏览器登录回跳（App Login Handoff）
 
-状态：设计稿，2026-10-10。服务端部分尚未实现（需要在 zhang 仓库改 `zhang-server/src/auth` 与前端登录页）。
+状态：2026-10-10。服务端在 zhang 分支 `feat/app-login-handoff`（PR #786）；App 端已实现（「浏览器登录」鉴权方式 `AuthType.session`，`lib/data/auth/browser_sign_in.dart`，契约见 zhang-api.md §1.3）。未做：PKCE / state（见 known-issues.md）。
 
 ## 为什么不用原生 passkey
 

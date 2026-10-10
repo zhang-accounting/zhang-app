@@ -46,11 +46,30 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
   downloads included). The app sends `Authorization: Basic base64(user:pass)`; the scheme is case-insensitive on v0.2.
   Basic is not rate-limited and needs no session.
 * `GET /api/auth/status` (no credentials needed) →
-  `{"enabled","authenticated","methods":{"password","passkey"},"passkey_registered","user","title"}`.
+  `{"enabled","authenticated","methods":{"password","passkey"},"passkey_registered","user","title","app_login",
+  "app_return_schemes"}` (the last two only on servers with the app login handoff, zhang PR #786).
   The connection test calls it after a `401`: `enabled && !methods.password` (passkey only, `ZHANG_PASSKEY` without
-  `ZHANG_AUTH`) → `ApiPasskeyOnly` ("enable password sign-in"); the app cannot do WebAuthn.
-* Not used by the app: `POST /api/auth/login` (cookie session `zhang_session`, 30 days, rate-limited), passkeys.
-* Bearer / custom-header profiles are for a reverse proxy in front of zhang; the server ignores `Bearer`.
+  `ZHANG_AUTH`) → `ApiPasskeyOnly`; with `app_login` the message points to the "Browser" auth type, otherwise to
+  "enable password sign-in". Not consulted for "Browser" profiles (their `401` means the session ended).
+* **Browser sign-in** ("Browser" auth type, `AuthType.session`; design in [`passkey-login.md`](passkey-login.md)):
+  1. `GET /api/auth/status`: `!enabled` → "sign-in not needed"; `enabled && !app_login` (or `zhang-app` not in
+     `app_return_schemes`) → "upgrade zhang (PR #786)".
+  2. The system browser (`flutter_web_auth_2`, iOS `ASWebAuthenticationSession` / Android Custom Tabs, ephemeral)
+     opens `<base>/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback`; the user signs in with a passkey or password
+     on zhang's own login page, which then calls `POST /api/auth/app/code` and navigates to
+     `zhang-app://auth/callback?code=<base64url>` (60 s, single use).
+  3. The app accepts exactly that URL with one well-formed `code` and nothing else (`BrowserSignIn.codeFromCallback`).
+  4. `POST /api/auth/app/exchange {"code"}` (no credentials) → `{"data":{"token","expires_at","user"}}`;
+     `401 {"message":"invalid or expired code"}` → "expired or already used"; `429` + `Retry-After` (5 failed
+     attempts / 15 min / client, shared with the password login) → "try again in N s" (`ApiRateLimited`).
+  5. Every request then sends `Authorization: Bearer <token>` (`/api/sse` and documents too). Token, `expires_at`
+     and user are kept in secure storage. The token is a stateless 30-day HMAC: `POST /api/auth/logout` (called best
+     effort on "Sign out") only clears the cookie and does not revoke it; it stops working when `ZHANG_AUTH` /
+     `ZHANG_SESSION_SECRET` change or the server restarts without `ZHANG_SESSION_SECRET`. The app then gets `401`
+     and Home offers "Sign in again"; it also warns 3 days before `expires_at`.
+* Not used by the app: `POST /api/auth/login` (cookie session `zhang_session`, 30 days, rate-limited) and
+  `POST /api/auth/app/code` (both called by the login page in the browser; the live test calls them over HTTP).
+* Bearer / custom-header profiles are for a reverse proxy in front of zhang (or a session token pasted by hand).
 
 ### 1.4 Amounts
 
@@ -92,7 +111,9 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
 | Method | Path | Used for (repository / provider) |
 |---|---|---|
 | GET | `/api/info` | version gate, title, `reload_failure` (`ZhangApiClient.info`, `serverGateProvider`, `serverInfoProvider`) |
-| GET | `/api/auth/status` | passkey-only detection in the connection test |
+| GET | `/api/auth/status` | passkey-only detection in the connection test; browser sign-in feature check (`app_login`) |
+| POST | `/api/auth/app/exchange` | browser sign-in: one-time code → session token (`BrowserSignIn.exchange`) |
+| POST | `/api/auth/logout` | "Sign out" of a browser sign-in profile (best effort; does not revoke the token) |
 | GET | `/api/options` | operating currency, timezone (`ledgerOptionsProvider`) |
 | GET | `/api/sse` | `Connected` / `Reload` / `ReloadFailed` events (`ledgerEventsProvider`) |
 | POST | `/api/reload` | "Retry" on the reload-failed banner |

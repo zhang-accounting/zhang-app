@@ -139,7 +139,13 @@ The fixture capture also posted one transaction through the API (`Mobile Test Ca
 `POST /api/transactions/{id}/documents`) and one account document (`POST /api/accounts/Assets:WeChat/documents`).
 
 Ports used by the agents' runs: `18080` (no auth), `18081` (`--auth demo:secret`), `18082` (a zhang 0.1 build, only
-for the "server too old" check). The fixtures in `test/fixtures` were captured from `:18080` with
+for the "server too old" check), `18100` (a zhang with the app login handoff, PR #786, for the "Browser" sign-in;
+`ZHANG_SESSION_SECRET=pk-test` keeps session tokens valid across restarts) and `18101` (dev proxy, below).
+
+Browser sign-in by hand: a `cargo build -p zhang` without `--features frontend` answers `/login` with a plain-text
+"frontend is not enabled" page. Either build with the frontend, or serve the built web UI (`frontend/dist` of the
+zhang checkout) on another port and forward `/api/*` to the server (any small reverse proxy; the agents used a
+Python one on `:18101`), then use that port as the server URL in the app. The fixtures in `test/fixtures` were captured from `:18080` with
 plain curls (one file per response; the requests are the ones in `docs/compat-v0.2.md` Appendix A).
 
 Server URL to type in onboarding: iOS simulator `http://127.0.0.1:18080`, Android emulator
@@ -186,7 +192,13 @@ flutter test           # unit + widget tests (no server needed)
   flutter test integration_test/add_transaction_live_test.dart  -d $D --dart-define=ZHANG_URL=http://127.0.0.1:18080 \
     --dart-define=ZHANG_LEDGER_DIR=/tmp/zhang-v3-ledger
   flutter test integration_test/accounts_reports_live_test.dart -d $D --dart-define=ZHANG_URL=http://127.0.0.1:18080
+  flutter test integration_test/session_login_live_test.dart    -d $D --dart-define=ZHANG_URL=http://127.0.0.1:18100
   ```
+
+  `session_login_live_test.dart` replaces the browser (`webAuthLauncherProvider`, passed to
+  `bootstrap(overrides:)`) with `POST /api/auth/login` + `POST /api/auth/app/code` over HTTP and feeds the returned
+  `zhang-app://auth/callback?code=…` into the app's real callback → exchange → Bearer path, then signs out and in
+  again.
 
 ## Where things live
 
@@ -201,6 +213,8 @@ lib/
                             describeApiError), ledger_widgets.dart (ActiveLedgerTitle, SettingsButton,
                             LedgerDot, PlaceholderScreen)
   data/profiles/            ServerProfile, ProfileRepository, SecretStore, profilesProvider/activeProfileProvider
+  data/auth/                BrowserSignIn (browser sign-in handoff: status check, login page, callback code,
+                            app/exchange → SessionGrant), webAuthLauncherProvider / browserSignInProvider
   data/api/                 ZhangApiClient + zhangApiClientProvider, ZhangApiException hierarchy,
                             AuthInterceptor, ZhangEndpoints, ConnectionTester (version gate),
                             BuiltinQueryClient (`client.builtins`)
