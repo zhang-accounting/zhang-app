@@ -58,28 +58,32 @@ class LedgerEvents extends Notifier<LedgerEventsState> {
   Timer? _retry;
   Timer? _debounce;
   int _failures = 0;
-  bool _disposed = false;
   bool _wasConnected = false;
+
+  /// Bumped by every build and dispose: a connection loop of an earlier
+  /// build (the previous profile's client) sees a different value and
+  /// stops instead of reconnecting to the old server.
+  int _session = 0;
 
   @override
   LedgerEventsState build() {
+    final session = ++_session;
     if (!ref.watch(ledgerEventsEnabledProvider)) return const LedgerEventsState();
     final client = ref.watch(zhangApiClientProvider);
-    _disposed = false;
     _wasConnected = false;
     _failures = 0;
     ref.onDispose(() {
-      _disposed = true;
+      _session++;
       _cancel?.cancel();
       _retry?.cancel();
       _debounce?.cancel();
     });
-    scheduleMicrotask(() => _connect(client));
+    scheduleMicrotask(() => _connect(client, session));
     return const LedgerEventsState();
   }
 
-  Future<void> _connect(ZhangApiClient client) async {
-    if (_disposed) return;
+  Future<void> _connect(ZhangApiClient client, int session) async {
+    if (session != _session) return;
     final cancel = _cancel = CancelToken();
     try {
       final res = await client.dio.get<ResponseBody>(
@@ -94,7 +98,7 @@ class LedgerEvents extends Notifier<LedgerEventsState> {
       final body = res.data;
       if (body == null) throw StateError('empty event stream');
       await for (final line in body.stream.cast<List<int>>().transform(utf8.decoder).transform(const LineSplitter())) {
-        if (_disposed) return;
+        if (session != _session) return;
         final data = sseData(line);
         if (data == null) continue;
         ServerEvent event;
@@ -108,11 +112,11 @@ class LedgerEvents extends Notifier<LedgerEventsState> {
     } catch (_) {
       // Network error, 401, cancelled: fall through to the reconnect.
     }
-    if (_disposed) return;
+    if (session != _session) return;
     if (state.connected) state = state.copyWith(connected: false);
     final delay = _backoff[_failures.clamp(0, _backoff.length - 1)];
     _failures++;
-    _retry = Timer(delay, () => _connect(client));
+    _retry = Timer(delay, () => _connect(client, session));
   }
 
   void _handle(ServerEvent event) {
@@ -136,8 +140,9 @@ class LedgerEvents extends Notifier<LedgerEventsState> {
 
   void _bumpSoon() {
     _debounce?.cancel();
+    final session = _session;
     _debounce = Timer(reloadDebounce, () {
-      if (!_disposed) ref.read(ledgerRevisionProvider.notifier).bump();
+      if (session == _session) ref.read(ledgerRevisionProvider.notifier).bump();
     });
   }
 }

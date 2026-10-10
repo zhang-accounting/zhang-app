@@ -35,6 +35,18 @@ class _Stream {
 
 Future<void> _wait([int ms = 50]) => Future<void>.delayed(Duration(milliseconds: ms));
 
+/// The active client, switchable like a profile change.
+class _ActiveClient extends Notifier<ZhangApiClient> {
+  _ActiveClient(this._initial);
+
+  final ZhangApiClient _initial;
+
+  @override
+  ZhangApiClient build() => _initial;
+
+  void switchTo(ZhangApiClient client) => state = client;
+}
+
 void main() {
   test('sse data lines and the ReloadFailed event', () {
     expect(sseData('data: {"type":"Reload"}'), '{"type":"Reload"}');
@@ -119,5 +131,49 @@ void main() {
     await _wait(LedgerEvents.reloadDebounce.inMilliseconds + 100);
     expect(container.read(ledgerEventsProvider).connected, isTrue);
     expect(revision(), before + 1);
+  });
+
+  test('a profile switch closes the old stream and never reconnects to the old server', () async {
+    final oldStreams = <_Stream>[];
+    final newStreams = <_Stream>[];
+    final oldAdapter = FakeAdapter((o) {
+      final s = _Stream();
+      oldStreams.add(s);
+      return s.body;
+    });
+    final newAdapter = FakeAdapter((o) {
+      final s = _Stream();
+      newStreams.add(s);
+      return s.body;
+    });
+    final oldClient = ZhangApiClient(_profile)..dio.httpClientAdapter = oldAdapter;
+    final newClient = ZhangApiClient(const ServerProfile(id: 'q', name: 'Other', baseUrl: 'http://127.0.0.1:18081'))
+      ..dio.httpClientAdapter = newAdapter;
+    final active = NotifierProvider<_ActiveClient, ZhangApiClient>(() => _ActiveClient(oldClient));
+    final container = ProviderContainer(
+      overrides: [
+        zhangApiClientProvider.overrideWith((ref) => ref.watch(active)),
+        ledgerEventsEnabledProvider.overrideWithValue(true),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(ledgerEventsProvider, (_, _) {});
+    await _wait();
+    oldStreams.single.send('{"type":"Connected"}');
+    await _wait();
+    expect(container.read(ledgerEventsProvider).connected, isTrue);
+
+    container.read(active.notifier).switchTo(newClient);
+    await _wait();
+    expect(newStreams, hasLength(1));
+    newStreams.single.send('{"type":"Connected"}');
+    await _wait();
+    expect(container.read(ledgerEventsProvider).connected, isTrue);
+
+    // Longer than the first reconnect backoff (1 s).
+    await _wait(1500);
+    expect(oldAdapter.requests, hasLength(1), reason: 'no reconnect to the previous server');
+    expect(newAdapter.requests, hasLength(1));
+    expect(container.read(ledgerEventsProvider).connected, isTrue);
   });
 }
