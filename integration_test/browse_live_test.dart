@@ -77,6 +77,9 @@ void main() {
     expect(page1, hasLength(50));
     expect(page2, isNotEmpty);
     final newest = page1.first;
+    // Balance rows show "Balance check", not their payee: check the newest
+    // transaction's payee (the newest item may be a balance assertion).
+    final newestTxn = page1.firstWhere((r) => r['type'] == 'Transaction');
     final target = page2.first; // first item of the second page
     final latest = DateTime.parse(newest['datetime']! as String);
     // zhang ≥ 0.2: balance checks carry `asserted` / `passed`.
@@ -113,8 +116,8 @@ void main() {
     final expense = tester.widget<Text>(find.byKey(const Key('home.summary.expense'))).data;
     final income = tester.widget<Text>(find.byKey(const Key('home.summary.income'))).data;
     _log('ZHANG_RESULT home month=${tester.widget<Text>(find.byKey(const Key('home.month'))).data} '
-        'expense=$expense income=$income newest=${newest['payee']}');
-    expect(find.text(newest['payee']! as String), findsWidgets);
+        'expense=$expense income=$income newest=${newest['type']} ${newest['payee']}');
+    expect(find.text(newestTxn['payee']! as String), findsWidgets);
     await _hold(tester, 'home');
 
     // --- Journal: scroll until an item of page 2 is visible --------------
