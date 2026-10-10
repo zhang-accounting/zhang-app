@@ -387,6 +387,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addSaveFailed => 'Could not save';
 
   @override
+  String get addPreviewRejected => 'Not saved – the ledger would report:';
+
+  @override
+  String addPreviewUnbalanced(String amounts) {
+    return 'The postings do not balance (off by $amounts).';
+  }
+
+  @override
+  String addPreviewAccountMissing(String account) {
+    return 'Account $account is not open.';
+  }
+
+  @override
+  String addPreviewAccountClosed(String account) {
+    return 'Account $account is closed.';
+  }
+
+  @override
   String get addDiscardTitle => 'Discard this entry?';
 
   @override

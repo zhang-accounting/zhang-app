@@ -11,6 +11,7 @@ import 'package:zhang_app/data/models/amount.dart';
 import 'package:zhang_app/data/models/commodity.dart';
 import 'package:zhang_app/data/models/for_new_transaction.dart';
 import 'package:zhang_app/data/models/options.dart';
+import 'package:zhang_app/data/models/transaction_preview.dart';
 import 'package:zhang_app/data/models/transaction_request.dart';
 import 'package:zhang_app/data/profiles/profile_providers.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
@@ -21,6 +22,8 @@ import 'package:zhang_app/features/transaction_new/new_transaction_screen.dart';
 import 'package:zhang_app/features/transaction_new/record_prefs.dart';
 import 'package:zhang_app/features/transaction_new/transaction_history.dart';
 import 'package:zhang_app/l10n/l10n.dart';
+
+import '../../helpers/fixtures.dart';
 
 const _profile = ServerProfile(id: 'p1', name: 'Test', baseUrl: 'http://127.0.0.1:1');
 
@@ -62,7 +65,17 @@ class _FakeJournalRepository extends JournalRepository {
   _FakeJournalRepository() : super(ZhangApiClient(_profile));
 
   final requests = <CreateTransactionRequest>[];
+  final previews = <CreateTransactionRequest>[];
   Object? failWith;
+
+  /// Answer of `POST /api/transactions/preview` (clean by default).
+  TransactionPreview previewResult = TransactionPreview.fromJson(fixtureData('transaction_preview.json'));
+
+  @override
+  Future<TransactionPreview> preview(CreateTransactionRequest request) async {
+    previews.add(request);
+    return previewResult;
+  }
 
   @override
   Future<void> create(CreateTransactionRequest request) async {
@@ -84,6 +97,7 @@ Future<(_FakeJournalRepository, SharedPreferences)> _pump(WidgetTester tester) a
         sharedPreferencesProvider.overrideWithValue(prefs),
         activeProfileProvider.overrideWithValue(_profile),
         journalRepositoryProvider.overrideWithValue(repo),
+        ledgerClockOffsetProvider.overrideWith((ref) async => Duration.zero),
         pickerAccountsProvider.overrideWith((ref) async => _accounts),
         ledgerOptionsProvider.overrideWith((ref) async => const LedgerOptions({'operating_currency': 'CNY'})),
         commoditiesProvider.overrideWith(
@@ -181,9 +195,11 @@ void main() {
     await tester.tap(find.byKey(const Key('add.key.save')));
     await tester.pumpAndSettle();
 
+    expect(repo.previews, hasLength(1), reason: 'validated before saving');
     expect(repo.requests, hasLength(1));
     final json = repo.requests.single.toJson();
     expect(json['payee'], 'Canteen');
+    expect(json['datetime'], isNot(endsWith('Z')), reason: 'ledger wall clock');
     expect(json['narration'], '');
     expect(json['postings'], [
       {'account': 'Liabilities:Card', 'unit': {'number': '-15.50', 'commodity': 'CNY'}},
@@ -243,6 +259,40 @@ void main() {
     await tester.tap(find.byKey(const Key('add.key.save')));
     await tester.pumpAndSettle();
     expect(find.textContaining('Authentication failed (401)'), findsOneWidget);
+  });
+
+  testWidgets('preview problems block the save and are listed', (tester) async {
+    final (repo, _) = await _pump(tester);
+    // Captured: an invalid account name and an account that is not open.
+    repo.previewResult = TransactionPreview.fromJson({
+      ...fixtureData('transaction_preview_errors.json')! as Map<String, Object?>,
+      'errors': [
+        {
+          'error_type': 'AccountDoesNotExist',
+          'metas': {'account_name': 'Assets:Nope'},
+        },
+      ],
+    });
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Clothing')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '9');
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(repo.previews, hasLength(1));
+    expect(repo.requests, isEmpty, reason: 'not saved');
+    expect(find.byKey(const Key('add.error')), findsOneWidget);
+    expect(find.textContaining('Not saved'), findsOneWidget);
+    expect(find.textContaining('invalid account "Foo:Bar"'), findsOneWidget);
+    expect(find.textContaining('Account Assets:Nope is not open.'), findsOneWidget);
+    expect(_amountText(tester), '¥9');
+
+    // Unbalanced (captured: off by -1.00 CNY, plus the matching ledger error).
+    repo.previewResult = TransactionPreview.fromJson(fixtureData('transaction_preview_unbalanced.json'));
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('do not balance (off by −1.00 CNY)'), findsOneWidget);
+    expect(find.textContaining('UnbalancedTransaction'), findsNothing);
+    expect(repo.requests, isEmpty);
   });
 
   testWidgets('transfer mode uses from / to accounts; income uses Income tiles', (tester) async {

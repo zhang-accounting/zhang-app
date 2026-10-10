@@ -776,6 +776,30 @@ abstract class AppLocalizations {
   /// **'Could not save'**
   String get addSaveFailed;
 
+  /// No description provided for @addPreviewRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved – the ledger would report:'**
+  String get addPreviewRejected;
+
+  /// No description provided for @addPreviewUnbalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'The postings do not balance (off by {amounts}).'**
+  String addPreviewUnbalanced(String amounts);
+
+  /// No description provided for @addPreviewAccountMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Account {account} is not open.'**
+  String addPreviewAccountMissing(String account);
+
+  /// No description provided for @addPreviewAccountClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Account {account} is closed.'**
+  String addPreviewAccountClosed(String account);
+
   /// No description provided for @addDiscardTitle.
   ///
   /// In en, this message translates to:

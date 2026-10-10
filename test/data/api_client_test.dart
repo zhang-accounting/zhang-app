@@ -341,6 +341,26 @@ void main() {
       expect(f.accountNames.first, 'Assets:CitiBank:9999');
     });
 
+    test('preview posts the transaction body to /api/transactions/preview', () async {
+      final (client, adapter) = _client(_base, (_) => jsonResponse(fixture('transaction_preview.json')));
+      final preview = await JournalRepository(client).preview(
+        CreateTransactionRequest(
+          datetime: DateTime(2026, 10, 10, 9, 30),
+          payee: 'Cafe',
+          narration: 'Latte',
+          postings: [
+            PostingRequest(account: 'Assets:WeChat', unit: Amount(Decimal.parse('-32.50'), 'CNY')),
+            const PostingRequest(account: 'Expenses:PersonalDiet:Lunch'),
+          ],
+        ),
+      );
+      expect(adapter.last.method, 'POST');
+      expect(adapter.last.uri.path, '/api/transactions/preview');
+      expect((adapter.last.data as Map)['datetime'], '2026-10-10T09:30:00');
+      expect(preview.isClean, isTrue);
+      expect(preview.text, startsWith('2026-10-10 09:30:00 * "Cafe" "Latte"'));
+    });
+
     test('budgets: month list, detail, unknown name, merged history', () async {
       final builtins = FakeBuiltins({
         'budgets.budget': (p) => p['name'] == 'food'

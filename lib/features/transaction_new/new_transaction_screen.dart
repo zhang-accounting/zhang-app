@@ -12,6 +12,7 @@ import '../../core/utils/money.dart';
 import '../../core/widgets/error_view.dart';
 import '../../data/models/account.dart';
 import '../../data/models/commodity.dart';
+import '../../data/models/transaction_preview.dart';
 import '../../data/repositories/journal_repository.dart';
 import '../../data/repositories/ledger_data_providers.dart';
 import '../../l10n/l10n.dart';
@@ -243,6 +244,10 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       _error = null;
     });
     try {
+      // Validate first: an unbalanced entry or an unknown / closed account
+      // would still be written (and only show up as a ledger error).
+      final preview = await repository.preview(request);
+      if (!preview.isClean) throw TransactionRejected(preview);
       await repository.create(request);
     } catch (e) {
       if (!mounted) return;
@@ -946,11 +951,17 @@ class _ErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
       child: Row(
         children: [
-          Icon(iconForApiError(error), color: scheme.onErrorContainer),
+          Icon(
+            error is TransactionRejected ? Icons.rule : iconForApiError(error),
+            color: scheme.onErrorContainer,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '${l10n.addSaveFailed}: ${describeApiError(l10n, error)}',
+              switch (error) {
+                final TransactionRejected r => '${l10n.addPreviewRejected}\n${previewProblems(l10n, r.preview).join('\n')}',
+                _ => '${l10n.addSaveFailed}: ${describeApiError(l10n, error)}',
+              },
               style: TextStyle(color: scheme.onErrorContainer),
             ),
           ),
@@ -965,3 +976,18 @@ class _ErrorBanner extends StatelessWidget {
   }
 }
 
+/// One line per problem of a [TransactionPreview] (the server's message for
+/// refused fields, localised text for the rest).
+List<String> previewProblems(AppLocalizations l10n, TransactionPreview preview) => [
+  for (final f in preview.fieldErrors) f.message.isEmpty ? '${f.field}: ${f.kind}' : f.message,
+  if (preview.isUnbalanced)
+    l10n.addPreviewUnbalanced(preview.unbalanced!.map((a) => formatMoney(a.number, a.commodity, signed: true)).join(', ')),
+  for (final e in preview.errors)
+    // The unbalanced amounts are already listed above.
+    if (!(e.type == 'UnbalancedTransaction' && preview.isUnbalanced))
+      switch (e.type) {
+        'AccountDoesNotExist' => l10n.addPreviewAccountMissing(e.account ?? ''),
+        'AccountClosed' => l10n.addPreviewAccountClosed(e.account ?? ''),
+        _ => e.account == null ? e.type : '${e.type}: ${e.account}',
+      },
+];

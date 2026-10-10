@@ -215,6 +215,31 @@
     }
   },
   "addSaveFailed": "Could not save",
+  "addPreviewRejected": "Not saved – the ledger would report:",
+  "addPreviewUnbalanced": "The postings do not balance (off by {amounts}).",
+  "@addPreviewUnbalanced": {
+    "placeholders": {
+      "amounts": {
+        "type": "String"
+      }
+    }
+  },
+  "addPreviewAccountMissing": "Account {account} is not open.",
+  "@addPreviewAccountMissing": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "addPreviewAccountClosed": "Account {account} is closed.",
+  "@addPreviewAccountClosed": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
   "addDiscardTitle": "Discard this entry?",
   "addDiscardMessage": "What you entered will be lost.",
   "addDiscard": "Discard",

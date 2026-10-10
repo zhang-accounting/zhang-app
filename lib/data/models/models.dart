@@ -18,4 +18,5 @@ export 'pageable.dart';
 export 'query_result.dart';
 export 'server_event.dart';
 export 'statistic.dart';
+export 'transaction_preview.dart';
 export 'transaction_request.dart';

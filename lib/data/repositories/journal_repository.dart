@@ -7,6 +7,7 @@ import '../api/zhang_api_client.dart';
 import '../models/for_new_transaction.dart';
 import '../models/journal.dart';
 import '../models/pageable.dart';
+import '../models/transaction_preview.dart';
 import '../models/transaction_request.dart';
 import 'ledger_revision.dart';
 
@@ -128,6 +129,12 @@ class JournalRepository {
     await _client.send('POST', ZhangEndpoints.transactions, body: request.toJson());
     _onMutated?.call();
   }
+
+  /// `POST /api/transactions/preview` – validates [request] without writing:
+  /// the text that would be written, refused fields, what it is unbalanced
+  /// by and the ledger errors it would cause.
+  Future<TransactionPreview> preview(CreateTransactionRequest request) =>
+      _client.post(ZhangEndpoints.transactionPreview, body: request.toJson(), decode: TransactionPreview.fromJson);
 
   /// `PUT /api/transactions/{id}` – replaces the whole transaction. Build
   /// [request] with `CreateTransactionRequest.fromJournal` so tags, links,

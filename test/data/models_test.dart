@@ -427,6 +427,54 @@ void main() {
     });
   });
 
+  group('transaction preview', () {
+    test('clean preview', () {
+      final p = TransactionPreview.fromJson(fixtureData('transaction_preview.json'));
+      expect(p.isClean, isTrue);
+      expect(p.unbalanced, isEmpty);
+      expect(p.text, contains('Assets:WeChat -32.50 CNY'));
+    });
+
+    test('refused field: no text, balance not checked', () {
+      final p = TransactionPreview.fromJson(fixtureData('transaction_preview_errors.json'));
+      expect(p.isClean, isFalse);
+      expect(p.text, isNull);
+      expect(p.unbalanced, isNull);
+      final f = p.fieldErrors.single;
+      expect(f.posting, 1);
+      expect(f.field, 'account');
+      expect(f.kind, 'invalid_account');
+      expect(f.value, 'Foo:Bar');
+      expect(f.message, startsWith('invalid account "Foo:Bar"'));
+    });
+
+    test('unbalanced (captured)', () {
+      final p = TransactionPreview.fromJson(fixtureData('transaction_preview_unbalanced.json'));
+      expect(p.isUnbalanced, isTrue);
+      expect(p.unbalanced, [Amount(d('-1'), 'CNY')]);
+      expect(p.errors.single.type, 'UnbalancedTransaction');
+    });
+
+    test('ledger errors and unbalanced amounts', () {
+      final p = TransactionPreview.fromJson({
+        'text': '2026-10-03 09:30:00 * "V" ""\n  Assets:Nope -1 CNY\n  Expenses:Medical',
+        'field_errors': [],
+        'unbalanced': [
+          {'number': '-1', 'commodity': 'CNY'},
+        ],
+        'errors': [
+          {
+            'error_type': 'AccountDoesNotExist',
+            'metas': {'account_name': 'Assets:Nope'},
+          },
+        ],
+      });
+      expect(p.isUnbalanced, isTrue);
+      expect(p.errors.single.type, 'AccountDoesNotExist');
+      expect(p.errors.single.account, 'Assets:Nope');
+    });
+  });
+
   test('balance requests', () {
     final check = BalanceCheckRequest(amount: Amount(d('20.50'), 'CNY'));
     expect(check.toJson(), {

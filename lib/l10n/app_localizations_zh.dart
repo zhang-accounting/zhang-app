@@ -375,6 +375,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addSaveFailed => '未能保存';
 
   @override
+  String get addPreviewRejected => '未保存——账本会报告以下问题：';
+
+  @override
+  String addPreviewUnbalanced(String amounts) {
+    return '分录不平衡（相差 $amounts）。';
+  }
+
+  @override
+  String addPreviewAccountMissing(String account) {
+    return '账户 $account 未开立。';
+  }
+
+  @override
+  String addPreviewAccountClosed(String account) {
+    return '账户 $account 已关闭。';
+  }
+
+  @override
   String get addDiscardTitle => '放弃这笔？';
 
   @override
