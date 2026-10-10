@@ -2,26 +2,32 @@
 // against a running zhang server without auth. NOT part of `flutter test`
 // (needs a server + device):
 //
-//   zhang serve /tmp/zhang-app-lineB --addr 127.0.0.1 --port 18030 --no-report
+//   zhang serve /tmp/zhang-v3-ledger --addr 127.0.0.1 --port 18080 --no-report
 //   flutter test integration_test/browse_live_test.dart -d <simulator-id> \
-//     [--dart-define=ZHANG_URL=http://127.0.0.1:18030] \
+//     [--dart-define=ZHANG_URL=http://127.0.0.1:18080] \
 //     [--dart-define=ZHANG_SCREENSHOT_PAUSE=6]   # seconds to hold each state for screenshots
 //
 // Prints `ZHANG_STATE <name>` when a state is ready (home, journal, detail).
-// Replaces the app's saved profiles with one pointing at ZHANG_URL.
+// Replaces the app's saved profiles with one pointing at ZHANG_URL. The
+// ledger needs a failing balance check on the first page of the journal
+// (the zhang-app test ledger has `2023-09-10 23:00:00 balance Assets:WeChat
+// 100 CNY`; see docs/dev.md).
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zhang_app/app.dart';
 import 'package:zhang_app/data/profiles/profile_repository.dart';
+import 'package:zhang_app/data/repositories/ledger_data_providers.dart';
 import 'package:zhang_app/data/profiles/secret_store.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/main.dart' as app;
 
-const _url = String.fromEnvironment('ZHANG_URL', defaultValue: 'http://127.0.0.1:18030');
+const _url = String.fromEnvironment('ZHANG_URL', defaultValue: 'http://127.0.0.1:18080');
 const _pause = int.fromEnvironment('ZHANG_SCREENSHOT_PAUSE');
 
 void _log(String message) {
@@ -73,6 +79,9 @@ void main() {
     final newest = page1.first;
     final target = page2.first; // first item of the second page
     final latest = DateTime.parse(newest['datetime']! as String);
+    // zhang ≥ 0.2: balance checks carry `asserted` / `passed`.
+    final failedCheck = page1.firstWhere((r) => r['type'] == 'BalanceCheck' && r['passed'] == false);
+    final asserted = (failedCheck['asserted']! as Map)['number'];
 
     // One active profile pointing at the server.
     final prefs = await SharedPreferences.getInstance();
@@ -90,8 +99,9 @@ void main() {
     expect(find.byKey(const Key('home.summary')), findsOneWidget);
     await _waitFor(tester, find.byKey(const Key('home.summary.expense')));
     // Walk the summary back to the month of the newest transaction so the
-    // card shows real figures.
-    final now = DateTime.now();
+    // card shows real figures ("now" by the ledger's clock).
+    final container = ProviderScope.containerOf(tester.element(find.byType(ZhangApp)));
+    final now = container.read(ledgerClockProvider)();
     final months = (now.year - latest.year) * 12 + now.month - latest.month;
     for (var i = 0; i < months; i++) {
       await tester.tap(find.byKey(const Key('home.prevMonth')));
@@ -131,6 +141,19 @@ void main() {
     await tester.pumpAndSettle();
     _log('ZHANG_RESULT journal page2-first=${target['id']} payee=${target['payee']}');
     await _hold(tester, 'journal');
+
+    // The failing balance check (page 1) shows the asserted amount, flagged.
+    final checkRow = find.byKey(Key('journal.row.${failedCheck['id']}'));
+    await tester.scrollUntilVisible(checkRow, -300, scrollable: list.first);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: checkRow, matching: find.text('Balance check failed')), findsOneWidget);
+    final checkTexts = find.descendant(of: checkRow, matching: find.byType(Text)).evaluate()
+        .map((e) => (e.widget as Text).data)
+        .join(' | ');
+    _log('ZHANG_RESULT failed check asserted=$asserted row="$checkTexts"');
+    expect(checkTexts, contains(asserted.toString()));
+    await tester.scrollUntilVisible(targetRow, 300, scrollable: list.first);
+    await tester.pumpAndSettle();
 
     // --- Detail ------------------------------------------------------------
     await tester.tap(targetRow);

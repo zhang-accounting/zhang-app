@@ -1,10 +1,10 @@
 // Live end-to-end check of the "记一笔" flow against a running zhang server
 // (no auth). NOT part of `flutter test` (needs a server + simulator):
 //
-//   zhang serve /tmp/zhang-app-lineA --addr 127.0.0.1 --port 18020 --no-report
+//   zhang serve /tmp/zhang-v3-ledger --addr 127.0.0.1 --port 18080 --no-report
 //   flutter test integration_test/add_transaction_live_test.dart -d <simulator-id> \
-//     [--dart-define=ZHANG_URL=http://127.0.0.1:18020] \
-//     [--dart-define=ZHANG_LEDGER_DIR=/tmp/zhang-app-lineA] \
+//     [--dart-define=ZHANG_URL=http://127.0.0.1:18080] \
+//     [--dart-define=ZHANG_LEDGER_DIR=/tmp/zhang-v3-ledger] \
 //     [--dart-define=ZHANG_SCREENSHOT_PAUSE=6]   # seconds to hold states for screenshots
 //
 // Prints `ZHANG_STATE <name>` when a state worth a screenshot is on screen.
@@ -13,19 +13,24 @@ import 'dart:io';
 
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zhang_app/app.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/models/journal.dart';
 import 'package:zhang_app/data/profiles/profile_repository.dart';
 import 'package:zhang_app/data/profiles/secret_store.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/journal_repository.dart';
+import 'package:zhang_app/data/repositories/ledger_data_providers.dart';
+import 'package:zhang_app/data/repositories/ledger_events.dart';
+import 'package:zhang_app/data/repositories/ledger_revision.dart';
 import 'package:zhang_app/main.dart' as app;
 
-const _url = String.fromEnvironment('ZHANG_URL', defaultValue: 'http://127.0.0.1:18020');
-const _ledgerDir = String.fromEnvironment('ZHANG_LEDGER_DIR', defaultValue: '/tmp/zhang-app-lineA');
+const _url = String.fromEnvironment('ZHANG_URL', defaultValue: 'http://127.0.0.1:18080');
+const _ledgerDir = String.fromEnvironment('ZHANG_LEDGER_DIR', defaultValue: '/tmp/zhang-v3-ledger');
 const _pause = int.fromEnvironment('ZHANG_SCREENSHOT_PAUSE');
 
 void _log(String line) {
@@ -95,6 +100,13 @@ void main() {
 
     await tester.pumpWidget(await app.bootstrap());
     await _waitFor(tester, find.byKey(const Key('shell.newTransaction')));
+    final container = ProviderScope.containerOf(tester.element(find.byType(ZhangApp)));
+    // Home is up; the SSE stream should be connected by now.
+    for (var i = 0; i < 50 && !container.read(ledgerEventsProvider).connected; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    }
+    final sse = container.read(ledgerEventsProvider).connected;
+    final revisionBefore = container.read(ledgerRevisionProvider);
     await tester.tap(find.byKey(const Key('shell.newTransaction')));
     await tester.pumpAndSettle();
 
@@ -123,12 +135,22 @@ void main() {
 
     await _tapKey(tester, 'add.key.save'); // "="
     expect(tester.widget<Text>(find.byKey(const Key('add.amount'))).data, '¥15.5');
-    await tester.tap(find.byKey(const Key('add.key.save'))); // save
+    await tester.tap(find.byKey(const Key('add.key.save'))); // preview, then save
+    final saveStart = DateTime.now();
     await _waitFor(tester, find.byKey(const Key('shell.newTransaction')));
     expect(find.byKey(const Key('add.payee')), findsNothing, reason: 'screen closed after saving');
     expect(find.descendant(of: find.byType(SnackBar), matching: find.textContaining(payee)), findsOneWidget,
         reason: 'snackbar (Home may already list the new row too)');
     await _hold(tester, 'saved');
+
+    // Home lists the new row once the server's SSE `Reload` arrived (the
+    // 600 ms timer is only the fallback without the stream).
+    final homeRow = find.descendant(of: find.byType(ListTile), matching: find.text(payee));
+    await _waitFor(tester, homeRow, seconds: 10);
+    final refreshMs = DateTime.now().difference(saveStart).inMilliseconds;
+    _log('ZHANG_RESULT sse connected=$sse revision $revisionBefore->${container.read(ledgerRevisionProvider)} '
+        'home row after ${refreshMs}ms');
+    expect(sse, isTrue, reason: 'GET /api/sse connected');
 
     // The server has the transaction (it reloads asynchronously → poll).
     final journals = JournalRepository(ZhangApiClient(profile));
@@ -147,6 +169,11 @@ void main() {
     expect(postings['Assets:WeChat']?.commodity, 'CNY');
     expect(postings['Expenses:PersonalDiet:Lunch']?.number, Decimal.parse('15.5'));
     expect(saved.isBalanced, isTrue);
+    // Written in the ledger's wall-clock time (ledger.now) – within a minute
+    // or two of the ledger clock when saved.
+    final ledgerNow = container.read(ledgerClockProvider)();
+    _log('ZHANG_RESULT datetime ${saved.datetime} ledger clock $ledgerNow');
+    expect(saved.datetime.difference(ledgerNow).inMinutes.abs(), lessThan(5));
 
     // The ledger text gained the entry (the simulator can read host /tmp).
     final hits = await tester.runAsync(() async {

@@ -2,13 +2,14 @@
 // zhang server without auth. NOT part of `flutter test` (needs a server +
 // device):
 //
-//   zhang serve /tmp/zhang-app-lineC --addr 127.0.0.1 --port 18040 --no-report
+//   zhang serve /tmp/zhang-v3-ledger --addr 127.0.0.1 --port 18080 --no-report
 //   flutter test integration_test/accounts_reports_live_test.dart -d <simulator-id> \
-//     [--dart-define=ZHANG_URL=http://127.0.0.1:18040] \
+//     [--dart-define=ZHANG_URL=http://127.0.0.1:18080] \
 //     [--dart-define=ZHANG_SCREENSHOT_PAUSE=6]   # seconds to hold each state for screenshots
 //
-// The ledger needs postings in the current and the previous month for the
-// report charts (the examples/ ledger stops in 2023; seed a throw-away copy).
+// The ledger needs postings in the current and the previous month (by the
+// ledger's clock) for the report charts (the examples/ ledger stops in 2023;
+// seed a throw-away copy, see docs/dev.md).
 // Replaces the app's saved profiles with one profile for ZHANG_URL.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,12 +20,14 @@ import 'package:zhang_app/app.dart';
 import 'package:zhang_app/data/profiles/profile_repository.dart';
 import 'package:zhang_app/data/profiles/secret_store.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
+import 'package:zhang_app/data/repositories/ledger_data_providers.dart';
 import 'package:zhang_app/features/accounts/account_detail_screen.dart';
+import 'package:zhang_app/features/journals/transaction_detail_screen.dart';
 import 'package:zhang_app/features/stats/report_period.dart';
 import 'package:zhang_app/features/stats/reports_providers.dart';
 import 'package:zhang_app/main.dart' as app;
 
-const _url = String.fromEnvironment('ZHANG_URL', defaultValue: 'http://127.0.0.1:18040');
+const _url = String.fromEnvironment('ZHANG_URL', defaultValue: 'http://127.0.0.1:18080');
 const _pause = int.fromEnvironment('ZHANG_SCREENSHOT_PAUSE');
 
 Finder _key(String k) => find.byKey(Key(k));
@@ -91,18 +94,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AccountDetailScreen), findsOneWidget);
     await _waitFor(tester, _key('accountDetail.firstRow'));
+    // accounts.balance_history (built-in query) feeds the chart.
     await _waitFor(tester, _key('accountDetail.balanceChart'));
     _log('detail balance ${_text(tester, _key('accountDetail.balance'))}');
     await _hold(tester, 'account-detail');
+
+    // A posting opens its transaction (trx_id is the transaction id).
+    await _show(tester, 'accountDetail.list', _key('accountDetail.firstRow'), 200);
+    await tester.tap(_key('accountDetail.firstRow'));
+    await tester.pumpAndSettle();
+    await _waitFor(tester, find.byType(TransactionDetailScreen));
+    await _waitFor(tester, _key('trx.amount'));
+    final subtitle = find.byKey(const Key('trx.subtitle'));
+    _log('posting detail ${subtitle.evaluate().isEmpty ? '' : _text(tester, subtitle)} '
+        'amount ${_text(tester, _key('trx.amount'))}');
+    await _hold(tester, 'posting-detail');
+    await tester.pageBack();
+    await tester.pumpAndSettle();
     await tester.pageBack();
     await tester.pumpAndSettle();
 
     // ---- Reports: current month.
     await tester.tap(find.byIcon(Icons.bar_chart_outlined));
     await tester.pumpAndSettle();
-    final now = DateTime.now();
+    final now = container.read(ledgerClockProvider)();
     expect(container.read(reportPeriodProvider), ReportPeriod.month(now));
     await _waitFor(tester, _key('reports.kpi.income'));
+    String kpi(String k) => find
+        .descendant(of: _key('reports.kpi.$k'), matching: find.byType(Text))
+        .evaluate()
+        .map((e) => (e.widget as Text).data)
+        .join(' ');
+    _log('kpis income="${kpi('income')}" expense="${kpi('expense')}" net="${kpi('net')}"');
     await _waitFor(tester, _key('reports.cashflowChart'));
     expect(_key('reports.kpi.expense'), findsOneWidget);
     expect(_key('reports.kpi.net'), findsOneWidget);
