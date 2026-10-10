@@ -1,6 +1,6 @@
-import '../../core/utils/dates.dart';
 import 'amount.dart';
 import 'json_utils.dart';
+import 'query_result.dart';
 
 /// The five top-level account types (first segment of an account name).
 enum AccountType {
@@ -95,13 +95,10 @@ class AccountDetail extends Account {
   final String rawType;
 }
 
-/// A posting as seen from one account (`AccountJournal`): items of
-/// `/api/accounts/{name}/journals`, `top_transactions` of
-/// `/api/statistic/{type}` and `Posting` items of budget intervals.
-///
-/// Careful: in `/api/accounts/{name}/journals` [trxId] is a *posting* id
-/// (server bug) and cannot be used to open/edit the transaction; in the
-/// statistic and budget endpoints it is the real transaction id.
+/// A posting as seen from one account: items of
+/// `/api/accounts/{name}/journals`, rows of the `report.top_postings` and
+/// `budgets.postings` built-in queries. [trxId] is the transaction id
+/// everywhere (the same id as in `/api/journals`).
 class AccountJournalEntry {
   const AccountJournalEntry({
     required this.datetime,
@@ -125,11 +122,40 @@ class AccountJournalEntry {
     accountAfter: Amount.fromJson(m['account_after']),
   );
 
+  /// `report.top_postings` row: `[date, time, timestamp, account, id, payee,
+  /// narration, units, account_balance, value]`.
+  factory AccountJournalEntry.fromTopPosting(QueryRow r) => AccountJournalEntry(
+    datetime: r.dateTime('date', 'time'),
+    timestamp: r.integer('timestamp'),
+    account: r.string('account'),
+    trxId: r.stringOrNull('id') ?? '',
+    payee: r.stringOrNull('payee'),
+    narration: r.stringOrNull('narration'),
+    inferredUnit: r.amount('units'),
+    accountAfter: r.amount('account_balance'),
+  );
+
+  /// `budgets.postings` row: `[date, time, timestamp, account, id, payee,
+  /// narration, units, balance]`.
+  factory AccountJournalEntry.fromBudgetPosting(QueryRow r) => AccountJournalEntry(
+    datetime: r.dateTime('date', 'time'),
+    timestamp: r.integer('timestamp'),
+    account: r.string('account'),
+    trxId: r.stringOrNull('id') ?? '',
+    payee: r.stringOrNull('payee'),
+    narration: r.stringOrNull('narration'),
+    inferredUnit: r.amount('units'),
+    accountAfter: r.amount('balance'),
+  );
+
   /// Naive ledger-local wall-clock time.
   final DateTime datetime;
 
   /// Epoch seconds (true instant).
   final int timestamp;
+
+  /// The posting's account: the requested account or one of its
+  /// sub-accounts.
   final String account;
   final String trxId;
   final String? payee;
@@ -144,14 +170,9 @@ class AccountJournalEntry {
   bool get isBalanceItem => payee == 'Balance Check' || payee == 'Balance Pad';
 }
 
-/// One point of `/api/accounts/{name}/balances`.
+/// One point of an account's balance history.
 class BalancePoint {
   const BalancePoint({required this.date, required this.balance});
-
-  factory BalancePoint.fromJson(JsonMap m) => BalancePoint(
-    date: ZhangDates.parseDate(reqString(m, 'date')),
-    balance: Amount.fromJson(m['balance']),
-  );
 
   /// Local midnight of the `YYYY-MM-DD` date.
   final DateTime date;
@@ -160,19 +181,23 @@ class BalancePoint {
   final Amount balance;
 }
 
-/// `GET /api/accounts/{name}/balances`: per-commodity daily balances,
-/// **sorted ascending by date** (the server sends them unsorted).
+/// Daily balances per commodity of an account **and its sub-accounts**
+/// (built-in `accounts.balance_history`), sorted ascending by date.
 class AccountBalanceHistory {
   const AccountBalanceHistory(this.byCommodity);
 
-  factory AccountBalanceHistory.fromJson(Object? json) {
-    final m = asMap(json, 'balances');
-    final balance = m['balance'] == null ? const <String, Object?>{} : asMap(m['balance']);
-    return AccountBalanceHistory({
-      for (final e in balance.entries)
-        e.key: parseList(e.value, BalancePoint.fromJson, 'balance.${e.key}')
-          ..sort((a, b) => a.date.compareTo(b.date)),
-    });
+  /// Rows `[date, currency, balance]` (date order).
+  factory AccountBalanceHistory.fromQuery(QueryResult result) {
+    final out = <String, List<BalancePoint>>{};
+    for (final r in result.rows) {
+      final balance = r.amount('balance');
+      final currency = r.stringOrNull('currency') ?? balance.commodity;
+      out.putIfAbsent(currency, () => []).add(BalancePoint(date: r.date('date'), balance: balance));
+    }
+    for (final points in out.values) {
+      points.sort((a, b) => a.date.compareTo(b.date));
+    }
+    return AccountBalanceHistory(out);
   }
 
   final Map<String, List<BalancePoint>> byCommodity;

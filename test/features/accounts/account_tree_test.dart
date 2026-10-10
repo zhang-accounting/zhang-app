@@ -120,14 +120,14 @@ void main() {
       expect(buildAccountTree(_accounts, query: 'nothing-like-this').isEmpty, isTrue);
     });
 
-    test('works on the API fixture (multi-currency, unconverted BTC)', () {
+    test('works on the API fixture (multi-currency, BTC valued through USD)', () {
       final list = (fixtureData('accounts.json') as List)
           .map((e) => Account.fromJson((e as Map).cast<String, Object?>()))
           .toList();
       final t = buildAccountTree(list);
       final assets = t.sections.first.root;
-      expect(assets.balances, {'BTC': d('0.01'), 'CNY': d('134614'), 'USD': d('-260')});
-      expect(assets.calculated, d('132768.0'));
+      expect(assets.balances, {'BTC': d('0.01'), 'CNY': d('450102.10'), 'USD': d('-250')});
+      expect(assets.calculated, d('450174.60')); // includes BTC 0.01 = 1885 CNY
     });
   });
 
@@ -178,7 +178,7 @@ void main() {
       expect(nw.unconverted, isEmpty);
     });
 
-    test('flags held commodities without a price to the operating currency', () {
+    test('valued commodities are not flagged although they lack a direct price', () {
       final list = (fixtureData('accounts.json') as List)
           .map((e) => Account.fromJson((e as Map).cast<String, Object?>()))
           .toList();
@@ -187,9 +187,23 @@ void main() {
           (c as Map)['name'] as String: Commodity.fromJson(c.cast<String, Object?>()),
       };
       final nw = computeNetWorth(list, operatingCurrency: 'CNY', commodities: commodities);
-      expect(nw.assets, d('132768.0'));
-      expect(nw.liabilities, d('-474.229'));
-      expect(nw.unconverted, ['BTC']); // USD has a CNY price
+      expect(nw.assets, d('450174.60'));
+      expect(nw.liabilities, d('-1244.1775'));
+      expect(nw.unconverted, isEmpty); // BTC is valued through its USD price
+    });
+
+    test('flags commodities the server valued at 0', () {
+      final btc = Commodity(name: 'BTC', precision: 8, totalAmount: d('1'));
+      final nw = computeNetWorth(
+        [
+          acc('Assets:Crypto', detail: {'CNY': '10', 'BTC': '1'}, calculated: '10'),
+          acc('Assets:Bank', detail: {'CNY': '5'}),
+        ],
+        operatingCurrency: 'CNY',
+        commodities: {'BTC': btc},
+      );
+      expect(nw.assets, d('15'));
+      expect(nw.unconverted, ['BTC']);
     });
   });
 }

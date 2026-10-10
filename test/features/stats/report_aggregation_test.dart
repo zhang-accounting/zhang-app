@@ -4,6 +4,7 @@ import 'package:zhang_app/data/models/models.dart';
 import 'package:zhang_app/features/stats/report_aggregation.dart';
 import 'package:zhang_app/features/stats/report_period.dart';
 
+import '../../helpers/builtin_fake.dart';
 import '../../helpers/fixtures.dart';
 
 Decimal d(String v) => Decimal.parse(v);
@@ -18,7 +19,13 @@ RankItem item(String key, String value) =>
 
 void main() {
   group('aggregateRank', () {
-    final rank = StatisticRank.fromJson(fixtureData('statistic_rank.json'));
+    final rank = StatisticRank.fromResults(
+      QueryResult.fromJson(batchResult('statistic_rank.json', 0)),
+      QueryResult.fromJson(batchResult('statistic_rank.json', 1)),
+      from: DateTime(2023, 9),
+      to: DateTime(2023, 9, 30),
+      currency: 'CNY',
+    );
 
     test('top level aggregates to the second segment, sorted by value desc', () {
       final items = aggregateRank(rank.detail, 'Expenses');
@@ -32,7 +39,7 @@ void main() {
       expect(items.first.value, d('468')); // 170 + 298
       expect(items.first.hasChildren, isTrue);
       expect(items.first.label, 'PersonalDiet');
-      expect(items[1].value, d('182.229')); // converted (CNY 90 + USD 12.99)
+      expect(items[1].value, d('184.1775')); // converted (CNY 90 + USD 12.99 × 7.25)
       expect(items[1].hasChildren, isFalse);
       expect(items[3].hasChildren, isTrue); // GrandLordCompany:Tax
     });
@@ -134,10 +141,11 @@ void main() {
       expect(buckets[0].income, d('200'));
       expect(buckets[0].expense, d('53'));
       expect(buckets[0].net, d('147'));
-      expect(buckets[4].expense, d('108.229'));
+      expect(buckets[2].income, d('34'));
+      expect(buckets[4].expense, d('110.1775')); // incl. USD 12.99 at 7.25
       expect(buckets[4].income, Decimal.zero);
       final total = buckets.fold(Decimal.zero, (s, b) => s + b.expense);
-      expect(total, d('161.229'));
+      expect(total, d('373.6775'));
 
       final august = bucketCashflow(graph, ReportPeriod.month(DateTime(2023, 8)));
       expect(august.every((b) => b.income == Decimal.zero && b.expense == Decimal.zero), isTrue);
@@ -146,8 +154,8 @@ void main() {
     test('year view: monthly buckets', () {
       final buckets = bucketCashflow(graph, ReportPeriod.year(DateTime(2023)));
       expect(buckets.length, 12);
-      expect(buckets[8].income, d('200'));
-      expect(buckets[8].expense, d('161.229'));
+      expect(buckets[8].income, d('234'));
+      expect(buckets[8].expense, d('373.6775'));
     });
   });
 

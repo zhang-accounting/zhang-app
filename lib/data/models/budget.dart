@@ -1,9 +1,11 @@
 import '../../core/utils/dates.dart';
 import 'account.dart';
 import 'amount.dart';
-import 'json_utils.dart';
+import 'query_result.dart';
 
-/// `GET /api/budgets?year&month` item (`BudgetListItem`).
+/// A budget in one month: a row of the built-in `budgets.month` /
+/// `budgets.budget_month` queries (`[name, alias, category, currency,
+/// last_month, assigned, activity, available, closed]`).
 class Budget {
   const Budget({
     required this.name,
@@ -15,15 +17,19 @@ class Budget {
     required this.availableAmount,
   });
 
-  factory Budget.fromJson(JsonMap m) => Budget(
-    name: reqString(m, 'name'),
-    alias: optString(m, 'alias'),
-    category: optString(m, 'category'),
-    closed: optBool(m, 'closed'),
-    assignedAmount: Amount.fromJson(m['assigned_amount']),
-    activityAmount: Amount.fromJson(m['activity_amount']),
-    availableAmount: Amount.fromJson(m['available_amount']),
-  );
+  factory Budget.fromQueryRow(QueryRow r) {
+    final assigned = r.amount('assigned');
+    final currency = r.stringOrNull('currency') ?? assigned.commodity;
+    return Budget(
+      name: r.string('name'),
+      alias: r.stringOrNull('alias'),
+      category: r.stringOrNull('category'),
+      closed: r.booleanOrNull('closed') ?? false,
+      assignedAmount: assigned,
+      activityAmount: Amount(r.decimal('activity'), currency),
+      availableAmount: r.amount('available'),
+    );
+  }
 
   final String name;
   final String? alias;
@@ -44,7 +50,8 @@ class Budget {
   String get displayName => (alias == null || alias!.isEmpty) ? name : alias!;
 }
 
-/// `GET /api/budgets/{name}?year&month`.
+/// A budget in one month with its linked accounts (`budgets.budget` +
+/// `budgets.budget_month`).
 class BudgetDetail extends Budget {
   const BudgetDetail({
     required super.name,
@@ -57,8 +64,10 @@ class BudgetDetail extends Budget {
     this.relatedAccounts = const [],
   });
 
-  factory BudgetDetail.fromJson(JsonMap m) {
-    final b = Budget.fromJson(m);
+  /// [month] is the `budgets.budget_month` row, [budget] the
+  /// `budgets.budget` row (its `accounts` set).
+  factory BudgetDetail.fromQueryRows(QueryRow month, QueryRow budget) {
+    final b = Budget.fromQueryRow(month);
     return BudgetDetail(
       name: b.name,
       alias: b.alias,
@@ -67,7 +76,7 @@ class BudgetDetail extends Budget {
       assignedAmount: b.assignedAmount,
       activityAmount: b.activityAmount,
       availableAmount: b.availableAmount,
-      relatedAccounts: stringList(m['related_accounts']),
+      relatedAccounts: budget.stringSet('accounts'),
     );
   }
 
@@ -75,44 +84,32 @@ class BudgetDetail extends Budget {
   final List<String> relatedAccounts;
 }
 
-/// Item of `GET /api/budgets/{name}/interval/{year}/{month}` (newest first).
+/// Item of a budget's month history (events and postings, newest first).
 sealed class BudgetIntervalItem {
   const BudgetIntervalItem();
-
-  factory BudgetIntervalItem.fromJson(JsonMap m) {
-    final type = reqString(m, 'type');
-    return switch (type) {
-      'BudgetEvent' => BudgetEvent.fromJson(m),
-      'Posting' => BudgetPosting(AccountJournalEntry.fromJson(m)),
-      _ => throw FormatException('unknown budget interval item type "$type"'),
-    };
-  }
 
   /// Epoch seconds.
   int get timestamp;
 }
 
-/// `{"type":"BudgetEvent","timestamp","amount","event_type"}`.
+/// A `budgets.events` row: `[date, time, timestamp, type, amount]`.
 class BudgetEvent extends BudgetIntervalItem {
   const BudgetEvent({required this.timestamp, required this.amount, required this.eventType});
 
-  factory BudgetEvent.fromJson(JsonMap m) => BudgetEvent(
-    timestamp: reqInt(m, 'timestamp'),
-    amount: Amount.fromJson(m['amount']),
-    eventType: reqString(m, 'event_type'),
-  );
+  factory BudgetEvent.fromQueryRow(QueryRow r) =>
+      BudgetEvent(timestamp: r.integer('timestamp'), amount: r.amount('amount'), eventType: r.string('type'));
 
   @override
   final int timestamp;
   final Amount amount;
 
-  /// `AddAssignedAmount` | `Transfer`.
+  /// `assign` (a `budget-add`; transfers are two assigns).
   final String eventType;
 
   DateTime get instant => ZhangDates.fromEpochSeconds(timestamp);
 }
 
-/// `{"type":"Posting", …AccountJournal fields}` (real transaction id).
+/// A `budgets.postings` row (a posting on a linked account).
 class BudgetPosting extends BudgetIntervalItem {
   const BudgetPosting(this.entry);
 

@@ -1,38 +1,396 @@
 {
  "data": {
-  "balance": {
-   "USD": [
+  "columns": [
+   {
+    "name": "date",
+    "type": "date"
+   },
+   {
+    "name": "currency",
+    "type": "str"
+   },
+   {
+    "name": "balance",
+    "type": "amount"
+   }
+  ],
+  "rows": [
+   [
+    "2023-05-31",
+    "CNY",
     {
-     "date": "2023-09-06",
-     "balance": {
-      "number": "-260",
-      "commodity": "USD"
-     }
+     "number": "135125",
+     "currency": "CNY"
     }
    ],
-   "CNY": [
+   [
+    "2023-06-02",
+    "CNY",
     {
-     "date": "2023-08-03",
-     "balance": {
-      "number": "134857",
-      "commodity": "CNY"
-     }
-    },
+     "number": "135066",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-03",
+    "CNY",
     {
-     "date": "2023-08-29",
-     "balance": {
-      "number": "134702",
-      "commodity": "CNY"
-     }
-    },
+     "number": "135075",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-05",
+    "CNY",
     {
-     "date": "2023-06-26",
-     "balance": {
-      "number": "134980",
-      "commodity": "CNY"
-     }
+     "number": "135082",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-06",
+    "CNY",
+    {
+     "number": "135056",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-07",
+    "CNY",
+    {
+     "number": "135043",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-08",
+    "CNY",
+    {
+     "number": "135022",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-09",
+    "CNY",
+    {
+     "number": "135008",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-11",
+    "CNY",
+    {
+     "number": "135032",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-14",
+    "CNY",
+    {
+     "number": "135020",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-15",
+    "CNY",
+    {
+     "number": "135003",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-16",
+    "CNY",
+    {
+     "number": "134990",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-18",
+    "CNY",
+    {
+     "number": "135017",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-19",
+    "CNY",
+    {
+     "number": "135007",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-21",
+    "CNY",
+    {
+     "number": "134982",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-22",
+    "CNY",
+    {
+     "number": "135026",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-24",
+    "CNY",
+    {
+     "number": "135029",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-25",
+    "CNY",
+    {
+     "number": "135007",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-06-26",
+    "CNY",
+    {
+     "number": "134980",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-07-08",
+    "CNY",
+    {
+     "number": "134963",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-07-10",
+    "CNY",
+    {
+     "number": "134945",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-07-15",
+    "CNY",
+    {
+     "number": "134913",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-07-16",
+    "CNY",
+    {
+     "number": "134885",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-07-21",
+    "CNY",
+    {
+     "number": "134921",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-07-26",
+    "CNY",
+    {
+     "number": "134894",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-07-30",
+    "CNY",
+    {
+     "number": "134874",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-03",
+    "CNY",
+    {
+     "number": "134857",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-06",
+    "CNY",
+    {
+     "number": "134865",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-07",
+    "CNY",
+    {
+     "number": "134824",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-08",
+    "CNY",
+    {
+     "number": "134795",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-13",
+    "CNY",
+    {
+     "number": "134785",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-14",
+    "CNY",
+    {
+     "number": "134770",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-20",
+    "CNY",
+    {
+     "number": "134743",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-22",
+    "CNY",
+    {
+     "number": "134759",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-24",
+    "CNY",
+    {
+     "number": "134749",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-25",
+    "CNY",
+    {
+     "number": "134785",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-26",
+    "CNY",
+    {
+     "number": "134740",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-27",
+    "CNY",
+    {
+     "number": "134724",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-08-29",
+    "CNY",
+    {
+     "number": "134702",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-09-01",
+    "CNY",
+    {
+     "number": "134690",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-09-06",
+    "USD",
+    {
+     "number": "-250",
+     "currency": "USD"
+    }
+   ],
+   [
+    "2023-09-08",
+    "CNY",
+    {
+     "number": "134641",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-09-09",
+    "CNY",
+    {
+     "number": "134619",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-09-12",
+    "CNY",
+    {
+     "number": "134645",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-09-13",
+    "CNY",
+    {
+     "number": "134661",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-09-14",
+    "CNY",
+    {
+     "number": "134631",
+     "currency": "CNY"
+    }
+   ],
+   [
+    "2023-09-15",
+    "CNY",
+    {
+     "number": "134614",
+     "currency": "CNY"
     }
    ]
-  }
+  ]
  }
 }

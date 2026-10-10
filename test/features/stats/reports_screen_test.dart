@@ -1,45 +1,44 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zhang_app/core/utils/dates.dart';
 import 'package:zhang_app/features/accounts/account_detail_screen.dart';
 import 'package:zhang_app/features/stats/report_period.dart';
 import 'package:zhang_app/features/stats/reports_providers.dart';
 
+import '../../helpers/builtin_fake.dart';
 import '../../helpers/fake_adapter.dart';
 import '../../helpers/fixtures.dart';
 import '../accounts/ledger_app_harness.dart';
 
-final _incomeRank = {
-  'from': '2023-08-31T15:00:00',
-  'to': '2023-09-30T14:59:59',
-  'detail': [
-    {
-      'account': 'Income:Salary',
-      'amount': {
-        'calculated': {'number': '-200', 'commodity': 'CNY'},
-        'detail': {'CNY': '-200'},
+/// `report.account_totals` for Income (two accounts), in the captured
+/// column layout.
+Map<String, Object?> _incomeTotals() {
+  Map<String, Object?> inv(String n) => {
+    'positions': [
+      {
+        'units': {'number': n, 'currency': 'CNY'},
+        'cost': null,
       },
-    },
-    {
-      'account': 'Income:Publisher:A',
-      'amount': {
-        'calculated': {'number': '-148', 'commodity': 'CNY'},
-        'detail': {'CNY': '-148'},
-      },
-    },
-  ],
-  'top_transactions': [],
-};
+    ],
+  };
+  return {
+    ...batchResult('statistic_rank.json', 0),
+    'rows': [
+      ['Income:Salary', inv('-200'), inv('-200')],
+      ['Income:Publisher:A', inv('-148'), inv('-148')],
+    ],
+  };
+}
+
+FakeBuiltins _builtins() => FakeBuiltins({
+  'report.account_totals': (p) =>
+      p['type'] == 'Income' ? _incomeTotals() : batchResult('statistic_rank.json', 0),
+});
 
 ResponseBody _route(String path, RequestOptions o) => switch (path) {
-  '/statistic/summary' => jsonResponse(fixture('statistic_summary.json')),
   '/statistic/graph' => jsonResponse(fixture('statistic_graph.json')),
-  '/statistic/Expenses' => jsonResponse(fixture('statistic_rank.json')),
-  '/statistic/Income' => data(_incomeRank),
   '/accounts' => data(const []),
   _ when path.endsWith('/journals') => jsonResponse(fixture('account_journals.json')),
-  _ when path.endsWith('/balances') => jsonResponse(fixture('account_balances.json')),
   _ when path.startsWith('/accounts/') => jsonResponse(fixture('account_detail.json')),
   _ => jsonResponse({'message': 'not found'}, status: 404),
 };
@@ -58,14 +57,25 @@ Future<void> _show(WidgetTester tester, Finder finder, {double delta = 200}) asy
 
 void main() {
   testWidgets('reports: KPIs, bars, donut, drill-down, open account, step period', (tester) async {
-    final (container, adapter) = await pumpLedgerApp(tester, _route, now: DateTime(2023, 9, 15, 10));
+    final builtins = _builtins();
+    final (container, adapter) = await pumpLedgerApp(
+      tester,
+      _route,
+      now: DateTime(2023, 9, 15, 10),
+      builtins: builtins,
+    );
     await tester.tap(find.text('Reports'));
     await tester.pumpAndSettle();
 
     expect(_text(tester, 'reports.periodLabel'), 'September 2023');
-    final summaryReq = adapter.requests.lastWhere((r) => r.path == '/statistic/summary');
-    expect(summaryReq.queryParameters['from'], ZhangDates.toRfc3339(DateTime(2023, 9)));
-    expect(summaryReq.queryParameters['to'], ZhangDates.toRfc3339(DateTime(2023, 9, 30, 23, 59, 59)));
+    expect(builtins.callsTo('report.flows').last.params, {
+      'from': '2023-09-01',
+      'to': '2023-09-30',
+      'currency': 'CNY',
+    });
+    expect(builtins.callsTo('report.account_totals').last.params['type'], 'Expenses');
+    final graphReq = adapter.requests.lastWhere((r) => r.path == '/statistic/graph');
+    expect(graphReq.queryParameters, {'from': '2023-09-01', 'to': '2023-09-30', 'interval': 'Day'});
 
     // KPIs from the summary: income flipped to positive, net = income − expense.
     expect(
@@ -73,18 +83,18 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.descendant(of: _key('reports.kpi.expense'), matching: find.text('¥796.73')),
+      find.descendant(of: _key('reports.kpi.expense'), matching: find.text('¥798.68')),
       findsOneWidget,
     );
     expect(
-      find.descendant(of: _key('reports.kpi.net'), matching: find.text('−¥360.73')),
+      find.descendant(of: _key('reports.kpi.net'), matching: find.text('−¥362.68')),
       findsOneWidget,
     );
 
     expect(_key('reports.cashflowChart'), findsOneWidget);
 
     await _show(tester, _key('reports.donut'), delta: 200);
-    expect(_text(tester, 'reports.donutTotal'), '¥796.73');
+    expect(_text(tester, 'reports.donutTotal'), '¥798.68');
 
     // Top level aggregates to the 2nd segment; PersonalDiet drills down.
     await _show(tester, _key('reports.rank.Expenses:PersonalDiet'), delta: 200);
@@ -116,7 +126,7 @@ void main() {
     await _show(tester, _key('reports.rankType'), delta: -200);
     await tester.tap(find.descendant(of: _key('reports.rankType'), matching: find.text('Income')));
     await tester.pumpAndSettle();
-    expect(adapter.requests.any((r) => r.path == '/statistic/Income'), isTrue);
+    expect(builtins.callsTo('report.account_totals').last.params['type'], 'Income');
     await _show(tester, _key('reports.rank.Income:Salary'), delta: 200);
     expect(
       find.descendant(of: _key('reports.rank.Income:Salary'), matching: find.text('¥200.00')),
@@ -129,8 +139,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(_text(tester, 'reports.periodLabel'), 'August 2023');
     expect(container.read(reportPeriodProvider), ReportPeriod.month(DateTime(2023, 8)));
-    final aug = adapter.requests.lastWhere((r) => r.path == '/statistic/summary');
-    expect(aug.queryParameters['from'], ZhangDates.toRfc3339(DateTime(2023, 8)));
+    expect(builtins.callsTo('report.flows').last.params['from'], '2023-08-01');
+    expect(builtins.callsTo('report.flows').last.params['to'], '2023-08-31');
     // The fixture graph has no August postings → empty state instead of axes.
     expect(_key('reports.cashflowEmpty'), findsOneWidget);
 
@@ -151,10 +161,10 @@ void main() {
 
   testWidgets('reports: card-level error with retry', (tester) async {
     var fail = true;
-    await pumpLedgerApp(tester, (path, o) {
-      if (path == '/statistic/summary' && fail) return jsonResponse({'message': 'boom'}, status: 500);
-      return _route(path, o);
-    }, now: DateTime(2023, 9, 15));
+    final builtins = _builtins()
+      ..intercept = (call) =>
+          fail && call.name == 'report.flows' ? jsonResponse({'message': 'boom'}, status: 500) : null;
+    await pumpLedgerApp(tester, _route, now: DateTime(2023, 9, 15), builtins: builtins);
     await tester.tap(find.text('Reports'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Server error 500'), findsOneWidget);

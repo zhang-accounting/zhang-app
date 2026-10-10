@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/account.dart';
 import '../../data/models/statistic.dart';
+import '../../data/repositories/ledger_data_providers.dart';
 import '../../data/repositories/ledger_revision.dart';
 import '../../data/repositories/statistic_repository.dart';
 import 'report_period.dart';
@@ -32,16 +33,19 @@ class ReportPeriodController extends Notifier<ReportPeriod> {
   void step(int delta) => state = state.step(delta);
 }
 
-/// `GET /api/statistic/summary` for a period.
+/// Summary figures of a period (`report.*` built-in queries in the
+/// operating currency).
 final reportSummaryProvider = FutureProvider.autoDispose.family<StatisticSummary, ReportPeriod>((
   ref,
   period,
-) {
+) async {
   ref.watch(ledgerRevisionProvider);
-  return ref.watch(statisticRepositoryProvider).summary(period.start, period.end);
+  final repository = ref.watch(statisticRepositoryProvider);
+  final options = await ref.watch(ledgerOptionsProvider.future);
+  return repository.summary(period.start, period.end, currency: options.operatingCurrency);
 });
 
-/// `GET /api/statistic/graph` for a period (always daily).
+/// `GET /api/statistic/graph` for a period (daily).
 final reportGraphProvider = FutureProvider.autoDispose.family<StatisticGraph, ReportPeriod>((
   ref,
   period,
@@ -50,10 +54,13 @@ final reportGraphProvider = FutureProvider.autoDispose.family<StatisticGraph, Re
   return ref.watch(statisticRepositoryProvider).graph(period.start, period.end);
 });
 
-/// `GET /api/statistic/{type}` for a period.
+/// Per-account totals and top postings of an account type in a period
+/// (`report.account_totals` + `report.top_postings`).
 final reportRankProvider =
-    FutureProvider.autoDispose.family<StatisticRank, (AccountType, ReportPeriod)>((ref, arg) {
+    FutureProvider.autoDispose.family<StatisticRank, (AccountType, ReportPeriod)>((ref, arg) async {
       ref.watch(ledgerRevisionProvider);
       final (type, period) = arg;
-      return ref.watch(statisticRepositoryProvider).rank(type, period.start, period.end);
+      final repository = ref.watch(statisticRepositoryProvider);
+      final options = await ref.watch(ledgerOptionsProvider.future);
+      return repository.rank(type, period.start, period.end, currency: options.operatingCurrency);
     });

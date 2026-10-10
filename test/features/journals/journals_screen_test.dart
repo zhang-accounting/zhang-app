@@ -25,7 +25,7 @@ void main() {
     expect(find.byKey(const ValueKey('journal.item.id-0')), findsOneWidget);
     expect(find.text('September 2023'), findsOneWidget);
     // Month header totals come from the summary endpoint.
-    expect(find.text('Exp ¥796.73'), findsWidgets);
+    expect(find.text('Exp ¥798.68'), findsWidgets);
     expect(find.text('Inc ¥436.00'), findsWidgets);
     // Day header with the day's net (two expenses of 1 and 2 on 2023-09-30).
     expect(

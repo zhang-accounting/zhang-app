@@ -11,6 +11,7 @@ import 'package:zhang_app/data/profiles/secret_store.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/features/stats/reports_providers.dart';
 
+import '../../helpers/builtin_fake.dart';
 import '../../helpers/fake_adapter.dart';
 import '../../helpers/fixtures.dart';
 
@@ -46,12 +47,16 @@ ResponseBody? commonRoute(String path) => switch (path) {
 
 /// Pumps the whole app with an active profile whose API calls are answered
 /// by [handler] (called with the decoded request path, relative to `/api`).
+/// Built-in queries are answered by [builtins] (captured fixtures by
+/// default) before [handler] is asked.
 Future<(ProviderContainer, FakeAdapter)> pumpLedgerApp(
   WidgetTester tester,
   ResponseBody Function(String path, RequestOptions options) handler, {
   DateTime? now,
   Map<String, Object?>? info,
+  FakeBuiltins? builtins,
 }) async {
+  final queries = builtins ?? FakeBuiltins();
   tester.view.physicalSize = const Size(1170, 2532); // 390 x 844 logical
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -61,7 +66,7 @@ Future<(ProviderContainer, FakeAdapter)> pumpLedgerApp(
   final adapter = FakeAdapter((o) {
     final path = Uri.decodeComponent(o.path);
     if (info != null && path == '/info') return jsonResponse(info);
-    return commonRoute(path) ?? handler(path, o);
+    return commonRoute(path) ?? queries.handle(o) ?? handler(path, o);
   });
   client.dio.httpClientAdapter = adapter;
   final container = ProviderContainer(

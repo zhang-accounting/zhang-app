@@ -1,47 +1,223 @@
 {
- "data": {
-  "from": "2023-08-31T15:00:00Z",
-  "to": "2023-09-30T14:59:59Z",
-  "balance": {
-   "calculated": {
-    "number": "296692.771",
-    "commodity": "CNY"
-   },
-   "detail": {
-    "USD": "-272.99",
-    "BTC": "0.01",
-    "CNY": "298631.00"
-   }
+ "data": [
+  {
+   "columns": [
+    {
+     "name": "balance",
+     "type": "inventory"
+    },
+    {
+     "name": "units",
+     "type": "inventory"
+    },
+    {
+     "name": "value",
+     "type": "inventory"
+    }
+   ],
+   "rows": [
+    [
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "0.01",
+         "currency": "BTC"
+        },
+        "cost": {
+         "number": "26000",
+         "currency": "USD",
+         "date": "2023-09-06",
+         "label": null
+        }
+       },
+       {
+        "units": {
+         "number": "444553.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "-262.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "0.01",
+         "currency": "BTC"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "444553.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "-262.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "444531.8225",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ]
+   ]
   },
-  "liability": {
-   "calculated": {
-    "number": "-743.229",
-    "commodity": "CNY"
-   },
-   "detail": {
-    "USD": "-12.99",
-    "CNY": "-651"
-   }
+  {
+   "columns": [
+    {
+     "name": "units",
+     "type": "inventory"
+    },
+    {
+     "name": "value",
+     "type": "inventory"
+    }
+   ],
+   "rows": [
+    [
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "-651",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "-12.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "-745.1775",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ]
+   ]
   },
-  "income": {
-   "calculated": {
-    "number": "-436",
-    "commodity": "CNY"
-   },
-   "detail": {
-    "CNY": "-436"
-   }
+  {
+   "columns": [
+    {
+     "name": "type",
+     "type": "str"
+    },
+    {
+     "name": "units",
+     "type": "inventory"
+    },
+    {
+     "name": "value",
+     "type": "inventory"
+    }
+   ],
+   "rows": [
+    [
+     "Expenses",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "704.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "12.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "798.6775",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ],
+    [
+     "Income",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "-436",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "-436",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ]
+   ]
   },
-  "expense": {
-   "calculated": {
-    "number": "796.729",
-    "commodity": "CNY"
-   },
-   "detail": {
-    "CNY": "704.50",
-    "USD": "12.99"
-   }
-  },
-  "transaction_number": 40
- }
+  {
+   "columns": [
+    {
+     "name": "transactions",
+     "type": "int"
+    }
+   ],
+   "rows": [
+    [
+     40
+    ]
+   ]
+  }
+ ]
 }

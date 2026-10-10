@@ -5,9 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zhang_app/data/models/models.dart';
 import 'package:zhang_app/data/repositories/journal_repository.dart';
 
+import '../helpers/builtin_fake.dart';
 import '../helpers/fixtures.dart';
 
 Decimal d(String s) => Decimal.parse(s);
+
+QueryResult q(Map<String, Object?> json) => QueryResult.fromJson(json);
 
 void main() {
   group('amounts', () {
@@ -29,10 +32,31 @@ void main() {
     });
   });
 
-  test('info', () {
-    final info = ServerInfo.fromJson(fixtureData('info.json'));
-    expect(info.title, 'My Accounting');
-    expect(info.version, '0.1.0');
+  group('info', () {
+    test('v0.2 info has format and no reload failure', () {
+      final info = ServerInfo.fromJson(fixtureData('info.json'));
+      expect(info.title, 'My Accounting');
+      expect(info.version, '0.1.0');
+      expect(info.format, 'zhang');
+      expect(info.reloadFailure, isNull);
+      expect(info.isSupported, isTrue);
+    });
+
+    test('a reload failure is parsed', () {
+      final info = ServerInfo.fromJson({
+        'title': 'My Accounting',
+        'version': '0.1.0',
+        'build_date': '2026-10-10',
+        'format': 'zhang',
+        'reload_failure': {'file': 'data/2023/12.zhang', 'message': 'cannot parse data/2023/12.zhang'},
+      });
+      expect(info.reloadFailure, const ReloadFailure(file: 'data/2023/12.zhang', message: 'cannot parse data/2023/12.zhang'));
+    });
+
+    test('an info without format (zhang < 0.2) is not supported', () {
+      final info = ServerInfo.fromJson({'title': 'x', 'version': '0.1.0', 'build_date': '2026-10-02'});
+      expect(info.isSupported, isFalse);
+    });
   });
 
   test('options', () {
@@ -43,14 +67,19 @@ void main() {
     expect(o['default_booking_method'], 'FIFO');
   });
 
-  test('errors (pageable)', () {
-    final p = Pageable.fromJson(fixtureData('errors.json'), LedgerError.fromJson);
-    expect(p.totalCount, 2);
-    expect(p.records.first.type, LedgerErrorType.unbalancedTransaction);
-    expect(p.records.first.span!.filename, 'data/2023/12.zhang');
-    expect(p.records.last.type, LedgerErrorType.accountBalanceCheckError);
-    expect(p.records.last.metas['account_name'], 'Assets:WeChat');
+  test('ledger errors (journals.errors rows)', () {
+    final result = q(singleResult('errors.json'));
+    expect(result.total, 2);
+    final errors = [for (final r in result.rows) LedgerError.fromQueryRow(r)];
+    expect(errors.first.type, LedgerErrorType.unbalancedTransaction);
+    expect(errors.first.span!.filename, 'data/2023/12.zhang');
+    expect(errors.first.span!.line, 38);
+    expect(errors.first.span!.content, startsWith('2023-09-08 11:00:00 "Oops" "Unbalanced"'));
+    expect(errors.first.metas['txn_id'], errors.first.id);
+    expect(errors.last.type, LedgerErrorType.accountBalanceCheckError);
+    expect(errors.last.metas['account_name'], 'Assets:WeChat');
     expect(LedgerErrorType.fromWire('SomethingNew'), LedgerErrorType.unknown);
+    expect(LedgerErrorType.fromWire('CommodityNotAllowed'), LedgerErrorType.commodityNotAllowed);
   });
 
   group('journals', () {
@@ -150,55 +179,69 @@ void main() {
     });
   });
 
-  test('for-new-transaction filters synthetic payees and sorts', () {
-    final f = ForNewTransaction.fromJson(fixtureData('for_new_transaction.json'));
+  test('for-new-transaction from journals.payees + journals.accounts', () {
+    final f = ForNewTransaction.fromResults(
+      q(batchResult('for_new_transaction.json', 0)),
+      q(batchResult('for_new_transaction.json', 1)),
+    );
     expect(f.payees, isNot(contains('Balance Check')));
     expect(f.payees, isNot(contains('Balance Pad')));
     expect(f.payees.first, 'Adidas');
-    expect(f.accountNames.first, 'Assets:Paypal');
+    expect(f.payees.last, '隆江猪脚饭');
+    expect(f.accountNames.first, 'Assets:CitiBank:9999');
+    expect(f.accountNames, contains('Expenses:Groceries'));
   });
 
   group('accounts', () {
     test('list', () {
       final list = parseList(fixtureData('accounts.json'), Account.fromJson);
-      final apple = list.first;
-      expect(apple.type, AccountType.liabilities);
-      expect(apple.isOpen, isTrue);
-      expect(apple.amount.calculated, Amount(d('-474.229'), 'CNY'));
-      expect(apple.amount.detail, {'CNY': d('-382'), 'USD': d('-12.99')});
-      expect(list[1].amount.nonZeroDetail, [Amount(d('0.01'), 'BTC')]);
+      final citi = list.first;
+      expect(citi.name, 'Assets:CitiBank:9999');
+      expect(citi.type, AccountType.assets);
+      expect(citi.isOpen, isTrue);
+      final crypto = list[1];
+      expect(crypto.amount.calculated, Amount(d('1885.0000'), 'CNY'), reason: 'BTC valued via its USD price');
+      expect(crypto.amount.nonZeroDetail, [Amount(d('0.01'), 'BTC')]);
       expect(list[2].shortName, 'Paypal');
+      expect(list[2].amount.detail, {'CNY': d('134614'), 'USD': d('-250')});
     });
 
     test('detail', () {
       final a = AccountDetail.fromJson(fixtureData('account_detail.json') as Map<String, Object?>);
       expect(a.openDate, DateTime(1970));
       expect(a.rawType, 'Assets');
-      expect(a.amount.calculated.number, d('132768'));
+      expect(a.amount.calculated.number, d('132801.50'));
     });
 
-    test('journals (timestamp + naive datetime)', () {
+    test('journals (timestamp, naive datetime, real transaction id)', () {
       final list = parseList(fixtureData('account_journals.json'), AccountJournalEntry.fromJson);
-      expect(list.first.datetime, DateTime(2023, 9, 13, 14, 25));
-      expect(list.first.timestamp, 1694582700);
+      expect(list.first.datetime, DateTime(2026, 10, 6, 8));
+      expect(list.first.timestamp, 1791241200);
+      expect(list.first.account, 'Assets:WeChat');
+      expect(list.first.payee, 'Pending Shop');
       expect(list.last.isBalanceItem, isTrue);
     });
 
-    test('balances are sorted by date', () {
-      final h = AccountBalanceHistory.fromJson(fixtureData('account_balances.json'));
+    test('balance history (accounts.balance_history) grouped by currency and sorted', () {
+      final h = AccountBalanceHistory.fromQuery(q(singleResult('account_balances.json')));
       expect(h.commodities, ['CNY', 'USD']);
-      expect(h.byCommodity['CNY']!.map((p) => p.date), [
-        DateTime(2023, 6, 26),
-        DateTime(2023, 8, 3),
-        DateTime(2023, 8, 29),
-      ]);
+      final cny = h.byCommodity['CNY']!;
+      expect(cny.first.date, DateTime(2023, 5, 31));
+      expect(cny.first.balance, Amount(d('135125'), 'CNY'));
+      for (var i = 1; i < cny.length; i++) {
+        expect(cny[i].date.isBefore(cny[i - 1].date), isFalse);
+      }
     });
 
-    test('documents', () {
-      final docs = parseList(fixtureData('account_documents.json'), DocumentEntity.fromJson);
-      expect(docs.single.mimeType, isNull);
-      expect(docs.single.b64Path, 'YXR0YWNobWVudHMvcmVjZWlwdC50eHQ=');
-      expect(docs.single.isDownloadable, isTrue);
+    test('documents (accounts.documents)', () {
+      final docs = [for (final r in q(singleResult('account_documents.json')).rows) DocumentEntity.fromQueryRow(r)];
+      final doc = docs.single;
+      expect(doc.filename, 'receipt.txt');
+      expect(doc.mimeType, 'text/plain');
+      expect(doc.account, 'Assets:Paypal');
+      expect(doc.trxId, isNull);
+      expect(doc.datetime, DateTime(2023, 9, 7));
+      expect(doc.b64Path, 'YXR0YWNobWVudHMvcmVjZWlwdC50eHQ=');
     });
 
     test('AccountType helpers', () {
@@ -208,11 +251,17 @@ void main() {
     });
   });
 
-  test('documents', () {
-    final docs = parseList(fixtureData('documents.json'), DocumentEntity.fromJson);
+  test('documents (journals.documents, newest first)', () {
+    final docs = [for (final r in q(singleResult('documents.json')).rows) DocumentEntity.fromQueryRow(r)];
+    expect(docs, hasLength(3));
     expect(docs.first.isImage, isTrue);
-    expect(docs.first.trxId, '7c785595-5694-c51e-dd34-115dc2cddeb1');
-    expect(docs[1].account, 'Assets:WeChat');
+    expect(docs.first.account, 'Assets:WeChat');
+    expect(docs[1].trxId, '869ee8f5-efa2-1074-bc5d-0b9ef97a15f2');
+    expect(docs[1].filename, 'photo.png');
+    expect(docs[1].datetime, DateTime(2026, 10, 2, 18, 30));
+    expect(docs.last.account, 'Assets:Paypal');
+    expect(DocumentEntity.mimeTypeOf('a/B.JPG'), 'image/jpeg');
+    expect(DocumentEntity.mimeTypeOf('noext'), isNull);
   });
 
   group('commodities', () {
@@ -233,7 +282,7 @@ void main() {
 
     test('detail: lots and chronological prices', () {
       final usd = CommodityDetail.fromJson(fixtureData('commodity_usd.json'));
-      expect(usd.lots, hasLength(3));
+      expect(usd.lots, hasLength(2), reason: 'only Assets and Liabilities lots');
       expect(usd.prices.map((p) => p.amount.number), [d('7.1'), d('7.25')]);
       final btc = CommodityDetail.fromJson(fixtureData('commodity_btc.json'));
       expect(btc.lots.single.cost, Amount(d('26000'), 'USD'));
@@ -242,55 +291,109 @@ void main() {
   });
 
   group('statistics', () {
-    test('summary (from/to with Z)', () {
-      final s = StatisticSummary.fromJson(fixtureData('statistic_summary.json'));
-      expect(s.from, DateTime.utc(2023, 8, 31, 15));
-      expect(s.to, DateTime.utc(2023, 9, 30, 14, 59, 59));
-      expect(s.expense.calculated.number, d('796.729'));
+    test('summary from the report.* batch', () {
+      final s = StatisticSummary.fromResults(
+        [for (var i = 0; i < 4; i++) q(batchResult('statistic_summary.json', i))],
+        from: DateTime(2023, 9),
+        to: DateTime(2023, 9, 30),
+        currency: 'CNY',
+      );
+      expect(s.from, DateTime(2023, 9));
+      expect(s.to, DateTime(2023, 9, 30));
+      expect(s.balance.calculated, Amount(d('444531.8225'), 'CNY'));
+      expect(s.balance.detail, {'BTC': d('0.01'), 'CNY': d('444553.50'), 'USD': d('-262.99')});
+      expect(s.liability.calculated, Amount(d('-745.1775'), 'CNY'));
+      expect(s.expense.calculated, Amount(d('798.6775'), 'CNY'));
+      expect(s.expense.detail, {'CNY': d('704.50'), 'USD': d('12.99')});
+      expect(s.income.calculated, Amount(d('-436'), 'CNY'));
       expect(s.income.detail['CNY'], d('-436'));
       expect(s.transactionNumber, 40);
     });
 
-    test('graph (naive UTC echoes, sorted maps)', () {
+    test('summary of a period without flows is zero', () {
+      final flowsColumns = batchResult('statistic_summary.json', 2)['columns'];
+      final s = StatisticSummary.fromResults(
+        [
+          q(batchResult('statistic_summary.json', 0)),
+          q(batchResult('statistic_summary.json', 1)),
+          q({'columns': flowsColumns, 'rows': const <Object?>[]}),
+          q({
+            'columns': [
+              {'name': 'transactions', 'type': 'int'},
+            ],
+            'rows': [
+              [0],
+            ],
+          }),
+        ],
+        from: DateTime(2030),
+        to: DateTime(2030, 1, 31),
+        currency: 'CNY',
+      );
+      expect(s.expense.calculated, Amount(Decimal.zero, 'CNY'));
+      expect(s.income.calculated.number, Decimal.zero);
+      expect(s.transactionNumber, 0);
+    });
+
+    test('graph (ledger-local echoes, sorted maps)', () {
       final g = StatisticGraph.fromJson(fixtureData('statistic_graph.json'));
-      expect(g.from, DateTime.utc(2023, 8, 31, 15));
+      expect(g.from, DateTime(2023, 9));
+      expect(g.to, DateTime(2023, 9, 5, 23, 59, 59));
       expect(g.balances.map((b) => b.date), [
-        DateTime(2023, 8, 31),
-        DateTime(2023, 9, 2),
-        DateTime(2023, 9, 5),
+        for (var day = 1; day <= 5; day++) DateTime(2023, 9, day),
       ]);
       expect(g.changes.first.date, DateTime(2023, 9, 1));
       expect(g.changes.first.byType[AccountType.income]!.calculated.number, d('-200'));
       expect(g.changes.last.byType.keys, containsAll([AccountType.assets, AccountType.expenses]));
     });
 
-    test('rank', () {
-      final r = StatisticRank.fromJson(fixtureData('statistic_rank.json'));
+    test('rank from report.account_totals + report.top_postings', () {
+      final r = StatisticRank.fromResults(
+        q(batchResult('statistic_rank.json', 0)),
+        q(batchResult('statistic_rank.json', 1)),
+        from: DateTime(2023, 9),
+        to: DateTime(2023, 9, 30),
+        currency: 'CNY',
+      );
       expect(r.detail.first.account, 'Expenses:RemunerationTax');
+      expect(r.detail.last.account, 'Expenses:PersonalDiet:Lunch');
       expect(r.detail.last.amount.calculated.number, d('298'));
-      expect(r.topTransactions.first.trxId, '107c541d-653f-cb3a-e16d-ae192ec3684c');
-      expect(r.to, DateTime.utc(2023, 9, 30, 14, 59, 59));
+      final clothing = r.detail.firstWhere((a) => a.account == 'Expenses:Clothing');
+      expect(clothing.amount.calculated, Amount(d('184.1775'), 'CNY'));
+      expect(clothing.amount.detail, {'CNY': d('90'), 'USD': d('12.99')});
+      final top = r.topTransactions.first;
+      expect(top.trxId, '257ba3ec-06a5-60a6-c012-db8495939e46');
+      expect(top.datetime, DateTime(2023, 9, 5, 10));
+      expect(top.inferredUnit, Amount(d('12.99'), 'USD'));
+      expect(top.payee, 'UNIQLO');
+      expect(r.to, DateTime(2023, 9, 30));
     });
   });
 
   group('budgets', () {
-    test('list and detail', () {
-      final list = parseList(fixtureData('budgets.json'), Budget.fromJson);
+    test('month list and detail', () {
+      final list = [for (final r in q(singleResult('budgets.json')).rows) Budget.fromQueryRow(r)];
       expect(list.single.displayName, 'Eating');
+      expect(list.single.assignedAmount, Amount(d('1000'), 'CNY'));
+      expect(list.single.activityAmount, Amount(d('88.50'), 'CNY'));
       expect(list.single.availableAmount, Amount(d('911.50'), 'CNY'));
-      final detail = BudgetDetail.fromJson(fixtureData('budget_detail.json') as Map<String, Object?>);
+      final detail = BudgetDetail.fromQueryRows(
+        q(batchResult('budget_detail.json', 1)).rows.single,
+        q(batchResult('budget_detail.json', 0)).rows.single,
+      );
       expect(detail.relatedAccounts, ['Expenses:Groceries']);
       expect(detail.category, 'Living');
     });
 
-    test('interval items', () {
-      final items = parseList(fixtureData('budget_interval.json'), BudgetIntervalItem.fromJson);
-      expect(items.first, isA<BudgetPosting>());
-      expect((items.first as BudgetPosting).entry.payee, 'Supermarket');
-      final event = items.last as BudgetEvent;
-      expect(event.eventType, 'AddAssignedAmount');
+    test('events and postings', () {
+      final event = BudgetEvent.fromQueryRow(q(batchResult('budget_interval.json', 0)).rows.single);
+      expect(event.eventType, 'assign');
       expect(event.amount.number, d('1000'));
       expect(event.instant, DateTime.utc(2023, 8, 31, 15));
+      final posting = AccountJournalEntry.fromBudgetPosting(q(batchResult('budget_interval.json', 1)).rows.single);
+      expect(posting.payee, 'Supermarket');
+      expect(posting.trxId, '3bcdbf6a-ae47-0f9d-679a-3c4257b87b17');
+      expect(posting.accountAfter, Amount(d('88.50'), 'CNY'));
     });
   });
 
@@ -328,5 +431,6 @@ void main() {
       'page=1&size=20&keyword=a%20b&tags[0]=weekly&tags[1]=food&links[0]=r-1',
     );
     expect(const JournalQuery(page: 0, size: 0).toQueryString(), 'page=1&size=1');
+    expect(const JournalQuery(size: 5000).toQueryString(), 'page=1&size=1000');
   });
 }

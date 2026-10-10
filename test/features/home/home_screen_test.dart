@@ -3,26 +3,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zhang_app/data/repositories/ledger_revision.dart';
 import 'package:zhang_app/features/home/home_screen.dart';
 
-import '../../helpers/fixtures.dart';
 import '../journals/fake_server.dart';
 import '../journals/journal_test_utils.dart';
 import '../journals/screen_test_utils.dart';
 
 void main() {
   testWidgets('home: summary card, recent rows, error chip, detail', (tester) async {
-    final server = FakeZhangServer(
-      journals: generateExpenses(30),
-      errors: [
-        for (final e in ((fixtureData('errors.json') as Map)['records'] as List)) e as Map<String, Object?>,
-      ],
-    );
+    final server = FakeZhangServer(journals: generateExpenses(30), withErrors: true);
     await pumpApp(tester, server);
 
-    // Summary of the current month from /statistic/summary.
+    // Summary of the current month from the report.* built-in queries.
     expect(find.byKey(const Key('home.summary')), findsOneWidget);
-    expect(find.text('¥796.73'), findsOneWidget);
+    expect(find.text('¥798.68'), findsOneWidget);
     expect(find.text('¥436.00'), findsOneWidget);
-    expect(find.text('−¥360.73'), findsOneWidget);
+    expect(find.text('−¥362.68'), findsOneWidget);
     // Recent transactions: page 1, size 10.
     final recent = server.requestsTo('/journals').single.uri.queryParameters;
     expect(recent['size'], '10');
@@ -49,14 +43,14 @@ void main() {
   testWidgets('home: month switcher refetches the summary for that month', (tester) async {
     final server = FakeZhangServer(journals: generateExpenses(3));
     await pumpApp(tester, server);
-    expect(server.requestsTo('/statistic/summary'), hasLength(1));
+    expect(server.builtins.callsTo('report.flows'), hasLength(1));
     await tester.tap(find.byKey(const Key('home.prevMonth')));
     await tester.pumpAndSettle();
-    expect(server.requestsTo('/statistic/summary'), hasLength(2));
+    expect(server.builtins.callsTo('report.flows'), hasLength(2));
     await tester.tap(find.byKey(const Key('home.nextMonth')));
     await tester.pumpAndSettle();
     // Back to the current month: served from the cache.
-    expect(server.requestsTo('/statistic/summary'), hasLength(2));
+    expect(server.builtins.callsTo('report.flows'), hasLength(2));
   });
 
   testWidgets('home: empty ledger card', (tester) async {
@@ -80,13 +74,13 @@ void main() {
     final server = FakeZhangServer(journals: generateExpenses(3));
     final container = await pumpApp(tester, server);
     expect(find.text('Payee 0'), findsOneWidget);
-    expect(find.text('¥796.73'), findsOneWidget);
+    expect(find.text('¥798.68'), findsOneWidget);
     server.unauthorized = true;
     container.read(ledgerRevisionProvider.notifier).bump();
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('home.authBanner')), findsOneWidget);
     expect(find.text('Payee 0'), findsNothing);
-    expect(find.text('¥796.73'), findsNothing);
+    expect(find.text('¥798.68'), findsNothing);
     expect(find.text('Failed to load'), findsNWidgets(2));
   });
 

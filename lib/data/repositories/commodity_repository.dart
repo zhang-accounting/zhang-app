@@ -17,8 +17,7 @@ class CommodityRepository {
     decode: (d) => parseList(d, Commodity.fromJson, 'commodities')..sort((a, b) => a.name.compareTo(b.name)),
   );
 
-  /// `GET /api/commodities/{name}`. Only pass names returned by [list]: the
-  /// server handler crashes (connection closed) on unknown names.
+  /// `GET /api/commodities/{name}` (`ApiNotFound` for unknown names).
   Future<CommodityDetail> get(String name) =>
       _client.get(ZhangEndpoints.commodity(name), decode: CommodityDetail.fromJson);
 }

@@ -8,6 +8,7 @@ import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/models/models.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 
+import '../helpers/builtin_fake.dart';
 import '../helpers/fake_adapter.dart';
 import '../helpers/fixtures.dart';
 
@@ -45,8 +46,9 @@ void main() {
       final (q, adapter) = _client((_) => jsonResponse(fixture('ledger_now.json')));
       final now = await q.run(const BuiltinQuery('ledger.now'));
       expect(jsonDecode(jsonEncode(adapter.last.data)), {'params': <String, Object?>{}});
-      expect(now.firstOrNull!.date('date'), DateTime(2026, 10, 10));
-      expect(now.firstOrNull!.dateTime('date', 'time'), DateTime(2026, 10, 10, 11, 58, 15));
+      final [date, time] = (singleResult('ledger_now.json')['rows']! as List).single as List;
+      expect(now.firstOrNull!.date('date'), DateTime.parse(date as String));
+      expect(now.firstOrNull!.dateTime('date', 'time'), DateTime.parse('${date}T$time'));
     });
 
     test('runBatch posts [{name, params}] and returns results in order', () async {

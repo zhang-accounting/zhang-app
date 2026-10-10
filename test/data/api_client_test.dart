@@ -3,12 +3,14 @@ import 'dart:io';
 
 import 'package:decimal/decimal.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zhang_app/core/utils/dates.dart';
 import 'package:zhang_app/data/api/api_exception.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/models/models.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/repositories.dart';
 
+import '../helpers/builtin_fake.dart';
 import '../helpers/fake_adapter.dart';
 import '../helpers/fixtures.dart';
 
@@ -123,29 +125,39 @@ void main() {
       );
     });
 
-    test('500 JSON message → ApiServerError(status, message)', () async {
+    test('400 JSON message → ApiServerError(status, message)', () async {
       final (client, _) = _client(
         _base,
-        (_) => jsonResponse({'message': 'core error: account is invalid', 'origin': 'with_rejection'}, status: 500),
+        (_) => jsonResponse({'message': 'invalid account "Foo:Bar": it is `Assets`, …'}, status: 400),
       );
       await expectLater(
-        client.get('/accounts/Foo', decode: (d) => d),
+        client.get('/accounts/Foo:Bar', decode: (d) => d),
         throwsA(
           isA<ApiServerError>()
-              .having((e) => e.status, 'status', 500)
-              .having((e) => e.message, 'message', 'core error: account is invalid'),
+              .having((e) => e.status, 'status', 400)
+              .having((e) => e.message, 'message', startsWith('invalid account "Foo:Bar"')),
         ),
       );
     });
 
-    test('422 plain text → ApiServerError with the text', () async {
+    test('422 JSON (body rejected) → ApiServerError with the message', () async {
       final (client, _) = _client(
         _base,
-        (_) => textResponse('Failed to deserialize the JSON body: missing field `metas`', status: 422),
+        (_) => jsonResponse({
+          'message': 'Failed to deserialize the JSON body into the target type: missing field `metas` at line 1 column 96',
+        }, status: 422),
       );
       await expectLater(
         client.post('/transactions', body: const {}, decode: (d) => d),
         throwsA(isA<ApiServerError>().having((e) => e.message, 'message', contains('missing field'))),
+      );
+    });
+
+    test('plain-text error (e.g. from a reverse proxy) → ApiServerError with the text', () async {
+      final (client, _) = _client(_base, (_) => textResponse('Bad Gateway', status: 502));
+      await expectLater(
+        client.get('/info', decode: (d) => d),
+        throwsA(isA<ApiServerError>().having((e) => e.message, 'message', 'Bad Gateway')),
       );
     });
 
@@ -157,7 +169,7 @@ void main() {
       );
     });
 
-    test('200 text/plain fallback (unknown path / not zhang) → ApiParseError', () async {
+    test('200 text/plain (not a zhang API URL, or the frontend fallback) → ApiParseError', () async {
       final (client, _) = _client(
         _base,
         (_) => textResponse('hello zhang,\nseems you are trying to access the frontend UI'),
@@ -232,22 +244,133 @@ void main() {
       expect(mutated, 1);
     });
 
-    test('statistic range is sent as RFC 3339 UTC', () async {
-      final (client, adapter) = _client(_base, (_) => jsonResponse(fixture('statistic_summary.json')));
-      await StatisticRepository(client).summary(
-        DateTime.utc(2023, 8, 31, 15),
-        DateTime.utc(2023, 9, 30, 14, 59, 59),
+    test('summary: one batch of report.* queries with ledger dates', () async {
+      final builtins = FakeBuiltins();
+      final (client, adapter) = _client(_base, (o) => builtins.handle(o)!);
+      final summary = await StatisticRepository(client).summary(
+        DateTime(2023, 9),
+        DateTime(2023, 9, 30, 23, 59, 59),
+        currency: 'CNY',
       );
-      expect(adapter.last.queryParameters, {
-        'from': '2023-08-31T15:00:00Z',
-        'to': '2023-09-30T14:59:59Z',
-      });
+      expect(adapter.requests, hasLength(1));
+      expect(adapter.last.uri.path, '/api/query/builtins');
+      expect([for (final c in builtins.calls) c.name], [
+        'report.net_worth',
+        'report.liabilities',
+        'report.flows',
+        'report.transaction_count',
+      ]);
+      expect(builtins.calls[2].params, {'from': '2023-09-01', 'to': '2023-09-30', 'currency': 'CNY'});
+      expect(summary.expense.calculated, Amount(Decimal.parse('798.6775'), 'CNY'));
+      expect(summary.to, DateTime(2023, 9, 30));
     });
 
-    test('budget interval rejects invalid months before calling the server', () {
-      final (client, adapter) = _client(_base, (_) => jsonResponse({'data': []}));
-      expect(() => BudgetRepository(client).interval('food', 2023, 13), throwsArgumentError);
-      expect(adapter.requests, isEmpty);
+    test('graph sends ledger dates', () async {
+      final (client, adapter) = _client(_base, (_) => jsonResponse(fixture('statistic_graph.json')));
+      await StatisticRepository(client).graph(DateTime(2023, 9), DateTime(2023, 9, 5, 23, 59, 59));
+      expect(adapter.last.queryParameters, {'from': '2023-09-01', 'to': '2023-09-05', 'interval': 'Day'});
+    });
+
+    test('rank: report.account_totals + report.top_postings for the type', () async {
+      final builtins = FakeBuiltins();
+      final (client, _) = _client(_base, (o) => builtins.handle(o)!);
+      final rank = await StatisticRepository(client).rank(
+        AccountType.expenses,
+        DateTime(2023, 9),
+        DateTime(2023, 9, 30),
+        currency: 'CNY',
+      );
+      expect([for (final c in builtins.calls) c.name], ['report.account_totals', 'report.top_postings']);
+      expect(builtins.calls.first.params, {
+        'type': 'Expenses',
+        'from': '2023-09-01',
+        'to': '2023-09-30',
+        'currency': 'CNY',
+      });
+      expect(rank.detail, hasLength(6));
+      expect(rank.topTransactions.first.payee, 'UNIQLO');
+    });
+
+    test('ledger errors: journals.errors with count_total, paged by offset', () async {
+      final builtins = FakeBuiltins();
+      final (client, adapter) = _client(_base, (o) => builtins.handle(o)!);
+      final page = await LedgerRepository(client).errors(page: 2, size: 5000);
+      expect(adapter.last.uri.path, '/api/query/builtins/journals.errors');
+      expect(jsonDecode(jsonEncode(adapter.last.data)), {
+        'params': {'size': 1000, 'offset': 1000},
+        'count_total': true,
+      });
+      expect(page.totalCount, 2);
+      expect(page.records.first.type, LedgerErrorType.unbalancedTransaction);
+    });
+
+    test('ledger clock: ledger.now as a naive wall-clock DateTime', () async {
+      final builtins = FakeBuiltins();
+      final (client, _) = _client(_base, (o) => builtins.handle(o)!);
+      final now = await LedgerRepository(client).now();
+      final row = (singleResult('ledger_now.json')['rows']! as List).single as List;
+      expect(now.isUtc, isFalse);
+      expect(ZhangDates.toIsoDate(now), row[0]);
+      expect(ZhangDates.toNaiveIso(now), '${row[0]}T${row[1]}');
+    });
+
+    test('account balance history: accounts.balance_history', () async {
+      final builtins = FakeBuiltins();
+      final (client, _) = _client(_base, (o) => builtins.handle(o)!);
+      final h = await AccountRepository(client).balances('Assets:Paypal');
+      expect(builtins.calls.single.params, {'account': 'Assets:Paypal'});
+      expect(h.commodities, ['CNY', 'USD']);
+    });
+
+    test('account journals: 404 (no own open directive) reads as no postings', () async {
+      final (client, _) = _client(_base, (_) => jsonResponse({'message': 'not found'}, status: 404));
+      expect(await AccountRepository(client).journals('Assets:CitiBank'), isEmpty);
+    });
+
+    test('form data: ledger.now first, then payees + accounts open at that instant', () async {
+      final builtins = FakeBuiltins();
+      final (client, adapter) = _client(_base, (o) => builtins.handle(o)!);
+      final f = await JournalRepository(client).forNewTransaction();
+      expect(adapter.requests.map((r) => r.uri.path), [
+        '/api/query/builtins/ledger.now',
+        '/api/query/builtins',
+      ]);
+      final row = (singleResult('ledger_now.json')['rows']! as List).single as List;
+      expect(builtins.callsTo('journals.accounts').single.params, {'date': row[0], 'time': row[1]});
+      expect(f.payees.first, 'Adidas');
+      expect(f.accountNames.first, 'Assets:CitiBank:9999');
+    });
+
+    test('budgets: month list, detail, unknown name, merged history', () async {
+      final builtins = FakeBuiltins({
+        'budgets.budget': (p) => p['name'] == 'food'
+            ? batchResult('budget_detail.json', 0)
+            : {...batchResult('budget_detail.json', 0), 'rows': const <Object?>[]},
+      });
+      final (client, _) = _client(_base, (o) => builtins.handle(o)!);
+      final repo = BudgetRepository(client);
+      final list = await repo.list(year: 2023, month: 9);
+      expect(builtins.callsTo('budgets.month').single.params, {'month': '2023-09-01'});
+      expect(list.single.name, 'food');
+      await repo.list();
+      expect(builtins.callsTo('ledger.now'), hasLength(1), reason: 'current month by the ledger clock');
+      final detail = await repo.get('food', year: 2023, month: 9);
+      expect(detail.relatedAccounts, ['Expenses:Groceries']);
+      await expectLater(repo.get('nope', year: 2023, month: 9), throwsA(isA<ApiNotFound>()));
+      final items = await repo.interval('food', 2023, 9);
+      expect(items.first, isA<BudgetPosting>());
+      expect(items.last, isA<BudgetEvent>());
+      await repo.interval('food', 2023, 13);
+      expect(builtins.callsTo('budgets.events').last.params, {'name': 'food', 'month': '2024-01-01'});
+    });
+
+    test('documents: journals.documents; download by base64 path', () async {
+      final builtins = FakeBuiltins();
+      final (client, adapter) = _client(_base, (o) => builtins.handle(o) ?? textResponse('hello receipt'));
+      final docs = await DocumentRepository(client).list();
+      expect(docs, hasLength(3));
+      await DocumentRepository(client).download(docs.last);
+      expect(adapter.last.uri.path, '/api/documents/YXR0YWNobWVudHMvcmVjZWlwdC50eHQ=');
     });
   });
 }

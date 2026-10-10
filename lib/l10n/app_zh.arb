@@ -142,7 +142,7 @@
   "homeErrorCount": "{count} 个错误",
   "homeErrorsTitle": "账本错误",
   "homeErrorsMore": "显示 {shown} / {total} 条",
-  "homeErrorLocation": "{file} · 第 {offset} 字节",
+  "homeErrorLocation": "{file} 第 {line} 行",
   "homeAuthBanner": "服务器拒绝了保存的凭据。",
   "homeAuthUpdate": "去更新",
   "homeLoadFailed": "加载失败",

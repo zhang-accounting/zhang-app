@@ -1,23 +1,23 @@
-import 'json_utils.dart';
+import 'query_result.dart';
 
-/// `GET /api/for-new-transaction`: suggestions for the entry form.
+/// Suggestions for the entry form: the built-in queries `journals.payees`
+/// (sorted, without the synthetic `Balance Check` / `Balance Pad`) and
+/// `journals.accounts` (accounts open at the ledger's current instant).
 class ForNewTransaction {
   const ForNewTransaction({required this.payees, required this.accountNames});
 
-  /// Synthetic payees the server mixes into the list.
+  /// Payees of balance items in `/api/journals` (never real payees).
   static const syntheticPayees = {'Balance Check', 'Balance Pad'};
 
-  /// Payees are filtered (no `Balance Check` / `Balance Pad`, no blanks) and
-  /// both lists are sorted, since the server returns them unordered.
-  factory ForNewTransaction.fromJson(Object? json) {
-    final m = asMap(json, 'for-new-transaction');
-    final payees = stringList(m['payee'])
-        .where((p) => p.trim().isNotEmpty && !syntheticPayees.contains(p))
-        .toSet()
-        .toList()
-      ..sort();
-    final accounts = stringList(m['account_name']).toSet().toList()..sort();
-    return ForNewTransaction(payees: payees, accountNames: accounts);
+  factory ForNewTransaction.fromResults(QueryResult payees, QueryResult accounts) {
+    final names = <String>{
+      for (final r in payees.rows)
+        if ((r.stringOrNull('payee') ?? '').trim().isNotEmpty) r.string('payee'),
+    };
+    return ForNewTransaction(
+      payees: names.toList(),
+      accountNames: {for (final r in accounts.rows) r.string('account')}.toList(),
+    );
   }
 
   final List<String> payees;

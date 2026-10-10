@@ -44,16 +44,24 @@ class BuiltinQueryClient {
   final ZhangApiClient _client;
 
   /// `POST /api/query/builtins/{name}`.
-  Future<QueryResult> run(BuiltinQuery query) => _client.post(
+  Future<QueryResult> run(BuiltinQuery query) => this.query(query, (r) => r);
+
+  /// [run] and convert the result with [convert]; a [FormatException] from
+  /// [convert] (a cell of an unexpected type) becomes an `ApiParseError`.
+  Future<T> query<T>(BuiltinQuery query, T Function(QueryResult result) convert) => _client.post(
     ZhangEndpoints.builtinQuery(query.name),
     body: query.toRunJson(),
-    decode: QueryResult.fromJson,
+    decode: (d) => convert(QueryResult.fromJson(d)),
   );
 
   /// `POST /api/query/builtins`: several queries over **one** read of the
   /// ledger (consistent figures); results in request order. One failing
   /// query fails the whole batch.
-  Future<List<QueryResult>> runBatch(List<BuiltinQuery> queries) => _client.post(
+  Future<List<QueryResult>> runBatch(List<BuiltinQuery> queries) => batch(queries, (r) => r);
+
+  /// [runBatch] and convert the results with [convert] (errors as in
+  /// [query]).
+  Future<T> batch<T>(List<BuiltinQuery> queries, T Function(List<QueryResult> results) convert) => _client.post(
     ZhangEndpoints.builtinQueries,
     body: [for (final q in queries) q.toBatchJson()],
     decode: (d) {
@@ -61,7 +69,7 @@ class BuiltinQueryClient {
       if (list.length != queries.length) {
         throw FormatException('expected ${queries.length} results, got ${list.length}');
       }
-      return [for (final r in list) QueryResult.fromJson(r)];
+      return convert([for (final r in list) QueryResult.fromJson(r)]);
     },
   );
 }

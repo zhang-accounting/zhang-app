@@ -1,36 +1,77 @@
 {
  "data": {
-  "total_count": 2,
-  "total_page": 1,
-  "page_size": 100,
-  "current_page": 1,
-  "records": [
+  "columns": [
    {
-    "id": "ffdb27ad-bf2d-7315-2b65-381e04f13b2f",
-    "span": {
-     "start": 745,
-     "end": 834,
-     "content": "2023-09-08 11:00:00 \"Oops\" \"Unbalanced\"\n  Assets:Paypal -10 CNY\n  Expenses:Clothing 9 CNY",
-     "filename": "data/2023/12.zhang"
-    },
-    "error_type": "UnbalancedTransaction",
-    "metas": {
-     "txn_id": "ffdb27ad-bf2d-7315-2b65-381e04f13b2f"
-    }
+    "name": "id",
+    "type": "str"
    },
    {
-    "id": "9bc091c4-5de3-08b6-eb05-e2806277c9ea",
-    "span": {
-     "start": 836,
-     "end": 885,
-     "content": "2023-09-10 23:00:00 balance Assets:WeChat 100 CNY",
-     "filename": "data/2023/12.zhang"
-    },
-    "error_type": "AccountBalanceCheckError",
-    "metas": {
-     "account_name": "Assets:WeChat"
-    }
+    "name": "kind",
+    "type": "str"
+   },
+   {
+    "name": "file",
+    "type": "str"
+   },
+   {
+    "name": "line",
+    "type": "int"
+   },
+   {
+    "name": "column",
+    "type": "int"
+   },
+   {
+    "name": "span_start",
+    "type": "int"
+   },
+   {
+    "name": "span_end",
+    "type": "int"
+   },
+   {
+    "name": "source",
+    "type": "str"
+   },
+   {
+    "name": "metas",
+    "type": "metas"
    }
-  ]
+  ],
+  "rows": [
+   [
+    "3e7db305-4932-5fd7-cdc2-87bbe220182f",
+    "UnbalancedTransaction",
+    "data/2023/12.zhang",
+    38,
+    1,
+    956,
+    1045,
+    "2023-09-08 11:00:00 \"Oops\" \"Unbalanced\"\n  Assets:Paypal -10 CNY\n  Expenses:Clothing 9 CNY",
+    [
+     {
+      "key": "txn_id",
+      "value": "3e7db305-4932-5fd7-cdc2-87bbe220182f"
+     }
+    ]
+   ],
+   [
+    "df53cd51-5af0-3150-e3b4-a0394ab02ea4",
+    "AccountBalanceCheckError",
+    "data/2023/12.zhang",
+    42,
+    1,
+    1047,
+    1096,
+    "2023-09-10 23:00:00 balance Assets:WeChat 100 CNY",
+    [
+     {
+      "key": "account_name",
+      "value": "Assets:WeChat"
+     }
+    ]
+   ]
+  ],
+  "total": 2
  }
 }

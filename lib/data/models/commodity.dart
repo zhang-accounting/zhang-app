@@ -108,8 +108,7 @@ class CommodityPrice {
   final Amount amount;
 }
 
-/// `GET /api/commodities/{name}`. Only request names from the list endpoint:
-/// unknown names crash the server handler.
+/// `GET /api/commodities/{name}`.
 class CommodityDetail {
   const CommodityDetail({required this.info, this.lots = const [], this.prices = const []});
 

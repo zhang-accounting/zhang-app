@@ -1,6 +1,6 @@
-import 'json_utils.dart';
+import 'query_result.dart';
 
-/// Known `error_type` values of `GET /api/errors`.
+/// Known `kind` values of the built-in `journals.errors` query.
 enum LedgerErrorType {
   unbalancedTransaction('UnbalancedTransaction'),
   transactionCannotInferTradeAmount('TransactionCannotInferTradeAmount'),
@@ -16,6 +16,7 @@ enum LedgerErrorType {
   defineDuplicatedBudget('DefineDuplicatedBudget'),
   multipleOperatingCurrencyDetect('MultipleOperatingCurrencyDetect'),
   parseInvalidMeta('ParseInvalidMeta'),
+  commodityNotAllowed('CommodityNotAllowed'),
 
   /// Any value this client does not know yet (see [LedgerError.rawType]).
   unknown('');
@@ -32,14 +33,14 @@ enum LedgerErrorType {
 
 /// Source location of a ledger error.
 class ErrorSpan {
-  const ErrorSpan({required this.start, required this.end, required this.content, this.filename});
-
-  factory ErrorSpan.fromJson(JsonMap m) => ErrorSpan(
-    start: reqInt(m, 'start'),
-    end: reqInt(m, 'end'),
-    content: optString(m, 'content') ?? '',
-    filename: optString(m, 'filename'),
-  );
+  const ErrorSpan({
+    required this.start,
+    required this.end,
+    required this.content,
+    this.filename,
+    this.line,
+    this.column,
+  });
 
   /// Byte offsets in [filename].
   final int start;
@@ -50,9 +51,14 @@ class ErrorSpan {
 
   /// Path relative to the ledger root.
   final String? filename;
+
+  /// 1-based line and column of [start].
+  final int? line;
+  final int? column;
 }
 
-/// One entry of `GET /api/errors` (`ErrorEntity`).
+/// One ledger error: a row of the built-in `journals.errors` query
+/// (`[id, kind, file, line, column, span_start, span_end, source, metas]`).
 class LedgerError {
   const LedgerError({
     required this.id,
@@ -62,16 +68,24 @@ class LedgerError {
     this.metas = const {},
   });
 
-  factory LedgerError.fromJson(JsonMap m) {
-    final raw = reqString(m, 'error_type');
-    final span = m['span'];
-    final metas = m['metas'];
+  factory LedgerError.fromQueryRow(QueryRow r) {
+    final raw = r.string('kind');
+    final start = r.integerOrNull('span_start');
     return LedgerError(
-      id: reqString(m, 'id'),
-      span: span == null ? null : ErrorSpan.fromJson(asMap(span, 'span')),
+      id: r.stringOrNull('id') ?? '',
+      span: start == null
+          ? null
+          : ErrorSpan(
+              start: start,
+              end: r.integerOrNull('span_end') ?? start,
+              content: r.stringOrNull('source') ?? '',
+              filename: r.stringOrNull('file'),
+              line: r.integerOrNull('line'),
+              column: r.integerOrNull('column'),
+            ),
       type: LedgerErrorType.fromWire(raw),
       rawType: raw,
-      metas: metas == null ? const {} : {for (final e in asMap(metas).entries) e.key: '${e.value}'},
+      metas: {for (final m in r.metas('metas')) m.key: m.value},
     );
   }
 
@@ -80,7 +94,7 @@ class LedgerError {
   final ErrorSpan? span;
   final LedgerErrorType type;
 
-  /// `error_type` exactly as sent by the server.
+  /// `kind` exactly as sent by the server.
   final String rawType;
 
   /// Context such as `txn_id`, `account_name`.

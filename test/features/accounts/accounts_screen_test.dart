@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zhang_app/features/accounts/account_detail_screen.dart';
 
+import '../../helpers/builtin_fake.dart';
 import '../../helpers/fake_adapter.dart';
 import '../../helpers/fixtures.dart';
 import 'ledger_app_harness.dart';
@@ -21,7 +22,6 @@ final _accounts = [
 ResponseBody _route(String path, RequestOptions o) {
   if (path == '/accounts') return data(_accounts);
   if (path.endsWith('/journals')) return jsonResponse(fixture('account_journals.json'));
-  if (path.endsWith('/balances')) return jsonResponse(fixture('account_balances.json'));
   if (path.startsWith('/accounts/')) return jsonResponse(fixture('account_detail.json'));
   return jsonResponse({'message': 'not found'}, status: 404);
 }
@@ -106,9 +106,9 @@ void main() {
     expect(_key('accountDetail.balanceChart'), findsOneWidget);
     await tester.scrollUntilVisible(_key('accountDetail.firstRow'), 200, scrollable: _scrollable('accountDetail.list'));
     final first = _key('accountDetail.firstRow');
-    expect(find.descendant(of: first, matching: find.text('Github Restaurant')), findsOneWidget);
-    expect(find.descendant(of: first, matching: find.text('−¥25.00')), findsOneWidget);
-    expect(find.descendant(of: first, matching: find.text('¥59.00')), findsOneWidget); // running balance
+    expect(find.descendant(of: first, matching: find.text('Pending Shop')), findsOneWidget);
+    expect(find.descendant(of: first, matching: find.text('−¥9.90')), findsOneWidget);
+    expect(find.descendant(of: first, matching: find.text('¥146,039.60')), findsOneWidget); // running balance
     await tester.scrollUntilVisible(
       find.text('Balance check'),
       200,
@@ -140,10 +140,12 @@ void main() {
   });
 
   testWidgets('account detail: empty journals', (tester) async {
-    final (container, _) = await pumpLedgerApp(tester, (path, o) {
+    final noHistory = FakeBuiltins({
+      'accounts.balance_history': (_) => {...singleResult('account_balances.json'), 'rows': const <Object?>[]},
+    });
+    final (container, _) = await pumpLedgerApp(tester, builtins: noHistory, (path, o) {
       if (path == '/accounts') return data([accountJson('Assets:Cash', {'CNY': '0'})]);
       if (path.endsWith('/journals')) return data(const []);
-      if (path.endsWith('/balances')) return data({'balance': {}});
       return data({
         'date': '2023-01-01T00:00:00',
         'type': 'Assets',

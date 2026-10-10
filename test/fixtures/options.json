@@ -1,12 +1,8 @@
 {
  "data": [
   {
-   "key": "title",
-   "value": "My Accounting"
-  },
-  {
-   "key": "default_rounding",
-   "value": "RoundDown"
+   "key": "timezone",
+   "value": "Asia/Tokyo"
   },
   {
    "key": "default_balance_tolerance_precision",
@@ -17,20 +13,24 @@
    "value": "FIFO"
   },
   {
-   "key": "timezone",
-   "value": "Asia/Tokyo"
+   "key": "directive_output_path",
+   "value": "data/{{year}}/{{month_str}}.{{ext}}"
+  },
+  {
+   "key": "operating_currency",
+   "value": "CNY"
   },
   {
    "key": "default_commodity_precision",
    "value": "2"
   },
   {
-   "key": "directive_output_path",
-   "value": "data/{{year}}/{{month_str}}.zhang"
+   "key": "title",
+   "value": "My Accounting"
   },
   {
-   "key": "operating_currency",
-   "value": "CNY"
+   "key": "default_rounding",
+   "value": "RoundDown"
   }
  ]
 }

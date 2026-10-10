@@ -1,12 +1,35 @@
 {
- "data": [
-  {
-   "datetime": "2023-09-07T00:00:00",
-   "filename": "receipt.txt",
-   "path": "attachments/receipt.txt",
-   "extension": null,
-   "account": "Assets:Paypal",
-   "trx_id": null
-  }
- ]
+ "data": {
+  "columns": [
+   {
+    "name": "date",
+    "type": "date"
+   },
+   {
+    "name": "time",
+    "type": "str"
+   },
+   {
+    "name": "account",
+    "type": "str"
+   },
+   {
+    "name": "path",
+    "type": "str"
+   },
+   {
+    "name": "transaction_id",
+    "type": "str"
+   }
+  ],
+  "rows": [
+   [
+    "2023-09-07",
+    "00:00:00",
+    "Assets:Paypal",
+    "attachments/receipt.txt",
+    null
+   ]
+  ]
+ }
 }

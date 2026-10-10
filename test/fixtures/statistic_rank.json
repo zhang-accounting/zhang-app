@@ -1,115 +1,435 @@
 {
- "data": {
-  "from": "2023-08-31T15:00:00",
-  "to": "2023-09-30T14:59:59",
-  "detail": [
-   {
-    "account": "Expenses:RemunerationTax",
-    "amount": {
-     "calculated": {
-      "number": "28",
-      "commodity": "CNY"
-     },
-     "detail": {
-      "CNY": "28"
-     }
+ "data": [
+  {
+   "columns": [
+    {
+     "name": "account",
+     "type": "str"
+    },
+    {
+     "name": "units",
+     "type": "inventory"
+    },
+    {
+     "name": "value",
+     "type": "inventory"
     }
-   },
-   {
-    "account": "Expenses:GrandLordCompany:Tax",
-    "amount": {
-     "calculated": {
-      "number": "30",
-      "commodity": "CNY"
+   ],
+   "rows": [
+    [
+     "Expenses:RemunerationTax",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "28",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
      },
-     "detail": {
-      "CNY": "30"
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "28",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
      }
+    ],
+    [
+     "Expenses:GrandLordCompany:Tax",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "30",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "30",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ],
+    [
+     "Expenses:Groceries",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "88.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "88.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ],
+    [
+     "Expenses:PersonalDiet:Dinner",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "170",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "170",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ],
+    [
+     "Expenses:Clothing",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "90",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "12.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "184.1775",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ],
+    [
+     "Expenses:PersonalDiet:Lunch",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "298",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "298",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ]
+   ]
+  },
+  {
+   "columns": [
+    {
+     "name": "date",
+     "type": "date"
+    },
+    {
+     "name": "time",
+     "type": "str"
+    },
+    {
+     "name": "timestamp",
+     "type": "int"
+    },
+    {
+     "name": "account",
+     "type": "str"
+    },
+    {
+     "name": "id",
+     "type": "str"
+    },
+    {
+     "name": "payee",
+     "type": "str"
+    },
+    {
+     "name": "narration",
+     "type": "str"
+    },
+    {
+     "name": "units",
+     "type": "amount"
+    },
+    {
+     "name": "account_balance",
+     "type": "amount"
+    },
+    {
+     "name": "value",
+     "type": "amount"
     }
-   },
-   {
-    "account": "Expenses:Groceries",
-    "amount": {
-     "calculated": {
+   ],
+   "rows": [
+    [
+     "2023-09-05",
+     "10:00:00",
+     1693875600,
+     "Expenses:Clothing",
+     "257ba3ec-06a5-60a6-c012-db8495939e46",
+     "UNIQLO",
+     "Shirt in USD",
+     {
+      "number": "12.99",
+      "currency": "USD"
+     },
+     {
+      "number": "12.99",
+      "currency": "USD"
+     },
+     {
+      "number": "94.1775",
+      "currency": "CNY"
+     }
+    ],
+    [
+     "2023-09-03",
+     "12:30:00",
+     1693711800,
+     "Expenses:Groceries",
+     "3bcdbf6a-ae47-0f9d-679a-3c4257b87b17",
+     "Supermarket",
+     "Weekly groceries",
+     {
       "number": "88.50",
-      "commodity": "CNY"
+      "currency": "CNY"
      },
-     "detail": {
-      "CNY": "88.50"
-     }
-    }
-   },
-   {
-    "account": "Expenses:PersonalDiet:Dinner",
-    "amount": {
-     "calculated": {
-      "number": "170",
-      "commodity": "CNY"
+     {
+      "number": "88.50",
+      "currency": "CNY"
      },
-     "detail": {
-      "CNY": "170"
+     {
+      "number": "88.50",
+      "currency": "CNY"
      }
-    }
-   },
-   {
-    "account": "Expenses:Clothing",
-    "amount": {
-     "calculated": {
-      "number": "182.229",
-      "commodity": "CNY"
+    ],
+    [
+     "2023-09-01",
+     "08:00:00",
+     1693522800,
+     "Expenses:GrandLordCompany:Tax",
+     "0f2fa233-33ef-cfb4-8b7f-b28e21c007f9",
+     "GrandLordCompany",
+     "Salary",
+     {
+      "number": "30",
+      "currency": "CNY"
      },
-     "detail": {
-      "CNY": "90",
-      "USD": "12.99"
-     }
-    }
-   },
-   {
-    "account": "Expenses:PersonalDiet:Lunch",
-    "amount": {
-     "calculated": {
-      "number": "298",
-      "commodity": "CNY"
+     {
+      "number": "904",
+      "currency": "CNY"
      },
-     "detail": {
-      "CNY": "298"
+     {
+      "number": "30",
+      "currency": "CNY"
      }
-    }
-   }
-  ],
-  "top_transactions": [
-   {
-    "datetime": "2023-09-03T12:30:00",
-    "timestamp": 1693711800,
-    "account": "Expenses:Groceries",
-    "trx_id": "107c541d-653f-cb3a-e16d-ae192ec3684c",
-    "payee": "Supermarket",
-    "narration": "Weekly groceries",
-    "inferred_unit": {
-     "number": "88.50",
-     "commodity": "CNY"
-    },
-    "account_after": {
-     "number": "88.50",
-     "commodity": "CNY"
-    }
-   },
-   {
-    "datetime": "2023-09-01T08:00:00",
-    "timestamp": 1693522800,
-    "account": "Expenses:GrandLordCompany:Tax",
-    "trx_id": "0f2fa233-33ef-cfb4-8b7f-b28e21c007f9",
-    "payee": "GrandLordCompany",
-    "narration": "Salary",
-    "inferred_unit": {
-     "number": "30",
-     "commodity": "CNY"
-    },
-    "account_after": {
-     "number": "904",
-     "commodity": "CNY"
-    }
-   }
-  ]
- }
+    ],
+    [
+     "2023-09-13",
+     "11:19:58",
+     1694571598,
+     "Expenses:PersonalDiet:Lunch",
+     "284e5ce0-2cbe-d532-a85c-876f6ceeb5a3",
+     "Mcdonald",
+     "Fried Chicken",
+     {
+      "number": "30",
+      "currency": "CNY"
+     },
+     {
+      "number": "1090",
+      "currency": "CNY"
+     },
+     {
+      "number": "30",
+      "currency": "CNY"
+     }
+    ],
+    [
+     "2023-09-14",
+     "19:33:51",
+     1694687631,
+     "Expenses:PersonalDiet:Lunch",
+     "ac18ab3e-a80e-8b0a-c354-c3d9756a5f43",
+     "Mcdonald",
+     "Eating Lunch",
+     {
+      "number": "30",
+      "currency": "CNY"
+     },
+     {
+      "number": "1145",
+      "currency": "CNY"
+     },
+     {
+      "number": "30",
+      "currency": "CNY"
+     }
+    ],
+    [
+     "2023-09-12",
+     "21:28:21",
+     1694521701,
+     "Expenses:Clothing",
+     "9a9f6572-f53c-6666-090b-af06ddfc7f6a",
+     "H & M",
+     "shoes",
+     {
+      "number": "29",
+      "currency": "CNY"
+     },
+     {
+      "number": "706",
+      "currency": "CNY"
+     },
+     {
+      "number": "29",
+      "currency": "CNY"
+     }
+    ],
+    [
+     "2023-09-02",
+     "15:55:25",
+     1693637725,
+     "Expenses:PersonalDiet:Lunch",
+     "75d6e279-99c2-c63e-018b-6377427b8f36",
+     "KFC",
+     "Eating Dinner",
+     {
+      "number": "27",
+      "currency": "CNY"
+     },
+     {
+      "number": "976",
+      "currency": "CNY"
+     },
+     {
+      "number": "27",
+      "currency": "CNY"
+     }
+    ],
+    [
+     "2023-09-12",
+     "20:59:41",
+     1694519981,
+     "Expenses:PersonalDiet:Dinner",
+     "83852910-773a-5bb0-1d1c-cf6b9c842dcc",
+     "KFC",
+     "Fried Chicken",
+     {
+      "number": "27",
+      "currency": "CNY"
+     },
+     {
+      "number": "992",
+      "currency": "CNY"
+     },
+     {
+      "number": "27",
+      "currency": "CNY"
+     }
+    ],
+    [
+     "2023-09-16",
+     "17:05:48",
+     1694851548,
+     "Expenses:PersonalDiet:Dinner",
+     "a52330c7-5f6b-2db2-1e6c-beed2d1fabab",
+     "隆江猪脚饭",
+     "Eating Lunch",
+     {
+      "number": "27",
+      "currency": "CNY"
+     },
+     {
+      "number": "1032",
+      "currency": "CNY"
+     },
+     {
+      "number": "27",
+      "currency": "CNY"
+     }
+    ],
+    [
+     "2023-09-13",
+     "14:25:00",
+     1694582700,
+     "Expenses:PersonalDiet:Lunch",
+     "a236abdf-1855-c7fa-2c8a-9cc8a22f2c49",
+     "Github Restaurant",
+     "Fried Chicken",
+     {
+      "number": "25",
+      "currency": "CNY"
+     },
+     {
+      "number": "1115",
+      "currency": "CNY"
+     },
+     {
+      "number": "25",
+      "currency": "CNY"
+     }
+    ]
+   ]
+  }
+ ]
 }

@@ -7,13 +7,28 @@
   "alias": null,
   "amount": {
    "calculated": {
-    "number": "132768.0",
+    "number": "132801.50",
     "commodity": "CNY"
    },
    "detail": {
     "CNY": "134614",
-    "USD": "-260"
+    "USD": "-250"
    }
-  }
+  },
+  "amount_with_sub_accounts": {
+   "calculated": {
+    "number": "132801.50",
+    "commodity": "CNY"
+   },
+   "detail": {
+    "USD": "-250",
+    "CNY": "134614"
+   }
+  },
+  "balance_with_sub_accounts": {
+   "CNY": "134614",
+   "USD": "-250"
+  },
+  "has_sub_accounts": false
  }
 }

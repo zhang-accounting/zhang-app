@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/api_exception.dart';
+import '../api/builtin_query_client.dart';
 import '../api/endpoints.dart';
 import '../api/zhang_api_client.dart';
 import '../models/account.dart';
@@ -27,21 +29,33 @@ class AccountRepository {
     decode: (d) => AccountDetail.fromJson(asMap(d, 'account')),
   );
 
-  /// `GET /api/accounts/{name}/journals` – all postings, newest first.
-  /// Note: `trxId` here is a posting id (server bug).
-  Future<List<AccountJournalEntry>> journals(String name) => _client.get(
-    ZhangEndpoints.accountJournals(name),
-    decode: (d) => parseList(d, AccountJournalEntry.fromJson, 'account journals'),
+  /// `GET /api/accounts/{name}/journals` – the postings of the account
+  /// **and its sub-accounts** (`account` names the posting's account), newest
+  /// first; `trxId` is the transaction id. An account without its own `open`
+  /// directive (a virtual parent) answers 404, read here as no postings.
+  Future<List<AccountJournalEntry>> journals(String name) async {
+    try {
+      return await _client.get(
+        ZhangEndpoints.accountJournals(name),
+        decode: (d) => parseList(d, AccountJournalEntry.fromJson, 'account journals'),
+      );
+    } on ApiNotFound catch (e) {
+      if (e.isMissingRoute) rethrow;
+      return const [];
+    }
+  }
+
+  /// Daily balances per commodity of the account and its sub-accounts
+  /// (built-in `accounts.balance_history`).
+  Future<AccountBalanceHistory> balances(String name) => _client.builtins.query(
+    BuiltinQuery('accounts.balance_history', {'account': name}),
+    AccountBalanceHistory.fromQuery,
   );
 
-  /// `GET /api/accounts/{name}/balances` – daily balances per commodity.
-  Future<AccountBalanceHistory> balances(String name) =>
-      _client.get(ZhangEndpoints.accountBalances(name), decode: AccountBalanceHistory.fromJson);
-
-  /// `GET /api/accounts/{name}/documents`.
-  Future<List<DocumentEntity>> documents(String name) => _client.get(
-    ZhangEndpoints.accountDocuments(name),
-    decode: (d) => parseList(d, DocumentEntity.fromJson, 'documents'),
+  /// Documents of the account (built-in `accounts.documents`).
+  Future<List<DocumentEntity>> documents(String name) => _client.builtins.query(
+    BuiltinQuery('accounts.documents', {'account': name}),
+    (r) => [for (final row in r.rows) DocumentEntity.fromQueryRow(row)],
   );
 
   /// `POST /api/accounts/{name}/balances` – balance check or pad dated now.

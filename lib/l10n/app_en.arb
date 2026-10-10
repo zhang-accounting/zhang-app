@@ -268,13 +268,13 @@
       }
     }
   },
-  "homeErrorLocation": "{file} · byte {offset}",
+  "homeErrorLocation": "{file}:{line}",
   "@homeErrorLocation": {
     "placeholders": {
       "file": {
         "type": "String"
       },
-      "offset": {
+      "line": {
         "type": "int"
       }
     }

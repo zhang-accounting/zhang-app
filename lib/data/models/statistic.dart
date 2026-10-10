@@ -1,10 +1,13 @@
+import 'package:decimal/decimal.dart';
+
 import '../../core/utils/dates.dart';
 import 'account.dart';
 import 'amount.dart';
 import 'json_utils.dart';
+import 'query_result.dart';
 
-/// `interval` of `/api/statistic/graph` (required by the server, but ignored:
-/// output is always daily).
+/// `interval` of `/api/statistic/graph`: daily, or weekly / monthly buckets
+/// keyed by the bucket's first day.
 enum GraphInterval {
   day('Day'),
   week('Week'),
@@ -15,7 +18,14 @@ enum GraphInterval {
   final String wire;
 }
 
-/// `GET /api/statistic/summary?from&to`.
+/// Figures of a period, from one batch of built-in queries (zhang ≥ 0.2,
+/// `StatisticRepository.summary`): `report.net_worth` and
+/// `report.liabilities` as of [to], `report.flows` and
+/// `report.transaction_count` over [from]–[to].
+///
+/// Every [CalculatedAmount] has `calculated` = the server's `value` in the
+/// operating currency (latest price on or before [to], inverse prices and
+/// cost currencies included) and `detail` = the raw units per commodity.
 class StatisticSummary {
   const StatisticSummary({
     required this.from,
@@ -27,20 +37,37 @@ class StatisticSummary {
     required this.transactionNumber,
   });
 
-  factory StatisticSummary.fromJson(Object? json) {
-    final m = asMap(json, 'summary');
+  /// [results] in the order of `StatisticRepository.summaryQueries`.
+  factory StatisticSummary.fromResults(
+    List<QueryResult> results, {
+    required DateTime from,
+    required DateTime to,
+    required String currency,
+  }) {
+    if (results.length != 4) throw FormatException('expected 4 summary results, got ${results.length}');
+    final [netWorth, liabilities, flows, count] = results;
+    CalculatedAmount fromRow(QueryRow? row) => row == null
+        ? CalculatedAmount(calculated: Amount(Decimal.zero, currency))
+        : calculatedFromInventories(units: row.inventory('units'), value: row.inventory('value'), currency: currency);
+    QueryRow? flow(String type) {
+      for (final r in flows.rows) {
+        if (r.string('type') == type) return r;
+      }
+      return null;
+    }
+
     return StatisticSummary(
-      from: ZhangDates.parseNaiveUtc(reqString(m, 'from')),
-      to: ZhangDates.parseNaiveUtc(reqString(m, 'to')),
-      balance: CalculatedAmount.fromJson(m['balance']),
-      liability: CalculatedAmount.fromJson(m['liability']),
-      income: CalculatedAmount.fromJson(m['income']),
-      expense: CalculatedAmount.fromJson(m['expense']),
-      transactionNumber: reqInt(m, 'transaction_number'),
+      from: from,
+      to: to,
+      balance: fromRow(netWorth.firstOrNull),
+      liability: fromRow(liabilities.firstOrNull),
+      income: fromRow(flow(AccountType.income.wire)),
+      expense: fromRow(flow(AccountType.expenses.wire)),
+      transactionNumber: count.firstOrNull?.integer('transactions') ?? 0,
     );
   }
 
-  /// Echo of the requested range (UTC instants).
+  /// The requested range (ledger dates, both included).
   final DateTime from;
   final DateTime to;
 
@@ -56,15 +83,13 @@ class StatisticSummary {
   /// Expense postings in range (positive = spent).
   final CalculatedAmount expense;
 
-  /// Includes balance check/pad items (server bug).
+  /// Transactions in range (balance checks and pads excluded).
   final int transactionNumber;
 }
 
 /// `GET /api/statistic/graph?from&to&interval`.
 ///
-/// Map keys are `YYYY-MM-DD` dates, exposed as **sorted** lists here.
-/// [balances] keys are UTC calendar dates, [changes] keys are ledger-local
-/// dates (docs §3.7).
+/// Map keys are `YYYY-MM-DD` ledger dates, exposed as **sorted** lists here.
 class StatisticGraph {
   const StatisticGraph({
     required this.from,
@@ -90,14 +115,14 @@ class StatisticGraph {
         }),
     ]..sort((a, b) => a.date.compareTo(b.date));
     return StatisticGraph(
-      from: ZhangDates.parseNaiveUtc(reqString(m, 'from')),
-      to: ZhangDates.parseNaiveUtc(reqString(m, 'to')),
+      from: ZhangDates.parseNaive(reqString(m, 'from')),
+      to: ZhangDates.parseNaive(reqString(m, 'to')),
       balances: balanceList,
       changes: changeList,
     );
   }
 
-  /// Echo of the requested range (UTC instants).
+  /// Echo of the requested range (naive ledger-local, `to` at 23:59:59).
   final DateTime from;
   final DateTime to;
 
@@ -122,18 +147,17 @@ class DailyChange {
   final Map<AccountType, CalculatedAmount> byType;
 }
 
-/// `{account, amount}` item of the rank endpoint.
+/// Total of one account in a period (`report.account_totals` row).
 class AccountAmount {
   const AccountAmount({required this.account, required this.amount});
-
-  factory AccountAmount.fromJson(JsonMap m) =>
-      AccountAmount(account: reqString(m, 'account'), amount: CalculatedAmount.fromJson(m['amount']));
 
   final String account;
   final CalculatedAmount amount;
 }
 
-/// `GET /api/statistic/{account_type}?from&to`.
+/// Per-account totals and the largest postings of one account type in a
+/// period: `report.account_totals` + `report.top_postings`
+/// (`StatisticRepository.rank`).
 class StatisticRank {
   const StatisticRank({
     required this.from,
@@ -142,27 +166,32 @@ class StatisticRank {
     required this.topTransactions,
   });
 
-  factory StatisticRank.fromJson(Object? json) {
-    final m = asMap(json, 'rank');
-    return StatisticRank(
-      from: ZhangDates.parseNaiveUtc(reqString(m, 'from')),
-      to: ZhangDates.parseNaiveUtc(reqString(m, 'to')),
-      detail: parseList(m['detail'] ?? const [], AccountAmount.fromJson, 'detail'),
-      topTransactions: parseList(
-        m['top_transactions'] ?? const [],
-        AccountJournalEntry.fromJson,
-        'top_transactions',
-      ),
-    );
-  }
+  factory StatisticRank.fromResults(
+    QueryResult totals,
+    QueryResult top, {
+    required DateTime from,
+    required DateTime to,
+    required String currency,
+  }) => StatisticRank(
+    from: from,
+    to: to,
+    detail: [
+      for (final r in totals.rows)
+        AccountAmount(
+          account: r.string('account'),
+          amount: calculatedFromInventories(units: r.inventory('units'), value: r.inventory('value'), currency: currency),
+        ),
+    ],
+    topTransactions: [for (final r in top.rows) AccountJournalEntry.fromTopPosting(r)],
+  );
 
   final DateTime from;
   final DateTime to;
 
-  /// Total per account in range, ascending by `amount.calculated.number`
-  /// (server order is kept).
+  /// Total per account in range (server order; the UI sorts).
   final List<AccountAmount> detail;
 
-  /// Up to 10 largest postings; `trxId` is the real transaction id here.
+  /// The largest postings, ranked by value in the operating currency;
+  /// `trxId` is the transaction id.
   final List<AccountJournalEntry> topTransactions;
 }

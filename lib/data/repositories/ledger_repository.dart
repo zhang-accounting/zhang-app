@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/builtin_query_client.dart';
 import '../api/endpoints.dart';
 import '../api/zhang_api_client.dart';
 import '../models/info.dart';
@@ -8,7 +9,7 @@ import '../models/options.dart';
 import '../models/pageable.dart';
 import 'ledger_revision.dart';
 
-/// Ledger-wide endpoints: info, options, errors, reload.
+/// Ledger-wide endpoints: info, options, errors, the ledger clock, reload.
 class LedgerRepository {
   LedgerRepository(this._client, {this._onMutated});
 
@@ -22,16 +23,34 @@ class LedgerRepository {
   Future<LedgerOptions> options() =>
       _client.get(ZhangEndpoints.options, decode: LedgerOptions.fromJson);
 
-  /// `GET /api/errors` (1-based [page]; [size] must be > 0 – 0 crashes the
-  /// server handler).
-  Future<Pageable<LedgerError>> errors({int page = 1, int size = 100}) => _client.get(
-    ZhangEndpoints.errors,
-    query: {'page': page < 1 ? 1 : page, 'size': size < 1 ? 1 : size},
-    decode: (d) => Pageable.fromJson(d, LedgerError.fromJson),
-  );
+  /// Ledger errors (built-in `journals.errors` with `count_total`), 1-based
+  /// [page] of [size] (1–1000) items; `totalCount` counts all errors.
+  Future<Pageable<LedgerError>> errors({int page = 1, int size = 100}) {
+    final p = page < 1 ? 1 : page;
+    final s = size.clamp(1, 1000);
+    return _client.builtins.query(
+      BuiltinQuery('journals.errors', {'size': s, 'offset': (p - 1) * s}, true),
+      (r) {
+        final total = r.total ?? r.rows.length;
+        return Pageable(
+          totalCount: total,
+          totalPage: total == 0 ? 0 : (total + s - 1) ~/ s,
+          pageSize: s,
+          currentPage: p,
+          records: [for (final row in r.rows) LedgerError.fromQueryRow(row)],
+        );
+      },
+    );
+  }
 
-  /// `POST /api/reload` – queue a full ledger reload (completion is only
-  /// signalled via SSE). Bumps `ledgerRevisionProvider` afterwards.
+  /// The ledger's current wall-clock time in its own timezone (built-in
+  /// `ledger.now`), as a naive local [DateTime].
+  Future<DateTime> now() =>
+      _client.builtins.query(const BuiltinQuery('ledger.now'), (r) => r.rows.first.dateTime('date', 'time'));
+
+  /// `POST /api/reload` – reload the ledger now. Answers once the reload is
+  /// done; a failing reload is `ApiServerError(409, reason)`. Bumps
+  /// `ledgerRevisionProvider` afterwards.
   Future<void> reload() async {
     await _client.send('POST', ZhangEndpoints.reload);
     _onMutated?.call();

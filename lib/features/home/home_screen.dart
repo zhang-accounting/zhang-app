@@ -409,7 +409,12 @@ class _ErrorsSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (e.span?.filename != null)
-                    Text(l10n.homeErrorLocation(e.span!.filename!, e.span!.start), style: muted),
+                    Text(
+                      e.span!.line == null
+                          ? e.span!.filename!
+                          : l10n.homeErrorLocation(e.span!.filename!, e.span!.line!),
+                      style: muted,
+                    ),
                   if ((e.span?.content ?? '').isNotEmpty)
                     Text(
                       e.span!.content,

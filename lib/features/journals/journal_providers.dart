@@ -232,14 +232,17 @@ class JournalListController extends AsyncNotifier<JournalListData> {
 // Shared data
 // ---------------------------------------------------------------------------
 
-/// `GET /api/statistic/summary` for one month, cached per month (month
-/// headers of the journal, the Home summary card).
-final monthSummaryProvider = FutureProvider.family<StatisticSummary, YearMonth>((ref, month) {
+/// Summary figures of one month (`report.*` built-in queries in the
+/// operating currency), cached per month (month headers of the journal, the
+/// Home summary card).
+final monthSummaryProvider = FutureProvider.family<StatisticSummary, YearMonth>((ref, month) async {
   ref.watch(ledgerRevisionProvider);
-  return ref.watch(statisticRepositoryProvider).summary(month.start, month.end);
+  final repository = ref.watch(statisticRepositoryProvider);
+  final options = await ref.watch(ledgerOptionsProvider.future);
+  return repository.summary(month.start, month.end, currency: options.operatingCurrency);
 }, retry: browseRetry);
 
-/// `GET /api/errors` (first 100).
+/// Ledger errors (built-in `journals.errors`, first 100, with the total).
 final ledgerErrorsProvider = FutureProvider<Pageable<LedgerError>>((ref) {
   ref.watch(ledgerRevisionProvider);
   return ref.watch(ledgerRepositoryProvider).errors(size: 100);

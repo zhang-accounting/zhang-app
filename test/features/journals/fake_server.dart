@@ -2,21 +2,33 @@ import 'package:dio/dio.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 
+import '../../helpers/builtin_fake.dart';
 import '../../helpers/fake_adapter.dart';
 import '../../helpers/fixtures.dart';
 import 'journal_test_utils.dart';
 
 const testProfile = ServerProfile(id: 'p1', name: 'Family', baseUrl: 'http://127.0.0.1:18030');
 
-/// In-memory zhang server for feature tests: serves [journals] with
-/// page/size/keyword, the summary / errors / options / commodities fixtures,
+/// In-memory zhang v0.2 server for feature tests: serves [journals] with
+/// page/size/keyword, the built-in queries ([builtins]: report summary,
+/// ledger errors from [errors], …), info / options / commodities fixtures,
 /// and records every request in [adapter].
 class FakeZhangServer {
-  FakeZhangServer({List<Map<String, Object?>>? journals, this.errors = const []})
-    : journals = journals ?? [];
+  FakeZhangServer({List<Map<String, Object?>>? journals, this.withErrors = false})
+    : journals = journals ?? [] {
+    builtins.answers['journals.errors'] = (_) {
+      final captured = singleResult('errors.json');
+      return withErrors ? captured : {'columns': captured['columns'], 'rows': const <Object?>[], 'total': 0};
+    };
+  }
 
   final List<Map<String, Object?>> journals;
-  List<Map<String, Object?>> errors;
+
+  /// Report the two captured ledger errors (`errors.json`) instead of none.
+  bool withErrors;
+
+  /// Built-in query answers (captured fixtures by default).
+  final builtins = FakeBuiltins();
 
   /// When set, `/journals` requests for these pages fail with HTTP 500.
   Set<int> failingPages = {};
@@ -35,7 +47,7 @@ class FakeZhangServer {
       adapter.requests.where((r) => r.uri.path.endsWith(path)).toList();
 
   ResponseBody _handle(RequestOptions o) {
-    if (unauthorized) return emptyResponse(401);
+    if (unauthorized) return jsonResponse({'message': 'unauthorized'}, status: 401);
     final path = o.uri.path;
     final q = o.uri.queryParameters;
     if (path.endsWith('/journals')) {
@@ -52,10 +64,8 @@ class FakeZhangServer {
           : matching.sublist(start, (start + size).clamp(0, matching.length));
       return jsonResponse(pageJson(records, page: page, size: size, total: matching.length));
     }
-    if (path.endsWith('/statistic/summary')) return jsonResponse(fixture('statistic_summary.json'));
-    if (path.endsWith('/errors')) {
-      return jsonResponse(pageJson(errors, page: 1, size: 100, total: errors.length));
-    }
+    final builtin = builtins.handle(o);
+    if (builtin != null) return builtin;
     if (path.endsWith('/info')) return jsonResponse(fixture('info.json'));
     if (path.endsWith('/options')) return jsonResponse(fixture('options.json'));
     if (path.endsWith('/commodities')) return jsonResponse(fixture('commodities.json'));

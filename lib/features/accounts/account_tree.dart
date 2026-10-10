@@ -254,8 +254,8 @@ class NetWorth {
   /// Operating currency.
   final String commodity;
 
-  /// Commodities held in Assets/Liabilities that the server cannot convert to
-  /// the operating currency (no direct price), so they are not in the total.
+  /// Commodities held in Assets/Liabilities that the server could not value
+  /// in the operating currency, so they are not in the total.
   final List<String> unconverted;
 
   /// Assets minus what is owed (liabilities are negative, so it is a sum).
@@ -266,8 +266,12 @@ class NetWorth {
 /// accounts (closed ones included – their balance is normally zero).
 ///
 /// A commodity counts as [NetWorth.unconverted] when it has a non-zero
-/// balance, is not the operating currency and [commodities] reports no
-/// price to the operating currency (`latest_price_commodity == null`).
+/// balance, is not the operating currency, [commodities] reports no direct
+/// price to the operating currency (`latest_price_commodity == null`) **and**
+/// the account's `calculated` is just its operating-currency units, i.e. the
+/// server valued the rest at 0. zhang ≥ 0.2 also values through inverse
+/// prices and the cost currency (BTC bought in USD), so a missing direct
+/// price alone does not mean "not in the total".
 NetWorth computeNetWorth(
   List<Account> accounts, {
   required String operatingCurrency,
@@ -284,6 +288,8 @@ NetWorth computeNetWorth(
     } else {
       liabilities += a.amount.calculated.number;
     }
+    final operatingUnits = a.amount.detail[operatingCurrency] ?? Decimal.zero;
+    if (a.amount.calculated.number != operatingUnits) continue; // the rest was valued
     for (final e in a.amount.detail.entries) {
       if (e.value == Decimal.zero || e.key == operatingCurrency) continue;
       final c = commodities[e.key];
