@@ -1,0 +1,1282 @@
+{
+ "data": [
+  {
+   "datetime": "2026-10-06T08:00:00",
+   "timestamp": 1791241200,
+   "account": "Assets:WeChat",
+   "trx_id": "fa2230a4-7f74-755c-c0c6-e434fd21ad50",
+   "payee": "Pending Shop",
+   "narration": "Awaiting refund",
+   "inferred_unit": {
+    "number": "-9.90",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146039.60",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2026-10-03T12:15:00",
+   "timestamp": 1790997300,
+   "account": "Assets:WeChat",
+   "trx_id": "93bb6189-c7f9-f610-3015-ed6380f22855",
+   "payee": "Noodle Bar",
+   "narration": "Lunch",
+   "inferred_unit": {
+    "number": "-42.00",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146049.50",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2026-10-02T18:30:00",
+   "timestamp": 1790933400,
+   "account": "Assets:WeChat",
+   "trx_id": "869ee8f5-efa2-1074-bc5d-0b9ef97a15f2",
+   "payee": "Mobile Test Cafe",
+   "narration": "Flat white",
+   "inferred_unit": {
+    "number": "-32.50",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146091.50",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2026-09-20T12:00:00",
+   "timestamp": 1789873200,
+   "account": "Assets:WeChat",
+   "trx_id": "7c785595-5694-c51e-dd34-115dc2cddeb1",
+   "payee": "Bakery",
+   "narration": "Bread",
+   "inferred_unit": {
+    "number": "-18.00",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146124.00",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-09-13T14:25:00",
+   "timestamp": 1694582700,
+   "account": "Assets:WeChat",
+   "trx_id": "a236abdf-1855-c7fa-2c8a-9cc8a22f2c49",
+   "payee": "Github Restaurant",
+   "narration": "Fried Chicken",
+   "inferred_unit": {
+    "number": "-25",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146142",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-09-11T16:03:16",
+   "timestamp": 1694415796,
+   "account": "Assets:WeChat",
+   "trx_id": "bc77d384-3471-2998-6bd6-cb9f07e6c1b7",
+   "payee": "H & M",
+   "narration": "shoes",
+   "inferred_unit": {
+    "number": "-16",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146167",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-09-10T23:00:00",
+   "timestamp": 1694354400,
+   "account": "Assets:WeChat",
+   "trx_id": "df53cd51-5af0-3150-e3b4-a0394ab02ea4",
+   "payee": "Balance Check",
+   "narration": "Assets:WeChat",
+   "inferred_unit": {
+    "number": "0",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146183",
+    "commodity": "CNY"
+   },
+   "asserted": {
+    "number": "100",
+    "commodity": "CNY"
+   },
+   "checked_balance": {
+    "number": "146183",
+    "commodity": "CNY"
+   },
+   "difference": {
+    "number": "-146083",
+    "commodity": "CNY"
+   },
+   "tolerance": null,
+   "passed": false
+  },
+  {
+   "datetime": "2023-09-05T08:54:37",
+   "timestamp": 1693871677,
+   "account": "Assets:WeChat",
+   "trx_id": "23d5cb10-acdb-d5b5-df57-6d0d6af2a83a",
+   "payee": "Nike",
+   "narration": "shoes",
+   "inferred_unit": {
+    "number": "-16",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146183",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-09-04T17:42:42",
+   "timestamp": 1693816962,
+   "account": "Assets:WeChat",
+   "trx_id": "eb7e1dd0-97a0-b087-ac58-91cf3ca091ba",
+   "payee": "Nike",
+   "narration": "T-shirt",
+   "inferred_unit": {
+    "number": "-20",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146199",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-09-03T22:53:07",
+   "timestamp": 1693749187,
+   "account": "Assets:WeChat",
+   "trx_id": "d39a8c42-c772-a7ff-b194-32600d3d2e49",
+   "payee": "Scgolastic",
+   "narration": "Remuneration of <Good Good study, Day Day Up>",
+   "inferred_unit": {
+    "number": "30",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146219",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-09-03T07:06:28",
+   "timestamp": 1693692388,
+   "account": "Assets:WeChat",
+   "trx_id": "acf57339-4360-b4f4-6866-778094c1a819",
+   "payee": "Mcdonald",
+   "narration": "Eating Lunch",
+   "inferred_unit": {
+    "number": "-16",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146189",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-29T17:57:37",
+   "timestamp": 1693299457,
+   "account": "Assets:WeChat",
+   "trx_id": "63cbd4fe-e6d6-c117-5479-6686d57354e5",
+   "payee": "The Zhang Book Group",
+   "narration": "Remuneration of <How to learn Zhang>",
+   "inferred_unit": {
+    "number": "33",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146205",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-28T21:42:05",
+   "timestamp": 1693226525,
+   "account": "Assets:WeChat",
+   "trx_id": "f78e6b1a-b1b3-8645-700c-8a588598ac2f",
+   "payee": "隆江猪脚饭",
+   "narration": "Eating Lunch",
+   "inferred_unit": {
+    "number": "-11",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146172",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-22T01:31:33",
+   "timestamp": 1692635493,
+   "account": "Assets:WeChat",
+   "trx_id": "253f82a0-0f50-bb61-17a7-46fb87c11c6a",
+   "payee": "Github Restaurant",
+   "narration": "Eating Lunch",
+   "inferred_unit": {
+    "number": "-26",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146183",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-19T22:26:30",
+   "timestamp": 1692451590,
+   "account": "Assets:WeChat",
+   "trx_id": "a8ccb4f9-1760-d054-4d4f-b9e433ee2e1b",
+   "payee": "The Zhang Book Group",
+   "narration": "Remuneration of <How to learn Zhang>",
+   "inferred_unit": {
+    "number": "12",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146209",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-17T00:45:56",
+   "timestamp": 1692200756,
+   "account": "Assets:WeChat",
+   "trx_id": "0f95b3c2-6cea-50e8-acf5-dd4305c34f7e",
+   "payee": "Github Restaurant",
+   "narration": "Eating Dinner",
+   "inferred_unit": {
+    "number": "-22",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146197",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-15T17:06:47",
+   "timestamp": 1692086807,
+   "account": "Assets:WeChat",
+   "trx_id": "d8e775b4-f3ed-1da2-1975-eba892ba13b8",
+   "payee": "The Zhang Book Group",
+   "narration": "Annual Remuneration",
+   "inferred_unit": {
+    "number": "29",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146219",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-08T08:01:53",
+   "timestamp": 1691449313,
+   "account": "Assets:WeChat",
+   "trx_id": "740da424-abcf-4eb1-8eb7-90d4cf15e139",
+   "payee": "Scgolastic",
+   "narration": "Annual Remuneration",
+   "inferred_unit": {
+    "number": "38",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146190",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-06T23:11:50",
+   "timestamp": 1691331110,
+   "account": "Assets:WeChat",
+   "trx_id": "a344864c-b557-e0ff-89e1-1db220bbf51e",
+   "payee": "Github Restaurant",
+   "narration": "Fried Chicken",
+   "inferred_unit": {
+    "number": "-25",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146152",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-05T17:39:28",
+   "timestamp": 1691224768,
+   "account": "Assets:WeChat",
+   "trx_id": "5a53f626-7c0d-05a4-bf68-9bffee073d36",
+   "payee": "Github Restaurant",
+   "narration": "Eating Lunch",
+   "inferred_unit": {
+    "number": "-22",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146177",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-04T01:12:37",
+   "timestamp": 1691079157,
+   "account": "Assets:WeChat",
+   "trx_id": "3489b759-9717-ae5c-56b1-6c204c0be281",
+   "payee": "Scgolastic",
+   "narration": "Annual Remuneration",
+   "inferred_unit": {
+    "number": "42",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146199",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-03T02:46:08",
+   "timestamp": 1690998368,
+   "account": "Assets:WeChat",
+   "trx_id": "fe9ccbd1-8526-07dd-d50b-23374296537f",
+   "payee": "Github Restaurant",
+   "narration": "Eating Dinner",
+   "inferred_unit": {
+    "number": "-28",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146157",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-02T14:34:05",
+   "timestamp": 1690954445,
+   "account": "Assets:WeChat",
+   "trx_id": "a9a78fba-5023-e727-f311-9fad09bf4f58",
+   "payee": "The Zhang Book Group",
+   "narration": "Remuneration of <Good Good study, Day Day Up>",
+   "inferred_unit": {
+    "number": "12",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146185",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-08-01T06:30:51",
+   "timestamp": 1690839051,
+   "account": "Assets:WeChat",
+   "trx_id": "c624773e-2715-b198-b125-025fb3f869ee",
+   "payee": "Scgolastic",
+   "narration": "Remuneration of <How to learn Zhang>",
+   "inferred_unit": {
+    "number": "42",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146173",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-29T21:39:32",
+   "timestamp": 1690634372,
+   "account": "Assets:WeChat",
+   "trx_id": "e886ed2b-2cab-b1fb-e21f-46774b520e88",
+   "payee": "Scgolastic",
+   "narration": "Annual Remuneration",
+   "inferred_unit": {
+    "number": "20",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146131",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-29T08:51:16",
+   "timestamp": 1690588276,
+   "account": "Assets:WeChat",
+   "trx_id": "5816a4b9-56d5-4462-57df-594e7e9b546e",
+   "payee": "UNIQLO",
+   "narration": "shoes",
+   "inferred_unit": {
+    "number": "-19",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146111",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-27T14:38:13",
+   "timestamp": 1690436293,
+   "account": "Assets:WeChat",
+   "trx_id": "ca51f873-2b43-3dce-6e5b-034e20b25e34",
+   "payee": "KFC",
+   "narration": "Eating Dinner",
+   "inferred_unit": {
+    "number": "-26",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146130",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-26T12:03:04",
+   "timestamp": 1690340584,
+   "account": "Assets:WeChat",
+   "trx_id": "4f40227f-c7d3-2352-db50-5cb87332cb3f",
+   "payee": "KFC",
+   "narration": "Eating Lunch",
+   "inferred_unit": {
+    "number": "-16",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146156",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-18T22:24:15",
+   "timestamp": 1689686655,
+   "account": "Assets:WeChat",
+   "trx_id": "256f95d7-a88d-9a4c-8d30-1ce32957e22e",
+   "payee": "Doge Random House",
+   "narration": "Remuneration of <How to learn Zhang>",
+   "inferred_unit": {
+    "number": "37",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146172",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-17T16:48:51",
+   "timestamp": 1689580131,
+   "account": "Assets:WeChat",
+   "trx_id": "edbfe9f1-b869-4361-58db-ac86dbb9e727",
+   "payee": "隆江猪脚饭",
+   "narration": "Eating Dinner",
+   "inferred_unit": {
+    "number": "-23",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146135",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-17T06:14:20",
+   "timestamp": 1689542060,
+   "account": "Assets:WeChat",
+   "trx_id": "d7665f2c-29b7-edc8-25e4-0ac330242ac8",
+   "payee": "UNIQLO",
+   "narration": "jeans",
+   "inferred_unit": {
+    "number": "-22",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146158",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-16T03:21:34",
+   "timestamp": 1689445294,
+   "account": "Assets:WeChat",
+   "trx_id": "e0963db3-eb21-6c62-95d9-60b39c1ea7c7",
+   "payee": "Github Restaurant",
+   "narration": "Fried Chicken",
+   "inferred_unit": {
+    "number": "-15",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146180",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-15T07:01:55",
+   "timestamp": 1689372115,
+   "account": "Assets:WeChat",
+   "trx_id": "2a1d8221-eb69-16db-1bd2-5cb6b470b542",
+   "payee": "KFC",
+   "narration": "Eating Dinner",
+   "inferred_unit": {
+    "number": "-21",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146195",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-13T20:37:10",
+   "timestamp": 1689248230,
+   "account": "Assets:WeChat",
+   "trx_id": "b1b792d7-b89c-f940-9dc5-682309c274aa",
+   "payee": "KFC",
+   "narration": "Eating Dinner",
+   "inferred_unit": {
+    "number": "-29",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146216",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-13T05:02:06",
+   "timestamp": 1689192126,
+   "account": "Assets:WeChat",
+   "trx_id": "659a8a67-a880-fcdf-9f12-d7eda4934614",
+   "payee": "Adidas",
+   "narration": "jeans",
+   "inferred_unit": {
+    "number": "-11",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146245",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-10T05:52:12",
+   "timestamp": 1688935932,
+   "account": "Assets:WeChat",
+   "trx_id": "c59c5c25-c22e-24af-5be6-d8e681e30b7e",
+   "payee": "Doge Random House",
+   "narration": "Annual Remuneration",
+   "inferred_unit": {
+    "number": "44",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146256",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-09T23:26:31",
+   "timestamp": 1688912791,
+   "account": "Assets:WeChat",
+   "trx_id": "993b438a-74c9-c4f6-17f6-01877b460a9d",
+   "payee": "Doge Random House",
+   "narration": "Remuneration of <How to learn Zhang>",
+   "inferred_unit": {
+    "number": "45",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146212",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-08T07:08:26",
+   "timestamp": 1688767706,
+   "account": "Assets:WeChat",
+   "trx_id": "54657126-fea7-10c9-f937-416be8226aed",
+   "payee": "Doge Random House",
+   "narration": "Remuneration of <How to learn Zhang>",
+   "inferred_unit": {
+    "number": "35",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146167",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-07T20:20:02",
+   "timestamp": 1688728802,
+   "account": "Assets:WeChat",
+   "trx_id": "4eff0402-252b-5615-61fb-ddd553ccd178",
+   "payee": "Mcdonald",
+   "narration": "Fried Chicken",
+   "inferred_unit": {
+    "number": "-16",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146132",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-06T09:34:48",
+   "timestamp": 1688603688,
+   "account": "Assets:WeChat",
+   "trx_id": "faa93069-1188-e57d-132e-36d799274c46",
+   "payee": "H & M",
+   "narration": "jeans",
+   "inferred_unit": {
+    "number": "-15",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146148",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-07-03T16:48:54",
+   "timestamp": 1688370534,
+   "account": "Assets:WeChat",
+   "trx_id": "01996979-f291-8ffe-28be-c4f7d4bcc87b",
+   "payee": "Scgolastic",
+   "narration": "Remuneration of <How to learn Zhang>",
+   "inferred_unit": {
+    "number": "33",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146163",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-29T02:07:22",
+   "timestamp": 1687972042,
+   "account": "Assets:WeChat",
+   "trx_id": "a59cac87-a0fa-b846-eed7-cce8db899b1c",
+   "payee": "The Zhang Book Group",
+   "narration": "Annual Remuneration",
+   "inferred_unit": {
+    "number": "28",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146130",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-26T00:51:05",
+   "timestamp": 1687708265,
+   "account": "Assets:WeChat",
+   "trx_id": "69d08b50-9e2d-ae4d-5a6e-35ab31414eaa",
+   "payee": "Github Restaurant",
+   "narration": "Fried Chicken",
+   "inferred_unit": {
+    "number": "-30",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146102",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-24T09:00:41",
+   "timestamp": 1687564841,
+   "account": "Assets:WeChat",
+   "trx_id": "87b1f3e3-f54b-f0eb-4231-7d119b2ed855",
+   "payee": "Vans",
+   "narration": "jeans",
+   "inferred_unit": {
+    "number": "-30",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146132",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-23T15:24:22",
+   "timestamp": 1687501462,
+   "account": "Assets:WeChat",
+   "trx_id": "3ecaa988-d153-25ce-3cc6-70377578ea0f",
+   "payee": "The Zhang Book Group",
+   "narration": "Remuneration of <How to learn Zhang>",
+   "inferred_unit": {
+    "number": "14",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146162",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-20T05:59:19",
+   "timestamp": 1687208359,
+   "account": "Assets:WeChat",
+   "trx_id": "fc5b6d30-f2bd-e283-5a6e-14d1a2fa2881",
+   "payee": "Mcdonald",
+   "narration": "Fried Chicken",
+   "inferred_unit": {
+    "number": "-27",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146148",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-19T15:35:34",
+   "timestamp": 1687156534,
+   "account": "Assets:WeChat",
+   "trx_id": "0e30b6c5-ccfe-f170-2105-89c02c4594c8",
+   "payee": "Github Restaurant",
+   "narration": "Fried Chicken",
+   "inferred_unit": {
+    "number": "-29",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146175",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-19T09:08:13",
+   "timestamp": 1687133293,
+   "account": "Assets:WeChat",
+   "trx_id": "12dc7454-aa5a-d37a-7569-aeecd344841b",
+   "payee": "UNIQLO",
+   "narration": "shoes",
+   "inferred_unit": {
+    "number": "-15",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146204",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-17T21:58:44",
+   "timestamp": 1687006724,
+   "account": "Assets:WeChat",
+   "trx_id": "fe34dc39-bc42-fc71-d039-31309aa0f536",
+   "payee": "隆江猪脚饭",
+   "narration": "Eating Dinner",
+   "inferred_unit": {
+    "number": "-15",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146219",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-15T19:53:15",
+   "timestamp": 1686826395,
+   "account": "Assets:WeChat",
+   "trx_id": "2632d550-10d9-5219-11af-99eb54482401",
+   "payee": "Mcdonald",
+   "narration": "Eating Lunch",
+   "inferred_unit": {
+    "number": "-12",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146234",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-13T18:51:31",
+   "timestamp": 1686649891,
+   "account": "Assets:WeChat",
+   "trx_id": "565fd5f1-9d2d-9e38-08a0-1283c6339784",
+   "payee": "H & M",
+   "narration": "T-shirt",
+   "inferred_unit": {
+    "number": "-16",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146246",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-12T01:12:33",
+   "timestamp": 1686499953,
+   "account": "Assets:WeChat",
+   "trx_id": "2515eb0a-d5ed-99fe-8563-e29f53dd781e",
+   "payee": "隆江猪脚饭",
+   "narration": "Eating Lunch",
+   "inferred_unit": {
+    "number": "-26",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146262",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-11T00:14:22",
+   "timestamp": 1686410062,
+   "account": "Assets:WeChat",
+   "trx_id": "00b6872c-98c7-d061-5fbf-11d951ece8e3",
+   "payee": "Adidas",
+   "narration": "jeans",
+   "inferred_unit": {
+    "number": "-29",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146288",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-10T03:50:20",
+   "timestamp": 1686336620,
+   "account": "Assets:WeChat",
+   "trx_id": "00027eb7-e0b2-d729-f26f-f3011d3e0110",
+   "payee": "隆江猪脚饭",
+   "narration": "Eating Lunch",
+   "inferred_unit": {
+    "number": "-27",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146317",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-09T23:37:16",
+   "timestamp": 1686321436,
+   "account": "Assets:WeChat",
+   "trx_id": "a5cfd3cd-8074-711e-9ea7-50b6ef804b73",
+   "payee": "The Zhang Book Group",
+   "narration": "Annual Remuneration",
+   "inferred_unit": {
+    "number": "13",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146344",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-07T16:38:18",
+   "timestamp": 1686123498,
+   "account": "Assets:WeChat",
+   "trx_id": "ef7d7287-fddc-e5d2-a3f0-aabdc3dbab9b",
+   "payee": "KFC",
+   "narration": "Eating Dinner",
+   "inferred_unit": {
+    "number": "-16",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146331",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-07T13:08:57",
+   "timestamp": 1686110937,
+   "account": "Assets:WeChat",
+   "trx_id": "c1f64cfe-9520-2048-0157-500863374e26",
+   "payee": "Doge Random House",
+   "narration": "Remuneration of <Good Good study, Day Day Up>",
+   "inferred_unit": {
+    "number": "23",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146347",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-06-06T18:39:19",
+   "timestamp": 1686044359,
+   "account": "Assets:WeChat",
+   "trx_id": "0082fb8f-3f5e-43a0-ecd4-798ee7da1117",
+   "payee": "KFC",
+   "narration": "Eating Dinner",
+   "inferred_unit": {
+    "number": "-16",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146324",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  },
+  {
+   "datetime": "2023-05-31T01:01:01",
+   "timestamp": 1685462461,
+   "account": "Assets:WeChat",
+   "trx_id": "b024451a-fea3-4262-c296-c17cda986fc4",
+   "payee": "Balance Check",
+   "narration": "Assets:WeChat",
+   "inferred_unit": {
+    "number": "0",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146340",
+    "commodity": "CNY"
+   },
+   "asserted": {
+    "number": "146340",
+    "commodity": "CNY"
+   },
+   "checked_balance": {
+    "number": "146340",
+    "commodity": "CNY"
+   },
+   "difference": {
+    "number": "0",
+    "commodity": "CNY"
+   },
+   "tolerance": null,
+   "passed": true
+  },
+  {
+   "datetime": "2023-05-31T01:01:01",
+   "timestamp": 1685462461,
+   "account": "Assets:WeChat",
+   "trx_id": "ce6a97dc-0825-f645-7220-104033c0870e",
+   "payee": "Balance Pad",
+   "narration": "pad Assets:WeChat to Equity:OpenBalancing",
+   "inferred_unit": {
+    "number": "146340",
+    "commodity": "CNY"
+   },
+   "account_after": {
+    "number": "146340",
+    "commodity": "CNY"
+   },
+   "asserted": null,
+   "checked_balance": null,
+   "difference": null,
+   "tolerance": null,
+   "passed": null
+  }
+ ]
+}

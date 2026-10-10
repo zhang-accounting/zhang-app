@@ -1,0 +1,614 @@
+{
+  "@@locale": "en",
+  "appTitle": "Zhang",
+  "@appTitle": {
+    "description": "Application name"
+  },
+  "tabHome": "Home",
+  "tabJournal": "Journal",
+  "tabReports": "Reports",
+  "tabAccounts": "Accounts",
+  "newTransaction": "New",
+  "@newTransaction": {
+    "description": "Label of the centre FAB that records a new transaction"
+  },
+  "newTransactionTitle": "New transaction",
+  "settingsTitle": "Settings",
+  "comingSoon": "Coming soon",
+  "activeLedger": "Ledger: {name}",
+  "@activeLedger": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingTitle": "Connect to your zhang server",
+  "onboardingSubtitle": "Enter the address of your self-hosted zhang server. Credentials are stored securely on this device.",
+  "profileNameLabel": "Name",
+  "profileNameHint": "e.g. Family ledger",
+  "serverUrlLabel": "Server URL",
+  "serverUrlHint": "https://ledger.example.com",
+  "serverUrlHelper": "Without /api. http:// is allowed for local servers.",
+  "serverUrlRequired": "Enter the server URL",
+  "serverUrlInvalid": "Enter a valid http(s) URL",
+  "authTypeLabel": "Authentication",
+  "authNone": "None",
+  "authBasic": "Basic",
+  "authBearer": "Bearer",
+  "authHeaders": "Headers",
+  "usernameLabel": "Username",
+  "passwordLabel": "Password",
+  "tokenLabel": "Bearer token",
+  "headerNameLabel": "Header name",
+  "headerValueLabel": "Value",
+  "addHeader": "Add header",
+  "removeHeader": "Remove header",
+  "showSecret": "Show",
+  "hideSecret": "Hide",
+  "allowSelfSignedLabel": "Allow self-signed certificate",
+  "allowSelfSignedHelp": "Only enable this for servers you trust.",
+  "colorLabel": "Colour",
+  "colorDefault": "Default",
+  "testConnection": "Test connection",
+  "testingConnection": "Testing…",
+  "connectionOk": "Connected to “{title}”",
+  "@connectionOk": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "connectionOkDetail": "zhang {version} · built {buildDate}",
+  "@connectionOkDetail": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "buildDate": {
+        "type": "String"
+      }
+    }
+  },
+  "untitledLedger": "Untitled ledger",
+  "save": "Save",
+  "saveAndContinue": "Save and continue",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "edit": "Edit",
+  "retry": "Retry",
+  "errorUnauthorized": "Authentication failed (401). Check your credentials.",
+  "errorNotFound": "Not found (404).",
+  "errorServer": "Server error {status}: {message}",
+  "@errorServer": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "errorNetwork": "Cannot reach the server. Check the URL and your network.",
+  "errorTimeout": "The server did not respond in time.",
+  "errorCertificate": "The server's TLS certificate was rejected. Enable “Allow self-signed certificate” if you trust it.",
+  "errorParse": "Unexpected response. Is this the address of a zhang server?",
+  "errorUnknown": "Something went wrong: {message}",
+  "@errorUnknown": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "errorServerTooOld": "This zhang server is too old: zhang ≥ 0.2 with the built-in query API is required. Upgrade the server.",
+  "errorPasskeyOnly": "This server only allows passkey sign-in, which the app cannot use. Enable password sign-in on the server (ZHANG_AUTH or --auth user:pass).",
+  "errorApiMismatch": "The server does not offer this API ({message}). The app needs zhang ≥ 0.2.",
+  "@errorApiMismatch": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "serverTooOldTitle": "Server too old",
+  "serverTooOldVersion": "The server reports version {version}.",
+  "@serverTooOldVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "serversSection": "Servers",
+  "addServer": "Add server",
+  "editServer": "Edit server",
+  "activeBadge": "Active",
+  "switchedTo": "Switched to {name}",
+  "@switchedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteServerTitle": "Delete server?",
+  "deleteServerMessage": "“{name}” and its saved credentials will be removed from this device.",
+  "@deleteServerMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutSection": "About",
+  "appVersion": "App version",
+  "serverVersion": "Server version",
+  "ledgerTitle": "Ledger",
+  "saved": "Saved",
+  "addModeExpense": "Expense",
+  "addModeIncome": "Income",
+  "addModeTransfer": "Transfer",
+  "addClose": "Close",
+  "addSubcategory": "Sub-category",
+  "addSubcategoryRequired": "required",
+  "addNoCategories": "No open {root} accounts. Add an open directive to your ledger first.",
+  "@addNoCategories": {
+    "placeholders": {
+      "root": {
+        "type": "String"
+      }
+    }
+  },
+  "addFundingExpense": "Paid from",
+  "addFundingIncome": "Deposit to",
+  "addFrom": "From",
+  "addTo": "To",
+  "addSwap": "Swap accounts",
+  "addChooseAccount": "Choose account",
+  "addPayee": "Payee",
+  "addNarration": "Note",
+  "addTags": "Tags",
+  "addTagHint": "New tag",
+  "addTagAdd": "Add",
+  "addDone": "Done",
+  "addToday": "Today",
+  "addDate": "Date",
+  "addSaveAndAnother": "Save & new",
+  "@addSaveAndAnother": {
+    "description": "Keypad key: save and keep the screen open for another entry"
+  },
+  "addSaveAndAnotherLabel": "Save and add another",
+  "addEvaluate": "Calculate",
+  "addBackspace": "Backspace (long-press to clear)",
+  "addPlus": "Plus",
+  "addMinus": "Minus",
+  "addDecimalPoint": "Decimal point",
+  "addHintAmount": "Enter an amount",
+  "addHintAmountPositive": "The amount must be greater than 0",
+  "addHintCategory": "Choose a category",
+  "addHintSubcategory": "Choose a sub-category",
+  "addHintFunding": "Choose an account",
+  "addHintFrom": "Choose the source account",
+  "addHintTo": "Choose the destination account",
+  "addHintSameAccount": "Source and destination must differ",
+  "addHintCommodity": "Loading the ledger currency…",
+  "addSavedSnack": "Recorded {amount} · {title}",
+  "@addSavedSnack": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "addSavedCount": "{count, plural, =1{1 saved} other{{count} saved}}",
+  "@addSavedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addSaveFailed": "Could not save",
+  "addPreviewRejected": "Not saved – the ledger would report:",
+  "addPreviewUnbalanced": "The postings do not balance (off by {amounts}).",
+  "@addPreviewUnbalanced": {
+    "placeholders": {
+      "amounts": {
+        "type": "String"
+      }
+    }
+  },
+  "addPreviewAccountMissing": "Account {account} is not open.",
+  "@addPreviewAccountMissing": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "addPreviewAccountClosed": "Account {account} is closed.",
+  "@addPreviewAccountClosed": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "addPreviewWarning": "The ledger would report (the entry is not saved yet):",
+  "addSaveAnyway": "Save anyway",
+  "addPreviewCommodityUndeclared": "Commodity {commodity} is not declared in the ledger.",
+  "@addPreviewCommodityUndeclared": {
+    "placeholders": {
+      "commodity": {
+        "type": "String"
+      }
+    }
+  },
+  "addPreviewCommodityNotAllowed": "Account {account} does not list {commodity} in its open directive.",
+  "@addPreviewCommodityNotAllowed": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      },
+      "commodity": {
+        "type": "String"
+      }
+    }
+  },
+  "addDiscardTitle": "Discard this entry?",
+  "addDiscardMessage": "What you entered will be lost.",
+  "addDiscard": "Discard",
+  "addKeepEditing": "Keep editing",
+  "addLastAmount": "Last: {amount}",
+  "@addLastAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "addCommodity": "Currency",
+  "addPickerSearch": "Search name, alias or segment",
+  "addPickerFavourites": "Favourites",
+  "addPickerRecent": "Recent",
+  "addPickerAll": "All",
+  "addPickerEmpty": "No matching accounts",
+  "addPickerStarHint": "Long-press an account to star it",
+  "addPickerStarred": "Starred",
+  "addTypeAssets": "Assets",
+  "addTypeLiabilities": "Liabilities",
+  "addTypeEquity": "Equity",
+  "addTypeIncome": "Income",
+  "addTypeExpenses": "Expenses",
+  "homeExpense": "Expenses",
+  "homeIncome": "Income",
+  "homeNet": "Net",
+  "homePreviousMonth": "Previous month",
+  "homeNextMonth": "Next month",
+  "homeRecentTitle": "Recent transactions",
+  "homeSeeAll": "See all",
+  "homeEmptyLedger": "No transactions yet. Tap + to record your first one.",
+  "homeErrorCount": "{count, plural, =1{1 error} other{{count} errors}}",
+  "@homeErrorCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeErrorsTitle": "Ledger errors",
+  "homeErrorsMore": "Showing {shown} of {total}",
+  "@homeErrorsMore": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "homeErrorLocation": "{file}:{line}",
+  "@homeErrorLocation": {
+    "placeholders": {
+      "file": {
+        "type": "String"
+      },
+      "line": {
+        "type": "int"
+      }
+    }
+  },
+  "homeAuthBanner": "The server rejected the saved credentials.",
+  "homeAuthUpdate": "Update",
+  "homeReloadFailed": "The ledger failed to reload. The server still shows the previous version until the files are fixed.",
+  "homeLoadFailed": "Failed to load",
+  "journalFilterAll": "All",
+  "journalKindExpense": "Expense",
+  "journalKindIncome": "Income",
+  "journalKindTransfer": "Transfer",
+  "journalKindCompound": "Compound",
+  "journalKindAdjustment": "Adjustment",
+  "journalKindRefund": "Refund",
+  "journalBalanceCheck": "Balance check",
+  "journalBalancePad": "Balance pad",
+  "journalBalanceFailed": "Balance check failed",
+  "journalPadTarget": "to {amount}",
+  "@journalPadTarget": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "trxBalanceActual": "Actual balance {amount}",
+  "@trxBalanceActual": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "trxBalanceDifference": "Difference {amount}",
+  "@trxBalanceDifference": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsSubAccount": "in {account}",
+  "@accountsSubAccount": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "journalSearch": "Search",
+  "journalSearchHint": "Payee, narration, account, tag…",
+  "journalCloseSearch": "Close search",
+  "journalTags": "Tags",
+  "journalTagsTitle": "Filter by tag",
+  "journalNoTags": "No tags in the loaded transactions.",
+  "journalRemoveTag": "Remove tag filter {tag}",
+  "@journalRemoveTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "journalMonthExpense": "Exp {amount}",
+  "@journalMonthExpense": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "journalMonthIncome": "Inc {amount}",
+  "@journalMonthIncome": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "journalToday": "Today",
+  "journalYesterday": "Yesterday",
+  "journalEmpty": "No transactions yet",
+  "journalEmptyHint": "Tap + to record your first one.",
+  "journalNoMatch": "No matching transactions",
+  "journalClearFilters": "Clear filters",
+  "journalLoadMoreFailed": "Failed to load more",
+  "journalUnbalanced": "Unbalanced",
+  "journalPending": "Pending",
+  "journalAttachment": "Has attachments",
+  "trxTitle": "Transaction",
+  "trxPostings": "Postings",
+  "trxDetails": "Details",
+  "trxDate": "Date",
+  "trxFlag": "Flag",
+  "trxTags": "Tags",
+  "trxLinks": "Links",
+  "trxMetas": "Metadata",
+  "trxAuto": "auto",
+  "trxWritten": "written {amount}",
+  "@trxWritten": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "trxCopyText": "Copy as text",
+  "trxCopied": "Copied to clipboard",
+  "trxNotFound": "Transaction not found. Ids change when the ledger reloads – open it again from the list.",
+  "trxUnbalanced": "This transaction does not balance.",
+  "trxFilterByTag": "Show transactions tagged #{tag}",
+  "@trxFilterByTag": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsNetWorth": "Net worth",
+  "accountsAssets": "Assets",
+  "accountsLiabilities": "Liabilities",
+  "accountsIncome": "Income",
+  "accountsExpenses": "Expenses",
+  "accountsEquity": "Equity",
+  "accountsNetWorthSource": "Sum of account balances in {currency}",
+  "@accountsNetWorthSource": {
+    "placeholders": {
+      "currency": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsNotInTotal": "Not in total (no price): {commodities}",
+  "@accountsNotInTotal": {
+    "placeholders": {
+      "commodities": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsSearch": "Search accounts",
+  "accountsSearchHint": "Name or alias",
+  "accountsCloseSearch": "Close search",
+  "accountsShowClosed": "Show closed accounts",
+  "accountsClosedHidden": "{count, plural, =1{1 closed account hidden} other{{count} closed accounts hidden}}",
+  "@accountsClosedHidden": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsClosedBadge": "Closed",
+  "accountsOpenBadge": "Open",
+  "accountsEmpty": "No accounts yet. Add open directives to your ledger to see them here.",
+  "accountsNoMatches": "No accounts match “{query}”",
+  "@accountsNoMatches": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsExpand": "Expand",
+  "accountsCollapse": "Collapse",
+  "accountsShowCommodities": "Show each currency",
+  "accountsHideCommodities": "Hide currencies",
+  "accountsOpened": "Opened {date}",
+  "@accountsOpened": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsConvertedTotal": "≈ {amount} in total",
+  "@accountsConvertedTotal": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsBalanceHistory": "Balance history",
+  "accountsNoBalanceHistory": "No balance history yet",
+  "accountsTransactions": "Transactions",
+  "accountsRunningBalance": "Balance",
+  "accountsNoTransactions": "No transactions for this account yet",
+  "accountsBalanceCheck": "Balance check",
+  "accountsBalancePad": "Balance pad",
+  "accountsCopyName": "Copy account name",
+  "accountsNameCopied": "Account name copied",
+  "reportsPeriodWeek": "Week",
+  "reportsPeriodMonth": "Month",
+  "reportsPeriodYear": "Year",
+  "reportsPeriodCustom": "Custom",
+  "reportsPreviousPeriod": "Previous period",
+  "reportsNextPeriod": "Next period",
+  "reportsPickRange": "Select a date range",
+  "reportsIncome": "Income",
+  "reportsExpense": "Expense",
+  "reportsNet": "Net",
+  "reportsCashflowTitle": "Income & expense",
+  "reportsNoData": "No data for this period",
+  "reportsBreakdownTitle": "Breakdown",
+  "reportsExpenses": "Expenses",
+  "reportsIncomeSegment": "Income",
+  "reportsOther": "Other",
+  "reportsTotal": "Total",
+  "reportsNoExpenses": "No expenses in this period",
+  "reportsNoIncome": "No income in this period",
+  "reportsUpOneLevel": "Up one level",
+  "reportsShowSubAccounts": "Show sub-accounts",
+  "reportsOpenAccount": "Open account",
+  "authSession": "Browser",
+  "@authSession": {
+    "description": "Auth type segment: sign in on the server's login page in the system browser"
+  },
+  "authSessionHelper": "Sign in with a passkey or password in the browser",
+  "signInWithBrowser": "Sign in with browser",
+  "signingIn": "Signing in…",
+  "signInAgain": "Sign in again",
+  "signOut": "Sign out",
+  "signedOut": "Signed out of {name}",
+  "@signedOut": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "signedInAs": "Signed in as {user}, valid until {date}",
+  "@signedInAs": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "signedInSnack": "Signed in as {user}",
+  "@signedInSnack": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionSubtitle": "{user} · until {date}",
+  "@sessionSubtitle": {
+    "description": "Settings: signed-in user and session expiry of a browser sign-in server",
+    "placeholders": {
+      "user": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "notSignedIn": "Not signed in",
+  "signInFirst": "Sign in with the browser first.",
+  "signInNotNeeded": "This server does not require sign-in. Choose “None” instead.",
+  "signInNotSupported": "This server does not support app sign-in yet; upgrade zhang (PR #786).",
+  "signInCancelled": "Sign-in was cancelled.",
+  "signInBrowserFailed": "Could not open the browser for sign-in.",
+  "signInMalformedCallback": "The server returned an invalid sign-in response.",
+  "signInCodeRejected": "The sign-in expired or was already used. Sign in again.",
+  "signInRateLimited": "Too many sign-in attempts. Try again in {seconds} s.",
+  "@signInRateLimited": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "signInRateLimitedLater": "Too many sign-in attempts. Try again later.",
+  "homeSessionBanner": "Your sign-in has ended. Sign in again in the browser.",
+  "homeSessionExpiring": "Your sign-in expires on {date}. Sign in again to stay connected.",
+  "@homeSessionExpiring": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "errorPasskeyOnlyBrowser": "This server only allows passkey sign-in. Choose “Browser” to sign in with a passkey."
+}

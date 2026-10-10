@@ -1,0 +1,35 @@
+{
+ "data": {
+  "columns": [
+   {
+    "name": "date",
+    "type": "date"
+   },
+   {
+    "name": "time",
+    "type": "str"
+   },
+   {
+    "name": "account",
+    "type": "str"
+   },
+   {
+    "name": "path",
+    "type": "str"
+   },
+   {
+    "name": "transaction_id",
+    "type": "str"
+   }
+  ],
+  "rows": [
+   [
+    "2023-09-07",
+    "00:00:00",
+    "Assets:Paypal",
+    "attachments/receipt.txt",
+    null
+   ]
+  ]
+ }
+}

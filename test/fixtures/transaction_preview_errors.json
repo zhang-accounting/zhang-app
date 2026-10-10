@@ -1,0 +1,16 @@
+{
+ "data": {
+  "text": null,
+  "field_errors": [
+   {
+    "posting": 1,
+    "field": "account",
+    "kind": "invalid_account",
+    "value": "Foo:Bar",
+    "message": "invalid account \"Foo:Bar\": it is `Assets`, `Liabilities`, `Equity`, `Income` or `Expenses` followed by `:`-separated components, and a component cannot be empty or contain a space, tab, line break, `\"`, `:`, `(`, `)` or `,`"
+   }
+  ],
+  "unbalanced": null,
+  "errors": []
+ }
+}

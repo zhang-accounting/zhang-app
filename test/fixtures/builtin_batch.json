@@ -1,0 +1,271 @@
+{
+ "data": [
+  {
+   "columns": [
+    {
+     "name": "balance",
+     "type": "inventory"
+    },
+    {
+     "name": "units",
+     "type": "inventory"
+    },
+    {
+     "name": "value",
+     "type": "inventory"
+    }
+   ],
+   "rows": [
+    [
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "0.01",
+         "currency": "BTC"
+        },
+        "cost": {
+         "number": "26000",
+         "currency": "USD",
+         "date": "2023-09-06",
+         "label": null
+        }
+       },
+       {
+        "units": {
+         "number": "444553.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "-262.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "0.01",
+         "currency": "BTC"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "444553.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "-262.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "444531.8225",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ]
+   ]
+  },
+  {
+   "columns": [
+    {
+     "name": "id",
+     "type": "str"
+    },
+    {
+     "name": "kind",
+     "type": "str"
+    },
+    {
+     "name": "file",
+     "type": "str"
+    },
+    {
+     "name": "line",
+     "type": "int"
+    },
+    {
+     "name": "column",
+     "type": "int"
+    },
+    {
+     "name": "span_start",
+     "type": "int"
+    },
+    {
+     "name": "span_end",
+     "type": "int"
+    },
+    {
+     "name": "source",
+     "type": "str"
+    },
+    {
+     "name": "metas",
+     "type": "metas"
+    }
+   ],
+   "rows": [
+    [
+     "3e7db305-4932-5fd7-cdc2-87bbe220182f",
+     "UnbalancedTransaction",
+     "data/2023/12.zhang",
+     38,
+     1,
+     956,
+     1045,
+     "2023-09-08 11:00:00 \"Oops\" \"Unbalanced\"\n  Assets:Paypal -10 CNY\n  Expenses:Clothing 9 CNY",
+     [
+      {
+       "key": "txn_id",
+       "value": "3e7db305-4932-5fd7-cdc2-87bbe220182f"
+      }
+     ]
+    ]
+   ],
+   "total": 2
+  },
+  {
+   "columns": [
+    {
+     "name": "name",
+     "type": "str"
+    },
+    {
+     "name": "alias",
+     "type": "str"
+    },
+    {
+     "name": "category",
+     "type": "str"
+    },
+    {
+     "name": "currency",
+     "type": "str"
+    },
+    {
+     "name": "accounts",
+     "type": "set"
+    },
+    {
+     "name": "close",
+     "type": "date"
+    },
+    {
+     "name": "close_time",
+     "type": "str"
+    }
+   ],
+   "rows": [
+    [
+     "food",
+     "Eating",
+     "Living",
+     "CNY",
+     [
+      "Expenses:Groceries"
+     ],
+     null,
+     null
+    ]
+   ]
+  },
+  {
+   "columns": [
+    {
+     "name": "name",
+     "type": "str"
+    },
+    {
+     "name": "alias",
+     "type": "str"
+    },
+    {
+     "name": "category",
+     "type": "str"
+    },
+    {
+     "name": "currency",
+     "type": "str"
+    },
+    {
+     "name": "last_month",
+     "type": "date"
+    },
+    {
+     "name": "assigned",
+     "type": "amount"
+    },
+    {
+     "name": "activity",
+     "type": "decimal"
+    },
+    {
+     "name": "available",
+     "type": "amount"
+    },
+    {
+     "name": "closed",
+     "type": "bool"
+    }
+   ],
+   "rows": [
+    [
+     "food",
+     "Eating",
+     "Living",
+     "CNY",
+     "2023-09-01",
+     {
+      "number": "1000",
+      "currency": "CNY"
+     },
+     "88.50",
+     {
+      "number": "911.50",
+      "currency": "CNY"
+     },
+     false
+    ]
+   ]
+  },
+  {
+   "columns": [
+    {
+     "name": "date",
+     "type": "date"
+    },
+    {
+     "name": "time",
+     "type": "str"
+    }
+   ],
+   "rows": [
+    [
+     "2026-10-10",
+     "12:01:52"
+    ]
+   ]
+  }
+ ]
+}

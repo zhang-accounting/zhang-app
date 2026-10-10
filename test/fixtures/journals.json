@@ -1,0 +1,655 @@
+{
+ "data": {
+  "total_count": 214,
+  "total_page": 22,
+  "page_size": 10,
+  "current_page": 1,
+  "records": [
+   {
+    "type": "Transaction",
+    "id": "fa2230a4-7f74-755c-c0c6-e434fd21ad50",
+    "sequence": 243,
+    "datetime": "2026-10-06T08:00:00",
+    "payee": "Pending Shop",
+    "narration": "Awaiting refund",
+    "tags": [],
+    "links": [],
+    "flag": "!",
+    "is_balanced": true,
+    "postings": [
+     {
+      "account": "Assets:WeChat",
+      "unit": {
+       "number": "-9.90",
+       "commodity": "CNY"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "-9.90",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "146049.50",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "146039.60",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     },
+     {
+      "account": "Expenses:Sport",
+      "unit": null,
+      "cost": null,
+      "inferred_unit": {
+       "number": "9.90",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "0.00",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "9.90",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     }
+    ],
+    "metas": [],
+    "edit_drops_text": false
+   },
+   {
+    "type": "Transaction",
+    "id": "5cf5c78b-a776-8029-4338-147c676efc11",
+    "sequence": 241,
+    "datetime": "2026-10-04T10:00:00",
+    "payee": "Tiny",
+    "narration": "sat",
+    "tags": [],
+    "links": [],
+    "flag": "*",
+    "is_balanced": true,
+    "postings": [
+     {
+      "account": "Assets:Crypto",
+      "unit": {
+       "number": "0.00000001",
+       "commodity": "BTC"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "0.00000001",
+       "commodity": "BTC"
+      },
+      "account_before": {
+       "number": "0.01000000",
+       "commodity": "BTC"
+      },
+      "account_after": {
+       "number": "0.01000001",
+       "commodity": "BTC"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     },
+     {
+      "account": "Assets:Crypto",
+      "unit": {
+       "number": "-0.00000001",
+       "commodity": "BTC"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "-0.00000001",
+       "commodity": "BTC"
+      },
+      "account_before": {
+       "number": "0.01000001",
+       "commodity": "BTC"
+      },
+      "account_after": {
+       "number": "0.01",
+       "commodity": "BTC"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     }
+    ],
+    "metas": [],
+    "edit_drops_text": false
+   },
+   {
+    "type": "Transaction",
+    "id": "869ee8f5-efa2-1074-bc5d-0b9ef97a15f2",
+    "sequence": 239,
+    "datetime": "2026-10-02T18:30:00",
+    "payee": "Mobile Test Cafe",
+    "narration": "Flat white",
+    "tags": [
+     "mobile"
+    ],
+    "links": [
+     "order-42"
+    ],
+    "flag": "*",
+    "is_balanced": true,
+    "postings": [
+     {
+      "account": "Assets:WeChat",
+      "unit": {
+       "number": "-32.50",
+       "commodity": "CNY"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "-32.50",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "146124.00",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "146091.50",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     },
+     {
+      "account": "Expenses:PersonalDiet:Lunch",
+      "unit": null,
+      "cost": null,
+      "inferred_unit": {
+       "number": "32.50",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "1221.00",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "1253.50",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     }
+    ],
+    "metas": [
+     {
+      "key": "document",
+      "value": "attachments/71b1fd90-a3eb-4ad1-ad61-78bd7ae6a733/photo.png"
+     },
+     {
+      "key": "source",
+      "value": "zhang-app"
+     }
+    ],
+    "edit_drops_text": false
+   },
+   {
+    "type": "Transaction",
+    "id": "0a25388b-66a0-cf83-c510-0411ccff76d9",
+    "sequence": 236,
+    "datetime": "2023-09-16T21:56:16",
+    "payee": "隆江猪脚饭",
+    "narration": "Eating Dinner",
+    "tags": [],
+    "links": [],
+    "flag": "*",
+    "is_balanced": true,
+    "postings": [
+     {
+      "account": "Assets:CitiBank:9999",
+      "unit": {
+       "number": "-21",
+       "commodity": "CNY"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "-21",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "164469.50",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "164448.50",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     },
+     {
+      "account": "Expenses:PersonalDiet:Lunch",
+      "unit": null,
+      "cost": null,
+      "inferred_unit": {
+       "number": "21",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "1182",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "1203",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     }
+    ],
+    "metas": [],
+    "edit_drops_text": false
+   },
+   {
+    "type": "BalanceCheck",
+    "id": "df53cd51-5af0-3150-e3b4-a0394ab02ea4",
+    "sequence": 220,
+    "datetime": "2023-09-10T23:00:00",
+    "payee": "Balance Check",
+    "narration": "Assets:WeChat",
+    "type_": "C",
+    "postings": [
+     {
+      "account": "Assets:WeChat",
+      "unit": null,
+      "cost": null,
+      "inferred_unit": {
+       "number": "0",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "146183",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "146183",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": null
+     }
+    ],
+    "asserted": {
+     "number": "100",
+     "commodity": "CNY"
+    },
+    "checked_balance": {
+     "number": "146183",
+     "commodity": "CNY"
+    },
+    "difference": {
+     "number": "-146083",
+     "commodity": "CNY"
+    },
+    "tolerance": null,
+    "passed": false
+   },
+   {
+    "type": "Transaction",
+    "id": "3e7db305-4932-5fd7-cdc2-87bbe220182f",
+    "sequence": 214,
+    "datetime": "2023-09-08T11:00:00",
+    "payee": "Oops",
+    "narration": "Unbalanced",
+    "tags": [],
+    "links": [],
+    "flag": "*",
+    "is_balanced": false,
+    "postings": [
+     {
+      "account": "Assets:Paypal",
+      "unit": {
+       "number": "-10",
+       "commodity": "CNY"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "-10",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "134690",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "134680",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     },
+     {
+      "account": "Expenses:Clothing",
+      "unit": {
+       "number": "9",
+       "commodity": "CNY"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "9",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "652",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "661",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     }
+    ],
+    "metas": [],
+    "edit_drops_text": false
+   },
+   {
+    "type": "Transaction",
+    "id": "846d80bc-6824-8b70-4196-825346014589",
+    "sequence": 208,
+    "datetime": "2023-09-06T00:00:00",
+    "payee": "Exchange",
+    "narration": "Buy BTC (edited)",
+    "tags": [],
+    "links": [],
+    "flag": "*",
+    "is_balanced": true,
+    "postings": [
+     {
+      "account": "Assets:Crypto",
+      "unit": {
+       "number": "0.01",
+       "commodity": "BTC"
+      },
+      "cost": {
+       "number": "26000",
+       "commodity": "USD"
+      },
+      "inferred_unit": {
+       "number": "0.01",
+       "commodity": "BTC"
+      },
+      "account_before": {
+       "number": "0.00",
+       "commodity": "BTC"
+      },
+      "account_after": {
+       "number": "0.01",
+       "commodity": "BTC"
+      },
+      "metas": [],
+      "written": {
+       "cost": "{ 26000 USD }",
+       "price": null,
+       "comment": null
+      }
+     },
+     {
+      "account": "Assets:Paypal",
+      "unit": {
+       "number": "-260",
+       "commodity": "USD"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "-260",
+       "commodity": "USD"
+      },
+      "account_before": {
+       "number": "0",
+       "commodity": "USD"
+      },
+      "account_after": {
+       "number": "-260",
+       "commodity": "USD"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     }
+    ],
+    "metas": [],
+    "edit_drops_text": false
+   },
+   {
+    "type": "Transaction",
+    "id": "3bcdbf6a-ae47-0f9d-679a-3c4257b87b17",
+    "sequence": 201,
+    "datetime": "2023-09-03T12:30:00",
+    "payee": "Supermarket",
+    "narration": "Weekly groceries",
+    "tags": [
+     "weekly"
+    ],
+    "links": [
+     "receipt-001"
+    ],
+    "flag": "*",
+    "is_balanced": true,
+    "postings": [
+     {
+      "account": "Assets:CitiBank:9999",
+      "unit": {
+       "number": "-88.50",
+       "commodity": "CNY"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "-88.50",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "164601.00",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "164512.50",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     },
+     {
+      "account": "Expenses:Groceries",
+      "unit": {
+       "number": "88.50",
+       "commodity": "CNY"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "88.50",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "0.00",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "88.50",
+       "commodity": "CNY"
+      },
+      "metas": [
+       {
+        "key": "category",
+        "value": "food"
+       }
+      ],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": "paid by card"
+      }
+     }
+    ],
+    "metas": [
+     {
+      "key": "receipt_no",
+      "value": "A-1"
+     }
+    ],
+    "edit_drops_text": false
+   },
+   {
+    "type": "BalanceCheck",
+    "id": "d1972649-2e84-117b-5cb8-6d93ac4573a3",
+    "sequence": 30,
+    "datetime": "2023-05-31T01:01:01",
+    "payee": "Balance Check",
+    "narration": "Assets:CitiBank:9999",
+    "type_": "C",
+    "postings": [
+     {
+      "account": "Assets:CitiBank:9999",
+      "unit": null,
+      "cost": null,
+      "inferred_unit": {
+       "number": "0",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "158059",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "158059",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": null
+     }
+    ],
+    "asserted": {
+     "number": "158059",
+     "commodity": "CNY"
+    },
+    "checked_balance": {
+     "number": "158059",
+     "commodity": "CNY"
+    },
+    "difference": {
+     "number": "0",
+     "commodity": "CNY"
+    },
+    "tolerance": null,
+    "passed": true
+   },
+   {
+    "type": "BalancePad",
+    "id": "8c2704fe-ef7a-272c-2286-b757719ae95c",
+    "sequence": 27,
+    "datetime": "2023-05-31T01:01:01",
+    "payee": "Balance Pad",
+    "narration": "pad Assets:CitiBank:9999 to Equity:OpenBalancing",
+    "type_": "P",
+    "postings": [
+     {
+      "account": "Assets:CitiBank:9999",
+      "unit": {
+       "number": "158059",
+       "commodity": "CNY"
+      },
+      "cost": null,
+      "inferred_unit": {
+       "number": "158059",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "0",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "158059",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     },
+     {
+      "account": "Equity:OpenBalancing",
+      "unit": null,
+      "cost": null,
+      "inferred_unit": {
+       "number": "-158059",
+       "commodity": "CNY"
+      },
+      "account_before": {
+       "number": "-281465",
+       "commodity": "CNY"
+      },
+      "account_after": {
+       "number": "-439524",
+       "commodity": "CNY"
+      },
+      "metas": [],
+      "written": {
+       "cost": null,
+       "price": null,
+       "comment": null
+      }
+     }
+    ]
+   }
+  ]
+ }
+}

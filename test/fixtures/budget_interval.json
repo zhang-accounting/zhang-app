@@ -1,0 +1,99 @@
+{
+ "data": [
+  {
+   "columns": [
+    {
+     "name": "date",
+     "type": "date"
+    },
+    {
+     "name": "time",
+     "type": "str"
+    },
+    {
+     "name": "timestamp",
+     "type": "int"
+    },
+    {
+     "name": "type",
+     "type": "str"
+    },
+    {
+     "name": "amount",
+     "type": "amount"
+    }
+   ],
+   "rows": [
+    [
+     "2023-09-01",
+     "00:00:00",
+     1693494000,
+     "assign",
+     {
+      "number": "1000",
+      "currency": "CNY"
+     }
+    ]
+   ]
+  },
+  {
+   "columns": [
+    {
+     "name": "date",
+     "type": "date"
+    },
+    {
+     "name": "time",
+     "type": "str"
+    },
+    {
+     "name": "timestamp",
+     "type": "int"
+    },
+    {
+     "name": "account",
+     "type": "str"
+    },
+    {
+     "name": "id",
+     "type": "str"
+    },
+    {
+     "name": "payee",
+     "type": "str"
+    },
+    {
+     "name": "narration",
+     "type": "str"
+    },
+    {
+     "name": "units",
+     "type": "amount"
+    },
+    {
+     "name": "balance",
+     "type": "amount"
+    }
+   ],
+   "rows": [
+    [
+     "2023-09-03",
+     "12:30:00",
+     1693711800,
+     "Expenses:Groceries",
+     "3bcdbf6a-ae47-0f9d-679a-3c4257b87b17",
+     "Supermarket",
+     "Weekly groceries",
+     {
+      "number": "88.50",
+      "currency": "CNY"
+     },
+     {
+      "number": "88.50",
+      "currency": "CNY"
+     }
+    ]
+   ]
+  }
+ ]
+}

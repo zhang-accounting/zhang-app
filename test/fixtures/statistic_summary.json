@@ -1,0 +1,223 @@
+{
+ "data": [
+  {
+   "columns": [
+    {
+     "name": "balance",
+     "type": "inventory"
+    },
+    {
+     "name": "units",
+     "type": "inventory"
+    },
+    {
+     "name": "value",
+     "type": "inventory"
+    }
+   ],
+   "rows": [
+    [
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "0.01",
+         "currency": "BTC"
+        },
+        "cost": {
+         "number": "26000",
+         "currency": "USD",
+         "date": "2023-09-06",
+         "label": null
+        }
+       },
+       {
+        "units": {
+         "number": "444553.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "-262.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "0.01",
+         "currency": "BTC"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "444553.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "-262.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "444531.8225",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ]
+   ]
+  },
+  {
+   "columns": [
+    {
+     "name": "units",
+     "type": "inventory"
+    },
+    {
+     "name": "value",
+     "type": "inventory"
+    }
+   ],
+   "rows": [
+    [
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "-651",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "-12.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "-745.1775",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ]
+   ]
+  },
+  {
+   "columns": [
+    {
+     "name": "type",
+     "type": "str"
+    },
+    {
+     "name": "units",
+     "type": "inventory"
+    },
+    {
+     "name": "value",
+     "type": "inventory"
+    }
+   ],
+   "rows": [
+    [
+     "Expenses",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "704.50",
+         "currency": "CNY"
+        },
+        "cost": null
+       },
+       {
+        "units": {
+         "number": "12.99",
+         "currency": "USD"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "798.6775",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ],
+    [
+     "Income",
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "-436",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     },
+     {
+      "positions": [
+       {
+        "units": {
+         "number": "-436",
+         "currency": "CNY"
+        },
+        "cost": null
+       }
+      ]
+     }
+    ]
+   ]
+  },
+  {
+   "columns": [
+    {
+     "name": "transactions",
+     "type": "int"
+    }
+   ],
+   "rows": [
+    [
+     40
+    ]
+   ]
+  }
+ ]
+}

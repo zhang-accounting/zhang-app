@@ -1,0 +1,610 @@
+{
+ "data": [
+  {
+   "name": "Assets:CitiBank:9999",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "169448.50",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "169448.50"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "169448.50"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "169448.50",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "169448.50"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Assets:Crypto",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "1885.0000",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "0",
+     "BTC": "0.01000000"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "BTC": "0.01000000",
+    "CNY": "0"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "1885.0000",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "BTC": "0.01000000",
+     "CNY": "0"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Assets:Paypal",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "132801.50",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "134614",
+     "USD": "-250"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "134614",
+    "USD": "-250"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "132801.50",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "USD": "-250",
+     "CNY": "134614"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Assets:WeChat",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "146039.60",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "146039.60"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "146039.60"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "146039.60",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "146039.60"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Equity:OpenBalancing",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "-439524",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-439524"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "-439524"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "-439524",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-439524"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Expenses:Clothing",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "1199.1775",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "1105.00",
+     "USD": "12.99"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "USD": "12.99",
+    "CNY": "1105.00"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "1199.1775",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "1105.00",
+     "USD": "12.99"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Expenses:GrandLordCompany:Tax",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "904",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "904"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "904"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "904",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "904"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Expenses:Groceries",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "88.50",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "88.50"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "88.50"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "88.50",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "88.50"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Expenses:Medical",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "0",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "0"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "0"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "0",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "0"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Expenses:PersonalDiet:Dinner",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "1032",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "1032"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "1032"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "1032",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "1032"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Expenses:PersonalDiet:Lunch",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "1295.50",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "1295.50"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "1295.50"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "1295.50",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "1295.50"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Expenses:RemunerationTax",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "165",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "165"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "165"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "165",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "165"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Expenses:Sport",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "9.90",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "9.90"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "9.90"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "9.90",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "9.90"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Expenses:Transportation",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "100.00",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "100.00"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "100.00"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "100.00",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "100.00"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Income:CitiBank:Interest",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "0",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "0"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "0"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "0",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "0"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Income:GrandLordCompany:Salary",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "-12780.00",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-12780.00"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "-12780.00"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "-12780.00",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-12780.00"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Income:Publisher:DogeRandomHouse",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "-445",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-445"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "-445"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "-445",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-445"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Income:Publisher:Scgolastic",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "-657",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-657"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "-657"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "-657",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-657"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Income:Publisher:TheZhangBookGroup",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "-319",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-319"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "-319"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "-319",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-319"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Income:Remuneration",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "0",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "0"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "0"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "0",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "0"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Liabilities:CreditCard:Apple",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "-975.1775",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "USD": "-12.99",
+     "CNY": "-881.00"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "-881.00",
+    "USD": "-12.99"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "-975.1775",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-881.00",
+     "USD": "-12.99"
+    }
+   },
+   "has_sub_accounts": false
+  },
+  {
+   "name": "Liabilities:CreditCard:CitiBank:3423",
+   "status": "Open",
+   "alias": null,
+   "amount": {
+    "calculated": {
+     "number": "-269",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-269"
+    }
+   },
+   "balance_with_sub_accounts": {
+    "CNY": "-269"
+   },
+   "amount_with_sub_accounts": {
+    "calculated": {
+     "number": "-269",
+     "commodity": "CNY"
+    },
+    "detail": {
+     "CNY": "-269"
+    }
+   },
+   "has_sub_accounts": false
+  }
+ ]
+}

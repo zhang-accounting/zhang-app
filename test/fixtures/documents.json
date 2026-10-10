@@ -1,0 +1,49 @@
+{
+ "data": {
+  "columns": [
+   {
+    "name": "date",
+    "type": "date"
+   },
+   {
+    "name": "time",
+    "type": "str"
+   },
+   {
+    "name": "path",
+    "type": "str"
+   },
+   {
+    "name": "account",
+    "type": "str"
+   },
+   {
+    "name": "transaction_id",
+    "type": "str"
+   }
+  ],
+  "rows": [
+   [
+    "2026-10-10",
+    "12:07:57",
+    "attachments/737ef4f0-5c6a-4fb3-b30b-f016283bf3cb/photo.png",
+    "Assets:WeChat",
+    null
+   ],
+   [
+    "2026-10-02",
+    "18:30:00",
+    "attachments/71b1fd90-a3eb-4ad1-ad61-78bd7ae6a733/photo.png",
+    null,
+    "869ee8f5-efa2-1074-bc5d-0b9ef97a15f2"
+   ],
+   [
+    "2023-09-07",
+    "00:00:00",
+    "attachments/receipt.txt",
+    "Assets:Paypal",
+    null
+   ]
+  ]
+ }
+}

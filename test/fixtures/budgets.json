@@ -1,0 +1,61 @@
+{
+ "data": {
+  "columns": [
+   {
+    "name": "name",
+    "type": "str"
+   },
+   {
+    "name": "alias",
+    "type": "str"
+   },
+   {
+    "name": "category",
+    "type": "str"
+   },
+   {
+    "name": "currency",
+    "type": "str"
+   },
+   {
+    "name": "last_month",
+    "type": "date"
+   },
+   {
+    "name": "assigned",
+    "type": "amount"
+   },
+   {
+    "name": "activity",
+    "type": "decimal"
+   },
+   {
+    "name": "available",
+    "type": "amount"
+   },
+   {
+    "name": "closed",
+    "type": "bool"
+   }
+  ],
+  "rows": [
+   [
+    "food",
+    "Eating",
+    "Living",
+    "CNY",
+    "2023-09-01",
+    {
+     "number": "1000",
+     "currency": "CNY"
+    },
+    "88.50",
+    {
+     "number": "911.50",
+     "currency": "CNY"
+    },
+    false
+   ]
+  ]
+ }
+}

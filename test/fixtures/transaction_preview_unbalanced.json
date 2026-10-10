@@ -1,0 +1,18 @@
+{
+ "data": {
+  "text": "2026-10-10 09:30:00 * \"X\" \"\"\n  Assets:WeChat -10 CNY\n  Expenses:Medical 9 CNY",
+  "field_errors": [],
+  "unbalanced": [
+   {
+    "number": "-1.00",
+    "commodity": "CNY"
+   }
+  ],
+  "errors": [
+   {
+    "error_type": "UnbalancedTransaction",
+    "metas": {}
+   }
+  ]
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "data": [
+  {
+   "key": "timezone",
+   "value": "Asia/Tokyo"
+  },
+  {
+   "key": "default_balance_tolerance_precision",
+   "value": "2"
+  },
+  {
+   "key": "default_booking_method",
+   "value": "FIFO"
+  },
+  {
+   "key": "directive_output_path",
+   "value": "data/{{year}}/{{month_str}}.{{ext}}"
+  },
+  {
+   "key": "operating_currency",
+   "value": "CNY"
+  },
+  {
+   "key": "default_commodity_precision",
+   "value": "2"
+  },
+  {
+   "key": "title",
+   "value": "My Accounting"
+  },
+  {
+   "key": "default_rounding",
+   "value": "RoundDown"
+  }
+ ]
+}
