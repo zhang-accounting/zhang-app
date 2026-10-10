@@ -9,6 +9,8 @@ import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/models/info.dart';
 import 'package:zhang_app/data/models/server_event.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
+import 'package:zhang_app/data/api/api_exception.dart';
+import 'package:zhang_app/data/repositories/ledger_data_providers.dart';
 import 'package:zhang_app/data/repositories/ledger_events.dart';
 import 'package:zhang_app/data/repositories/ledger_revision.dart';
 
@@ -206,6 +208,49 @@ void main() {
     streams.last.send('{"type":"Connected"}');
     await _wait(LedgerEvents.reloadDebounce.inMilliseconds + 100);
     expect(container.read(ledgerRevisionProvider), 1);
+  });
+
+  test('a version gate that failed (server unreachable) is re-checked when the stream connects', () async {
+    final streams = <_Stream>[];
+    var online = false;
+    final adapter = FakeAdapter((o) {
+      if (!online) throw DioException.connectionError(requestOptions: o, reason: 'offline');
+      if (o.path == '/info') {
+        return jsonResponse({
+          'data': {'title': 'Old', 'version': '0.1.0', 'build_date': '2026-10-02'},
+        });
+      }
+      final s = _Stream();
+      streams.add(s);
+      return s.body;
+    });
+    final client = ZhangApiClient(_profile)..dio.httpClientAdapter = adapter;
+    final container = ProviderContainer(
+      overrides: [
+        zhangApiClientProvider.overrideWithValue(client),
+        ledgerEventsEnabledProvider.overrideWithValue(true),
+      ],
+      retry: (_, _) => null,
+    );
+    addTearDown(container.dispose);
+    container.listen(serverGateProvider, (_, _) {});
+    await expectLater(container.read(serverGateProvider.future), throwsA(isA<ApiNetworkError>()));
+    container.listen(ledgerEventsProvider, (_, _) {});
+    await _wait();
+    online = true;
+    // The stream retries after 1 s (allow for a loaded machine).
+    for (var i = 0; i < 40 && streams.isEmpty; i++) {
+      await _wait(100);
+    }
+    expect(streams, hasLength(1));
+    streams.single.send('{"type":"Connected"}');
+    for (var i = 0; i < 40 && !container.read(serverGateProvider).hasValue; i++) {
+      await _wait(50);
+    }
+    final gate = container.read(serverGateProvider);
+    expect(gate.hasError, isFalse);
+    expect(gate.value?.isSupported, isFalse, reason: 'an old server is now caught by the gate');
+    expect([for (final r in adapter.requests) if (r.path == '/info') r.path], hasLength(2));
   });
 
   test('a profile switch closes the old stream and never reconnects to the old server', () async {

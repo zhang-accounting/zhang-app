@@ -9,6 +9,7 @@ import '../api/endpoints.dart';
 import '../api/zhang_api_client.dart';
 import '../models/info.dart';
 import '../models/server_event.dart';
+import 'ledger_data_providers.dart';
 import 'ledger_revision.dart';
 
 /// Whether the app listens to `GET /api/sse`. `bootstrap()` turns it on;
@@ -139,6 +140,11 @@ class LedgerEvents extends Notifier<LedgerEventsState> {
         state = missed ? const LedgerEventsState(connected: true) : state.copyWith(connected: true);
         if (missed) _bumpSoon();
         _wasConnected = true;
+        // The version gate could not reach the server (e.g. the app started
+        // offline) and let the tabs through: check the version now.
+        if (ref.exists(serverGateProvider) && ref.read(serverGateProvider).hasError) {
+          ref.invalidate(serverGateProvider);
+        }
       case ServerReload():
         state = state.copyWith(sawReloadEvent: true, clearFailure: true);
         _bumpSoon();

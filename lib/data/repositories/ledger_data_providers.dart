@@ -14,7 +14,9 @@ import 'ledger_revision.dart';
 /// The version gate of the active server: `GET /api/info` once per profile
 /// (not refetched on revision bumps). Its [ServerInfo.isSupported] decides
 /// whether the main shell may query the server at all; `AppShell` shows
-/// "server too old" instead of the tabs when it is `false`.
+/// "server too old" instead of the tabs when it is `false`. When it failed
+/// (server unreachable), `ledgerEventsProvider` re-checks it once the event
+/// stream connects.
 final serverGateProvider = FutureProvider<ServerInfo>((ref) => ref.watch(zhangApiClientProvider).info());
 
 /// `GET /api/info` of the active server (refetched with the ledger
