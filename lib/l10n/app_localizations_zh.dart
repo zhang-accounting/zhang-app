@@ -188,6 +188,27 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get errorServerTooOld =>
+      '该 zhang 服务器版本过旧：需要 zhang ≥ 0.2（带内置查询 API）。请升级服务器。';
+
+  @override
+  String get errorPasskeyOnly =>
+      '该服务器只允许通行密钥（passkey）登录，App 无法使用。请在服务器上启用密码登录（ZHANG_AUTH 或 --auth user:pass）。';
+
+  @override
+  String errorApiMismatch(String message) {
+    return '服务器没有这个 API（$message）。App 需要 zhang ≥ 0.2。';
+  }
+
+  @override
+  String get serverTooOldTitle => '服务器版本过旧';
+
+  @override
+  String serverTooOldVersion(String version) {
+    return '服务器报告的版本：$version。';
+  }
+
+  @override
   String get serversSection => '服务器';
 
   @override

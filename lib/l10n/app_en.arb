@@ -103,6 +103,25 @@
       }
     }
   },
+  "errorServerTooOld": "This zhang server is too old: zhang ≥ 0.2 with the built-in query API is required. Upgrade the server.",
+  "errorPasskeyOnly": "This server only allows passkey sign-in, which the app cannot use. Enable password sign-in on the server (ZHANG_AUTH or --auth user:pass).",
+  "errorApiMismatch": "The server does not offer this API ({message}). The app needs zhang ≥ 0.2.",
+  "@errorApiMismatch": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "serverTooOldTitle": "Server too old",
+  "serverTooOldVersion": "The server reports version {version}.",
+  "@serverTooOldVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
   "serversSection": "Servers",
   "addServer": "Add server",
   "editServer": "Edit server",

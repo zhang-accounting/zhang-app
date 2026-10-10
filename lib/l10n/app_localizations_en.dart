@@ -194,6 +194,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get errorServerTooOld =>
+      'This zhang server is too old: zhang ≥ 0.2 with the built-in query API is required. Upgrade the server.';
+
+  @override
+  String get errorPasskeyOnly =>
+      'This server only allows passkey sign-in, which the app cannot use. Enable password sign-in on the server (ZHANG_AUTH or --auth user:pass).';
+
+  @override
+  String errorApiMismatch(String message) {
+    return 'The server does not offer this API ($message). The app needs zhang ≥ 0.2.';
+  }
+
+  @override
+  String get serverTooOldTitle => 'Server too old';
+
+  @override
+  String serverTooOldVersion(String version) {
+    return 'The server reports version $version.';
+  }
+
+  @override
   String get serversSection => 'Servers';
 
   @override

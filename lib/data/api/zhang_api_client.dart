@@ -6,6 +6,7 @@ import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/auth_status.dart';
 import '../models/info.dart';
 import '../profiles/profile_providers.dart';
 import '../profiles/server_profile.dart';
@@ -70,6 +71,18 @@ class ZhangApiClient {
 
   /// `GET /api/info` – cheapest health/identity/credentials check.
   Future<ServerInfo> info() => get('/info', decode: ServerInfo.fromJson);
+
+  /// `GET /api/auth/status` – sign-in methods of the server; needs no
+  /// credentials (zhang ≥ 0.2).
+  Future<AuthStatus> authStatus() => get('/auth/status', decode: AuthStatus.fromJson);
+
+  /// `GET /api/info`, then the version gate: throws [ApiServerTooOld] when
+  /// the server predates the v0.2 API (no `format` key).
+  Future<ServerInfo> supportedInfo() async {
+    final info = await this.info();
+    if (!info.isSupported) throw ApiServerTooOld(info.version);
+    return info;
+  }
 
   /// GET [path] and decode the envelope's `data`.
   ///
@@ -281,15 +294,35 @@ final zhangApiClientProvider = Provider<ZhangApiClient>((ref) {
 
 /// Probes a not-yet-saved profile (onboarding / settings "Test connection").
 class ConnectionTester {
-  const ConnectionTester();
+  const ConnectionTester({this.createClient = ZhangApiClient.new});
 
-  /// Calls `GET /api/info` with [profile]'s URL and credentials.
+  /// Builds the client for the probed profile (tests inject a fake adapter).
+  final ZhangApiClient Function(ServerProfile profile) createClient;
+
+  /// Calls `GET /api/info` with [profile]'s URL and credentials and applies
+  /// the version gate ([ApiServerTooOld] for zhang < 0.2). When the
+  /// credentials are refused, `GET /api/auth/status` tells a passkey-only
+  /// server ([ApiPasskeyOnly]) from a wrong password ([ApiUnauthorized]).
   Future<ServerInfo> test(ServerProfile profile) async {
-    final client = ZhangApiClient(profile);
+    final client = createClient(profile);
     try {
-      return await client.info();
+      return await client.supportedInfo();
+    } on ApiUnauthorized {
+      final status = await _authStatus(client);
+      if (status != null && status.isPasskeyOnly) throw const ApiPasskeyOnly();
+      rethrow;
     } finally {
       client.close();
+    }
+  }
+
+  /// Best effort: `null` when the server cannot tell (older servers answer
+  /// 401 or a text page here).
+  static Future<AuthStatus?> _authStatus(ZhangApiClient client) async {
+    try {
+      return await client.authStatus();
+    } on ZhangApiException {
+      return null;
     }
   }
 }

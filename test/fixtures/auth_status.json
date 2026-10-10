@@ -1,0 +1,13 @@
+{
+ "data": {
+  "enabled": false,
+  "authenticated": true,
+  "methods": {
+   "password": false,
+   "passkey": false
+  },
+  "passkey_registered": false,
+  "user": null,
+  "title": "My Accounting"
+ }
+}

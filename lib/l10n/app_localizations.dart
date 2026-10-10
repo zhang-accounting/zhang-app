@@ -434,6 +434,36 @@ abstract class AppLocalizations {
   /// **'Something went wrong: {message}'**
   String errorUnknown(String message);
 
+  /// No description provided for @errorServerTooOld.
+  ///
+  /// In en, this message translates to:
+  /// **'This zhang server is too old: zhang ≥ 0.2 with the built-in query API is required. Upgrade the server.'**
+  String get errorServerTooOld;
+
+  /// No description provided for @errorPasskeyOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This server only allows passkey sign-in, which the app cannot use. Enable password sign-in on the server (ZHANG_AUTH or --auth user:pass).'**
+  String get errorPasskeyOnly;
+
+  /// No description provided for @errorApiMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The server does not offer this API ({message}). The app needs zhang ≥ 0.2.'**
+  String errorApiMismatch(String message);
+
+  /// No description provided for @serverTooOldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server too old'**
+  String get serverTooOldTitle;
+
+  /// No description provided for @serverTooOldVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'The server reports version {version}.'**
+  String serverTooOldVersion(String version);
+
   /// No description provided for @serversSection.
   ///
   /// In en, this message translates to:

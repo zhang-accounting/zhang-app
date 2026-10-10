@@ -2,6 +2,8 @@
  "data": {
   "title": "My Accounting",
   "version": "0.1.0",
-  "build_date": "2026-10-02"
+  "build_date": "2026-10-10",
+  "format": "zhang",
+  "reload_failure": null
  }
 }

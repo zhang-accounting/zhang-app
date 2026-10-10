@@ -50,6 +50,7 @@ Future<(ProviderContainer, FakeAdapter)> pumpLedgerApp(
   WidgetTester tester,
   ResponseBody Function(String path, RequestOptions options) handler, {
   DateTime? now,
+  Map<String, Object?>? info,
 }) async {
   tester.view.physicalSize = const Size(1170, 2532); // 390 x 844 logical
   tester.view.devicePixelRatio = 3;
@@ -59,6 +60,7 @@ Future<(ProviderContainer, FakeAdapter)> pumpLedgerApp(
   final client = ZhangApiClient(testProfile);
   final adapter = FakeAdapter((o) {
     final path = Uri.decodeComponent(o.path);
+    if (info != null && path == '/info') return jsonResponse(info);
     return commonRoute(path) ?? handler(path, o);
   });
   client.dio.httpClientAdapter = adapter;

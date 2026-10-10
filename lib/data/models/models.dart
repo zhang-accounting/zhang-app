@@ -3,6 +3,7 @@ library;
 
 export 'account.dart';
 export 'amount.dart';
+export 'auth_status.dart';
 export 'balance_request.dart';
 export 'budget.dart';
 export 'commodity.dart';

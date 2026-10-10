@@ -56,6 +56,7 @@ class FakeZhangServer {
     if (path.endsWith('/errors')) {
       return jsonResponse(pageJson(errors, page: 1, size: 100, total: errors.length));
     }
+    if (path.endsWith('/info')) return jsonResponse(fixture('info.json'));
     if (path.endsWith('/options')) return jsonResponse(fixture('options.json'));
     if (path.endsWith('/commodities')) return jsonResponse(fixture('commodities.json'));
     return jsonResponse({'message': 'not found'}, status: 404);

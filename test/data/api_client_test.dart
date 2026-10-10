@@ -71,27 +71,55 @@ void main() {
       final info = await client.info();
       expect(info.title, 'My Accounting');
       expect(info.version, '0.1.0');
-      expect(info.buildDate, '2026-10-02');
+      expect(info.buildDate, '2026-10-10');
+      expect(info.format, 'zhang');
+      expect(info.isSupported, isTrue);
+    });
+
+    test('401 {"message":"unauthorized"} → ApiUnauthorized', () async {
+      final (client, _) = _client(
+        _base,
+        (_) => rawJsonResponse(fixtureText('err_unauthorized.json'), status: 401),
+      );
+      await expectLater(
+        client.info(),
+        throwsA(isA<ApiUnauthorized>().having((e) => e.message, 'message', 'unauthorized')),
+      );
     });
 
     test('401 with empty body → ApiUnauthorized', () async {
-      final (client, _) = _client(
-        _base,
-        (_) => emptyResponse(401, headers: {
-          'www-authenticate': ['Basic'],
-        }),
-      );
+      final (client, _) = _client(_base, (_) => emptyResponse(401));
       await expectLater(client.info(), throwsA(isA<ApiUnauthorized>()));
     });
 
     test('404 JSON → ApiNotFound', () async {
-      final (client, _) = _client(
-        _base,
-        (_) => jsonResponse({'message': 'not found', 'origin': 'with_rejection'}, status: 404),
-      );
+      final (client, _) = _client(_base, (_) => jsonResponse({'message': 'not found'}, status: 404));
       await expectLater(
         client.get('/accounts/Assets:Nope', decode: (d) => d),
-        throwsA(isA<ApiNotFound>().having((e) => e.message, 'message', 'not found')),
+        throwsA(
+          isA<ApiNotFound>()
+              .having((e) => e.message, 'message', 'not found')
+              .having((e) => e.isMissingRoute, 'isMissingRoute', isFalse),
+        ),
+      );
+    });
+
+    test('404 / 405 "no route" → isMissingRoute (API version mismatch)', () async {
+      final (client, _) = _client(_base, (o) {
+        final name = o.path.endsWith('/balances') ? 'err_wrong_method.json' : 'err_no_route.json';
+        return rawJsonResponse(fixtureText(name), status: o.path.endsWith('/balances') ? 405 : 404);
+      });
+      await expectLater(
+        client.get('/statistic/summary', decode: (d) => d),
+        throwsA(isA<ApiNotFound>().having((e) => e.isMissingRoute, 'isMissingRoute', isTrue)),
+      );
+      await expectLater(
+        client.get('/accounts/Assets:Paypal/balances', decode: (d) => d),
+        throwsA(
+          isA<ApiServerError>()
+              .having((e) => e.status, 'status', 405)
+              .having((e) => e.isMissingRoute, 'isMissingRoute', isTrue),
+        ),
       );
     });
 

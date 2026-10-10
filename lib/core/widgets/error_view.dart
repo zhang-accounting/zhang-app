@@ -6,6 +6,9 @@ import '../../l10n/l10n.dart';
 /// Localised, user-facing description of any error thrown by the data layer.
 String describeApiError(AppLocalizations l10n, Object error) {
   return switch (error) {
+    ApiServerTooOld() => l10n.errorServerTooOld,
+    ApiPasskeyOnly() => l10n.errorPasskeyOnly,
+    ZhangApiException(isMissingRoute: true, :final message) => l10n.errorApiMismatch(message),
     ApiUnauthorized() => l10n.errorUnauthorized,
     ApiNotFound() => l10n.errorNotFound,
     ApiServerError(:final status, :final message) => l10n.errorServer(status, message),
@@ -19,7 +22,9 @@ String describeApiError(AppLocalizations l10n, Object error) {
 
 /// Icon matching an error (lock for 401, cloud-off for network, …).
 IconData iconForApiError(Object error) => switch (error) {
-  ApiUnauthorized() => Icons.lock_outline,
+  ApiServerTooOld() => Icons.update,
+  ZhangApiException(isMissingRoute: true) => Icons.update,
+  ApiUnauthorized() || ApiPasskeyOnly() => Icons.lock_outline,
   ApiNetworkError(kind: NetworkErrorKind.certificate) => Icons.gpp_maybe_outlined,
   ApiNetworkError() => Icons.cloud_off_outlined,
   ApiParseError() => Icons.help_outline,
