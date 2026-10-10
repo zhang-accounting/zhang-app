@@ -16,7 +16,8 @@ class YearMonth implements Comparable<YearMonth> {
   /// Month containing [value] (wall-clock fields, no timezone conversion).
   factory YearMonth.of(DateTime value) => YearMonth(value.year, value.month);
 
-  /// The current month on this device.
+  /// The current month on this device (prefer the ledger's clock,
+  /// `ledgerClockProvider`).
   factory YearMonth.now() => YearMonth.of(DateTime.now());
 
   final int year;

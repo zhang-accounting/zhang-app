@@ -156,7 +156,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       mode: mode,
       amount: _form.amount.value,
       commodity: commodity,
-      datetime: _form.date ?? DateTime.now(),
+      datetime: _form.date ?? _now(),
       precision: precision,
       categoryChosen: _form.category != null,
       categoryAccount: _form.categoryAccount,
@@ -217,7 +217,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       mode: r.draft.mode,
       amount: _form.amount.value,
       commodity: r.draft.commodity,
-      datetime: _form.date ?? DateTime.now(),
+      datetime: _form.date ?? _now(),
       precision: r.precision,
       categoryChosen: r.draft.categoryChosen,
       categoryAccount: r.draft.categoryAccount,
@@ -395,8 +395,12 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     _update(from ? _form.withFrom(picked) : _form.withTo(picked));
   }
 
+  /// "Now" by the ledger's clock: entries are written in the ledger's
+  /// wall-clock time.
+  DateTime _now() => ref.read(ledgerClockProvider)();
+
   Future<void> _pickDate() async {
-    final now = DateTime.now();
+    final now = _now();
     final current = _form.date ?? now;
     final day = await showDatePicker(
       context: context,
@@ -427,6 +431,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    ref.watch(ledgerClockProvider); // "today" follows the ledger's clock
     final r = _resolved = _resolve();
     final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return PopScope(
@@ -646,7 +651,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     final date = _form.date;
     if (date == null) return l10n.addToday;
     final locale = Localizations.localeOf(context).toString();
-    final now = DateTime.now();
+    final now = _now();
     final time = ZhangDates.formatTime(date, locale);
     if (ZhangDates.isSameDay(date, now)) return '${l10n.addToday} $time';
     final day = date.year == now.year ? DateFormat.MMMd(locale).format(date) : ZhangDates.formatDate(date, locale);
@@ -672,7 +677,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final notToday = _form.date != null && !ZhangDates.isSameDay(_form.date!, DateTime.now());
+    final notToday = _form.date != null && !ZhangDates.isSameDay(_form.date!, _now());
     final funding = r.draft.funding;
     final valid = r.issues.isEmpty;
     return Material(

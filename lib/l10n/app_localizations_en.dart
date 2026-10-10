@@ -487,8 +487,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String homeErrorLocation(String file, int offset) {
-    return '$file · byte $offset';
+  String homeErrorLocation(String file, int line) {
+    return '$file:$line';
   }
 
   @override
@@ -529,6 +529,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get journalBalanceFailed => 'Balance check failed';
+
+  @override
+  String journalPadTarget(String amount) {
+    return 'to $amount';
+  }
+
+  @override
+  String trxBalanceActual(String amount) {
+    return 'Actual balance $amount';
+  }
+
+  @override
+  String trxBalanceDifference(String amount) {
+    return 'Difference $amount';
+  }
+
+  @override
+  String accountsSubAccount(String account) {
+    return 'in $account';
+  }
 
   @override
   String get journalSearch => 'Search';

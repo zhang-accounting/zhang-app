@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:zhang_app/features/transaction_new/entry_mode.dart';
 import 'package:zhang_app/features/transaction_new/transaction_builder.dart';
 
-final _when = DateTime.utc(2026, 10, 2, 9, 30);
+final _when = DateTime(2026, 10, 2, 9, 30);
 
 EntryDraft draft(
   EntryMode mode, {
@@ -48,7 +48,7 @@ void main() {
       expect(json['tags'], <String>[]);
       expect(json['links'], <String>[]);
       expect(json['metas'], <Object>[]);
-      expect(json['datetime'], '2026-10-02T09:30:00Z');
+      expect(json['datetime'], '2026-10-02T09:30:00');
     });
 
     test('amounts are written with the commodity precision, never exponent notation', () {

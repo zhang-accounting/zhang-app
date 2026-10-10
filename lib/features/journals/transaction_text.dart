@@ -40,12 +40,11 @@ String transactionToText(JournalTransaction txn) {
 }
 
 String balanceToText(JournalBalance item) {
-  final posting = item.postings.isEmpty ? null : item.postings.first;
-  final account = posting?.account ?? (item.narration ?? '');
-  final asserted = posting == null ? '' : ' ${_amount(posting.accountAfter)}';
-  final line = '${_date(item.datetime)} balance $account$asserted';
+  final amount = item.assertedAmount;
+  final asserted = amount == null ? '' : ' ${_amount(amount)}';
+  final line = '${_date(item.datetime)} balance ${item.account}$asserted';
   if (!item.isPad) return line;
-  final pad = item.postings.length > 1 ? item.postings[1].account : null;
+  final pad = item.padAccount;
   return pad == null ? line : '$line with pad $pad';
 }
 

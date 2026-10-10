@@ -1,7 +1,7 @@
 import 'package:intl/intl.dart';
 
 /// Date/time helpers that encode the zhang server's conventions
-/// (docs/zhang-api.md §1.5).
+/// (docs/zhang-api.md, "Dates and times").
 ///
 /// * Response `datetime` fields are *naive* ledger-local wall-clock strings
 ///   (`2023-09-16T21:56:16`, no offset). We parse them into a local
@@ -9,8 +9,10 @@ import 'package:intl/intl.dart';
 ///   the UI should display. Do not convert them with `toLocal()`/`toUtc()`.
 /// * `timestamp` fields are Unix epoch seconds (true instants).
 /// * Date-only fields are `YYYY-MM-DD`.
-/// * Request datetimes must be RFC 3339 with an offset. We always send UTC
-///   (`2023-08-31T15:00:00Z`), which needs no `+` escaping in query strings.
+/// * Requests use the same naive ledger wall-clock format
+///   (`2026-10-03T09:30:00`, [toNaiveIso]) for datetimes and `YYYY-MM-DD`
+///   ([toIsoDate]) for dates; the server reads both in the ledger's
+///   timezone (zhang ≥ 0.2).
 abstract final class ZhangDates {
   /// Parses a naive ledger-local datetime (`YYYY-MM-DDTHH:MM:SS[.fff]`).
   /// A trailing `Z`/offset, if any, is honoured and converted to local time.
@@ -27,15 +29,6 @@ abstract final class ZhangDates {
     } on FormatException {
       return null;
     }
-  }
-
-  /// Parses a naive datetime that is known to be expressed in **UTC** without a
-  /// `Z` (the `from`/`to` echoes of `/api/statistic/graph` and
-  /// `/api/statistic/{type}`). Values with `Z` are accepted too.
-  static DateTime parseNaiveUtc(String value) {
-    final v = value.trim();
-    final hasZone = v.endsWith('Z') || RegExp(r'[+-]\d\d:?\d\d$').hasMatch(v);
-    return DateTime.parse(hasZone ? v : '${v}Z').toUtc();
   }
 
   /// Parses a `YYYY-MM-DD` date into a local midnight [DateTime].
@@ -57,14 +50,6 @@ abstract final class ZhangDates {
   /// Converts epoch seconds (`timestamp` fields) into a UTC [DateTime].
   static DateTime fromEpochSeconds(int seconds) =>
       DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true);
-
-  /// RFC 3339 instant for requests (`datetime` bodies, `from`/`to` params),
-  /// always in UTC with second precision, e.g. `2023-08-31T15:00:00Z`.
-  static String toRfc3339(DateTime value) {
-    final u = value.toUtc();
-    return '${_d4(u.year)}-${_d2(u.month)}-${_d2(u.day)}'
-        'T${_d2(u.hour)}:${_d2(u.minute)}:${_d2(u.second)}Z';
-  }
 
   /// `YYYY-MM-DD` of the wall-clock date of [value].
   static String toIsoDate(DateTime value) =>

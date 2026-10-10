@@ -2,10 +2,9 @@ import 'amount.dart';
 
 /// Body of `POST /api/accounts/{name}/balances` and an element of
 /// `POST /api/accounts/batch-balances`. Both are dated "now" by the server
-/// and answer `201` with an empty body.
+/// and answer `200 {"data":{"replaced":[]}}`.
 ///
-/// Avoid pads on commodities held at cost (can make the ledger unloadable,
-/// docs §1.7).
+/// Avoid pads on commodities held at cost (can make the ledger unloadable).
 sealed class BalanceRequest {
   const BalanceRequest({required this.amount, this.accountName});
 

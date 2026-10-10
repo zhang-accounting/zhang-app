@@ -20,28 +20,12 @@ void main() {
       expect(ZhangDates.tryParseNaive(null), isNull);
     });
 
-    test('parses naive UTC echoes and Z echoes as the same instant', () {
-      final a = ZhangDates.parseNaiveUtc('2023-08-31T15:00:00');
-      final b = ZhangDates.parseNaiveUtc('2023-08-31T15:00:00Z');
-      expect(a.isUtc, isTrue);
-      expect(a, b);
-      expect(a.toIso8601String(), '2023-08-31T15:00:00.000Z');
-    });
-
     test('date-only and epoch seconds', () {
       expect(ZhangDates.parseDate('2023-09-06'), DateTime(2023, 9, 6));
       expect(
         ZhangDates.fromEpochSeconds(1694354400).toIso8601String(),
         '2023-09-10T14:00:00.000Z',
       );
-    });
-
-    test('toRfc3339 emits UTC with Z and second precision', () {
-      final utc = DateTime.utc(2026, 10, 2, 9, 30, 0, 123);
-      expect(ZhangDates.toRfc3339(utc), '2026-10-02T09:30:00Z');
-      final local = DateTime(2023, 9, 1);
-      expect(ZhangDates.toRfc3339(local), ZhangDates.toRfc3339(local.toUtc()));
-      expect(ZhangDates.toRfc3339(local).endsWith('Z'), isTrue);
     });
 
     test('naive / iso date formatting and month bounds', () {

@@ -87,15 +87,14 @@ void main() {
     setUp(() => page = Pageable.fromJson(fixtureData('journals.json'), JournalItem.fromJson));
 
     test('page metadata', () {
-      expect(page.totalCount, 202);
+      expect(page.totalCount, 214);
       expect(page.currentPage, 1);
       expect(page.hasNextPage, isTrue);
-      expect(page.records, hasLength(5));
+      expect(page.records, hasLength(10));
     });
 
     test('transaction with tags, links, metas, implicit posting', () {
-      final tx = page.records.first as JournalTransaction;
-      expect(tx.id, '7c785595-5694-c51e-dd34-115dc2cddeb1');
+      final tx = page.records[2] as JournalTransaction;
       expect(tx.datetime, DateTime(2026, 10, 2, 18, 30));
       expect(tx.payee, 'Mobile Test Cafe');
       expect(tx.narration, 'Flat white');
@@ -103,36 +102,50 @@ void main() {
       expect(tx.links, ['order-42']);
       expect(tx.flag, '*');
       expect(tx.isBalanced, isTrue);
-      expect(tx.documentPaths, ['attachments/13f9ced5-57ad-44ff-b2f6-d23fd7b2f329/photo.png']);
+      expect(tx.documentPaths, ['attachments/71b1fd90-a3eb-4ad1-ad61-78bd7ae6a733/photo.png']);
       expect(tx.postings[0].unit, Amount(d('-32.50'), 'CNY'));
       expect(tx.postings[1].unit, isNull);
       expect(tx.postings[1].inferredUnit, Amount(d('32.50'), 'CNY'));
-      expect(tx.postings[1].accountAfter.number, d('1235.50'));
     });
 
     test('naive datetime is kept as wall-clock time', () {
-      final tx = page.records[1] as JournalTransaction;
+      final tx = page.records[3] as JournalTransaction;
       expect(tx.datetime.isUtc, isFalse);
       expect(tx.datetime, DateTime(2023, 9, 16, 21, 56, 16));
       expect(tx.payee, '隆江猪脚饭');
     });
 
-    test('cost postings and exponent amounts', () {
-      final tx = page.records[2] as JournalTransaction;
-      expect(tx.isPending, isTrue);
-      expect(tx.postings[0].cost, Amount(d('26000'), 'USD'));
-      expect(tx.postings[1].unit!.number, d('0.00000001'));
-      expect(tx.postings[1].accountBefore.number, d('-1000'));
+    test('pending flag, cost postings and tiny amounts in plain notation', () {
+      expect((page.records[0] as JournalTransaction).isPending, isTrue);
+      final tiny = page.records[1] as JournalTransaction;
+      expect(tiny.postings[0].unit!.number, d('0.00000001'));
+      final btc = page.records[6] as JournalTransaction;
+      expect(btc.narration, 'Buy BTC (edited)');
+      expect(btc.postings[0].cost, Amount(d('26000'), 'USD'));
+      expect(btc.postings[0].unit, Amount(d('0.01'), 'BTC'));
+      expect((page.records[5] as JournalTransaction).isBalanced, isFalse);
     });
 
-    test('balance check and pad items', () {
-      final check = page.records[3] as JournalBalance;
-      expect(check.isCheck, isTrue);
-      expect(check.narration, 'Assets:WeChat');
-      expect(check.postings.single.inferredUnit.number, d('-145994.50'));
-      final pad = page.records[4] as JournalBalance;
+    test('balance checks carry asserted / passed; pads their padded amount', () {
+      final failed = page.records[4] as JournalBalance;
+      expect(failed.isCheck, isTrue);
+      expect(failed.narration, 'Assets:WeChat');
+      expect(failed.postings.single.inferredUnit.number, Decimal.zero);
+      expect(failed.asserted, Amount(d('100'), 'CNY'));
+      expect(failed.checkedBalance, Amount(d('146183'), 'CNY'));
+      expect(failed.difference, Amount(d('-146083'), 'CNY'));
+      expect(failed.passed, isFalse);
+      expect(failed.failed, isTrue);
+      final passed = page.records[8] as JournalBalance;
+      expect(passed.asserted, Amount(d('158059'), 'CNY'));
+      expect(passed.passed, isTrue);
+      expect(passed.failed, isFalse);
+      final pad = page.records[9] as JournalBalance;
       expect(pad.isPad, isTrue);
       expect(pad.postings, hasLength(2));
+      expect(pad.asserted, isNull);
+      expect(pad.failed, isFalse);
+      expect(pad.postings.first.inferredUnit, Amount(d('158059'), 'CNY'));
     });
 
     test('unknown item types do not break the page', () {
@@ -147,9 +160,9 @@ void main() {
   });
 
   group('transaction request', () {
-    test('always sends narration, tags, links, metas; datetime with offset', () {
+    test('always sends narration, tags, links, metas; datetime as ledger wall clock', () {
       final req = CreateTransactionRequest(
-        datetime: DateTime.utc(2026, 10, 2, 9, 30),
+        datetime: DateTime(2026, 10, 2, 9, 30),
         payee: 'Mobile Test Cafe',
         postings: [
           PostingRequest(account: 'Assets:WeChat', unit: Amount(d('-32.50'), 'CNY')),
@@ -157,7 +170,7 @@ void main() {
         ],
       );
       final json = jsonDecode(jsonEncode(req.toJson())) as Map<String, dynamic>;
-      expect(json['datetime'], '2026-10-02T09:30:00Z');
+      expect(json['datetime'], '2026-10-02T09:30:00');
       expect(json['narration'], '');
       expect(json['flag'], '*');
       expect(json['tags'], isEmpty);
@@ -169,12 +182,13 @@ void main() {
 
     test('fromJournal preserves tags, links, metas and written units', () {
       final page = Pageable.fromJson(fixtureData('journals.json'), JournalItem.fromJson);
-      final tx = page.records.first as JournalTransaction;
+      final tx = page.records[2] as JournalTransaction;
       final json = CreateTransactionRequest.fromJournal(tx).copyWith(payee: 'Edited').toJson();
       expect(json['payee'], 'Edited');
+      expect(json['datetime'], '2026-10-02T18:30:00');
       expect(json['tags'], ['mobile']);
       expect(json['links'], ['order-42']);
-      expect((json['metas'] as List).map((m) => (m as Map)['key']), ['source', 'document']);
+      expect((json['metas'] as List).map((m) => (m as Map)['key']), ['document', 'source']);
       expect((json['postings'] as List)[1], {'account': 'Expenses:PersonalDiet:Lunch', 'unit': null});
     });
   });
@@ -219,7 +233,23 @@ void main() {
       expect(list.first.timestamp, 1791241200);
       expect(list.first.account, 'Assets:WeChat');
       expect(list.first.payee, 'Pending Shop');
+      final journal = Pageable.fromJson(fixtureData('journals.json'), JournalItem.fromJson);
+      final cafe = list.firstWhere((e) => e.payee == 'Mobile Test Cafe');
+      expect(cafe.trxId, journal.records[2].id, reason: 'trx_id is the /api/journals id');
       expect(list.last.isBalanceItem, isTrue);
+    });
+
+    test('journals: balance check rows carry asserted / passed', () {
+      final list = parseList(fixtureData('account_journals.json'), AccountJournalEntry.fromJson);
+      final failed = list.firstWhere((e) => e.payee == 'Balance Check' && e.passed == false);
+      expect(failed.isCheck, isTrue);
+      expect(failed.inferredUnit.number, Decimal.zero);
+      expect(failed.asserted, Amount(d('100'), 'CNY'));
+      expect(failed.checkedBalance, Amount(d('146183'), 'CNY'));
+      final pad = list.last;
+      expect(pad.isPad, isTrue);
+      expect(pad.asserted, isNull);
+      expect(pad.passed, isNull);
     });
 
     test('balance history (accounts.balance_history) grouped by currency and sorted', () {

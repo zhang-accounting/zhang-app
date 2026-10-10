@@ -26,8 +26,11 @@ class PostingRequest {
 
 /// Body of `POST /api/transactions` and `PUT /api/transactions/{id}`.
 ///
-/// Encodes the server's rules (docs §3.3):
-/// * [datetime] is sent as an RFC 3339 UTC instant (`…Z`);
+/// Encodes the server's rules (docs/zhang-api.md):
+/// * [datetime] is the **ledger's wall-clock time** and is sent without an
+///   offset (`2026-10-03T09:30:00`, zhang ≥ 0.2 reads it in the ledger's
+///   timezone), so editing never shifts the time when the device timezone
+///   differs from the ledger's;
 /// * [narration] is always sent as a string (`""` for none) – omitting it
 ///   would turn the payee into the narration;
 /// * `tags`, `links` and `metas` are always sent (may be empty);
@@ -46,7 +49,9 @@ class CreateTransactionRequest {
 
   /// Starting point for a safe edit (`PUT`): copies payee, narration, flag,
   /// tags, links, metas (incl. `document` entries) and the *written* posting
-  /// units of [tx], so nothing is lost when only some fields change.
+  /// units of [tx], so nothing is lost when only some fields change. Posting
+  /// cost / price / comment are not sent; the server keeps them when the keys
+  /// are omitted.
   factory CreateTransactionRequest.fromJournal(JournalTransaction tx) =>
       CreateTransactionRequest(
         datetime: tx.datetime,
@@ -61,7 +66,8 @@ class CreateTransactionRequest {
         links: tx.links,
       );
 
-  /// Local or UTC instant; serialised with [ZhangDates.toRfc3339].
+  /// Ledger wall-clock time (a naive `DateTime` as parsed from responses, or
+  /// the ledger clock); serialised with [ZhangDates.toNaiveIso].
   final DateTime datetime;
   final String payee;
   final String narration;
@@ -94,7 +100,7 @@ class CreateTransactionRequest {
   );
 
   Map<String, Object?> toJson() => {
-    'datetime': ZhangDates.toRfc3339(datetime),
+    'datetime': ZhangDates.toNaiveIso(datetime),
     'payee': payee,
     'narration': narration,
     if (flag != null) 'flag': flag,

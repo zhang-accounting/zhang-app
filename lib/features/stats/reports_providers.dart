@@ -7,8 +7,9 @@ import '../../data/repositories/ledger_revision.dart';
 import '../../data/repositories/statistic_repository.dart';
 import 'report_period.dart';
 
-/// Clock used to pick the initial period (overridable in tests).
-final reportsClockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+/// Clock used to pick the initial period: the ledger's clock (overridable in
+/// tests).
+final reportsClockProvider = Provider<DateTime Function()>((ref) => ref.watch(ledgerClockProvider));
 
 /// The selected reporting period (current month by default).
 final reportPeriodProvider = NotifierProvider<ReportPeriodController, ReportPeriod>(
@@ -17,7 +18,7 @@ final reportPeriodProvider = NotifierProvider<ReportPeriodController, ReportPeri
 
 class ReportPeriodController extends Notifier<ReportPeriod> {
   @override
-  ReportPeriod build() => ReportPeriod.month(ref.read(reportsClockProvider)());
+  ReportPeriod build() => ReportPeriod.month(ref.watch(reportsClockProvider)());
 
   /// Switch to week / month / year. Keeps "now" when the current period
   /// contains it, else anchors on the current period's first day.

@@ -953,8 +953,8 @@ abstract class AppLocalizations {
   /// No description provided for @homeErrorLocation.
   ///
   /// In en, this message translates to:
-  /// **'{file} · byte {offset}'**
-  String homeErrorLocation(String file, int offset);
+  /// **'{file}:{line}'**
+  String homeErrorLocation(String file, int line);
 
   /// No description provided for @homeAuthBanner.
   ///
@@ -1033,6 +1033,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Balance check failed'**
   String get journalBalanceFailed;
+
+  /// No description provided for @journalPadTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'to {amount}'**
+  String journalPadTarget(String amount);
+
+  /// No description provided for @trxBalanceActual.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual balance {amount}'**
+  String trxBalanceActual(String amount);
+
+  /// No description provided for @trxBalanceDifference.
+  ///
+  /// In en, this message translates to:
+  /// **'Difference {amount}'**
+  String trxBalanceDifference(String amount);
+
+  /// No description provided for @accountsSubAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'in {account}'**
+  String accountsSubAccount(String account);
 
   /// No description provided for @journalSearch.
   ///

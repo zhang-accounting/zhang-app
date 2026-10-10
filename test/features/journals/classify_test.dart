@@ -146,18 +146,18 @@ void main() {
       expect(noOp.amounts.first.commodity, 'USD');
     });
 
-    test('fixture items: expense and an asset-only (BTC) transfer with exponent amount', () {
+    test('fixture items: expense and an asset-only (BTC) transfer in plain notation', () {
       final records = [
         for (final r in ((fixtureData('journals.json') as Map)['records'] as List))
           JournalItem.fromJson(r as Map<String, Object?>),
       ];
-      final cafe = classify(records[0] as JournalTransaction, operatingCurrency: 'CNY');
+      final cafe = classify(records[2] as JournalTransaction, operatingCurrency: 'CNY');
       expect(cafe.kind, TxnKind.expense);
       expect(cafe.amounts, [a('-32.50')]);
-      final btc = classify(records[2] as JournalTransaction);
+      final btc = classify(records[1] as JournalTransaction);
       expect(btc.kind, TxnKind.transfer);
       expect(btc.amounts.single.commodity, 'BTC');
-      expect(btc.amounts.single.number.toString(), '0.01000001');
+      expect(btc.amounts.single.number.toString(), '0.00000001');
     });
   });
 }

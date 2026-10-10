@@ -57,8 +57,9 @@ IconData txnKindIcon(TxnClassification c) {
 /// * Transactions: icon by [classify] kind, payee → narration → category as
 ///   title, narration · account(s) · tags as subtitle, coloured signed
 ///   amount; `!` flag dot, unbalanced outline + ⚠, attachment clip.
-/// * Balance check / pad: ✓ (✗ when the check failed) and the asserted
-///   balance in neutral colour.
+/// * Balance check: ✓ (✗ when it failed) and the asserted amount in neutral
+///   colour. Balance pad (with its check folded in, see `foldBalancePads`):
+///   ⚖, the padded amount and the target balance.
 class JournalItemTile extends ConsumerWidget {
   const JournalItemTile({super.key, required this.item, this.onTap});
 
@@ -69,7 +70,6 @@ class JournalItemTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final commodities = ref.watch(commoditiesProvider).value;
     final opCurrency = ref.watch(operatingCurrencyProvider);
-    final failed = ref.watch(ledgerErrorIdsProvider).contains(item.id);
     return switch (item) {
       final JournalTransaction t => _TransactionTile(
         txn: t,
@@ -79,8 +79,7 @@ class JournalItemTile extends ConsumerWidget {
       ),
       final JournalBalance b => _BalanceTile(
         item: b,
-        failed: failed,
-        format: (a) => formatAmount(a, commodities),
+        format: (a, {signed = false}) => formatAmount(a, commodities, signed: signed),
         onTap: onTap,
       ),
       JournalUnknown() => ListTile(
@@ -211,11 +210,10 @@ class _TransactionTile extends StatelessWidget {
 }
 
 class _BalanceTile extends StatelessWidget {
-  const _BalanceTile({required this.item, required this.failed, required this.format, this.onTap});
+  const _BalanceTile({required this.item, required this.format, this.onTap});
 
   final JournalBalance item;
-  final bool failed;
-  final String Function(Amount) format;
+  final _Format format;
   final VoidCallback? onTap;
 
   @override
@@ -223,12 +221,18 @@ class _BalanceTile extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final posting = item.postings.isEmpty ? null : item.postings.first;
-    final account = posting?.account ?? item.narration ?? '';
+    final failed = item.failed;
     final title = item.isPad
         ? l10n.journalBalancePad
         : (failed ? l10n.journalBalanceFailed : l10n.journalBalanceCheck);
-    final amount = posting == null ? null : (item.isPad ? posting.inferredUnit : posting.accountAfter);
+    // A check shows the asserted amount; a pad the amount it posted, and the
+    // balance it pads to under the account.
+    final amount = item.isPad ? item.paddedAmount : item.assertedAmount;
+    final target = item.isPad ? item.assertedAmount : null;
+    final subtitle = [
+      accountLabel(item.account),
+      if (target != null) l10n.journalPadTarget(format(target)),
+    ].join(' · ');
     final iconColor = failed ? scheme.error : scheme.onSurfaceVariant;
     return ListTile(
       key: Key('journal.row.${item.id}'),
@@ -248,7 +252,7 @@ class _BalanceTile extends StatelessWidget {
         style: failed ? TextStyle(color: scheme.error) : null,
       ),
       subtitle: Text(
-        accountLabel(account),
+        subtitle,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
@@ -256,7 +260,7 @@ class _BalanceTile extends StatelessWidget {
       trailing: amount == null
           ? null
           : Text(
-              format(amount),
+              format(amount, signed: item.isPad),
               style: tabular(theme.textTheme.titleSmall)?.copyWith(color: context.zhangColors.neutral),
             ),
     );
@@ -283,7 +287,7 @@ class DayHeader extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Row(
         children: [
-          Expanded(child: Text(dayLabel(context, day), style: style)),
+          Expanded(child: Text(dayLabel(context, day, now: ref.watch(ledgerClockProvider)()), style: style)),
           if (n != null && !n.isZero)
             Text(
               formatAmount(n, commodities, signed: true),
@@ -298,7 +302,7 @@ class DayHeader extends ConsumerWidget {
 }
 
 /// "Today · Fri, Oct 2" / "今天 · 10月2日周五"; the year is added when it is
-/// not the current one.
+/// not the current one. [now] is the ledger's clock (`ledgerClockProvider`).
 String dayLabel(BuildContext context, DateTime day, {DateTime? now}) {
   final l10n = context.l10n;
   final locale = Localizations.localeOf(context).toLanguageTag();

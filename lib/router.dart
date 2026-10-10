@@ -93,6 +93,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'accounts/:name',
                     builder: (context, state) =>
                         AccountDetailScreen(name: state.pathParameters['name']!),
+                    routes: [JournalRoutes.accountDetailRoute()],
                   ),
                 ],
               ),
@@ -109,6 +110,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: ':name',
                     builder: (context, state) =>
                         AccountDetailScreen(name: state.pathParameters['name']!),
+                    routes: [JournalRoutes.accountDetailRoute()],
                   ),
                 ],
               ),

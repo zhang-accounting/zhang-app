@@ -172,7 +172,7 @@ class ZhangApiClient {
   }
 
   /// Returns the `data` member of a JSON envelope or throws [ApiParseError]
-  /// (non-JSON body, e.g. the `200 text/plain` fallback, or no envelope).
+  /// (non-JSON body – the URL is not a zhang API – or no envelope).
   @visibleForTesting
   static Object? unwrapEnvelope(Response<Object?> res) {
     final data = res.data;
@@ -230,8 +230,8 @@ class ZhangApiClient {
     return null;
   }
 
-  /// Error text per docs §1.2: JSON `message`, else the plain-text body,
-  /// else `HTTP <status>`.
+  /// Error text: zhang's JSON `message`, else a plain-text body (e.g. from
+  /// a reverse proxy), else `HTTP <status>`.
   static String errorMessageOf(Object? body, int status) {
     if (body is Map && body['message'] is String) return body['message'] as String;
     if (body is String && body.trim().isNotEmpty) {

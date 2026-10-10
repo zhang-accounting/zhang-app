@@ -65,7 +65,7 @@ void main() {
           postings: [('Income:Salary', '-1000', 'CNY'), ('Assets:Bank', '1000', 'CNY')],
           implicit: {1},
         ),
-        balanceCheckJson(id: 'b1', datetime: '2023-09-28T23:00:00'),
+        balanceCheckJson(id: 'b1', datetime: '2023-09-28T23:00:00', checked: '100.00'),
       ],
     );
     await pumpApp(tester, server);
@@ -103,6 +103,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(copied, startsWith('2023-09-29 09:00:00 * "Boss" "Salary" #work ^payslip-9\n  source: "zhang-app"'));
     expect(find.text('Copied to clipboard'), findsOneWidget);
+  });
+
+  testWidgets('journal: balance checks show the asserted amount; a pad absorbs its check', (tester) async {
+    final server = FakeZhangServer(
+      journals: [
+        balanceCheckJson(id: 'bad', datetime: '2023-09-28T23:00:00', asserted: '100', checked: '146094.50', sequence: 9),
+        balanceCheckJson(id: 'ok', datetime: '2023-09-27T23:00:00', asserted: '500', checked: '500', sequence: 8),
+        balanceCheckJson(id: 'padcheck', datetime: '2023-09-26T01:00:00', account: 'Assets:Bank', asserted: '700', checked: '700', sequence: 7),
+        balancePadJson(id: 'pad', datetime: '2023-09-26T01:00:00', account: 'Assets:Bank', amount: '700', sequence: 6),
+      ],
+    );
+    await pumpApp(tester, server);
+    await openJournalTab(tester);
+
+    final bad = find.byKey(const Key('journal.row.bad'));
+    expect(find.descendant(of: bad, matching: find.text('Balance check failed')), findsOneWidget);
+    expect(find.descendant(of: bad, matching: find.text('¥100.00')), findsOneWidget);
+    final ok = find.byKey(const Key('journal.row.ok'));
+    expect(find.descendant(of: ok, matching: find.text('Balance check')), findsOneWidget);
+    expect(find.descendant(of: ok, matching: find.text('¥500.00')), findsOneWidget);
+    // `balance … with pad`: one row for the pad, its check folded in.
+    expect(find.byKey(const Key('journal.row.padcheck')), findsNothing);
+    final pad = find.byKey(const Key('journal.row.pad'));
+    expect(find.descendant(of: pad, matching: find.text('Balance pad')), findsOneWidget);
+    expect(find.descendant(of: pad, matching: find.text('+¥700.00')), findsOneWidget);
+    expect(find.descendant(of: pad, matching: find.textContaining('to ¥700.00')), findsOneWidget);
+
+    await tester.tap(bad);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(find.byKey(const Key('trx.amount'))).data, '¥100.00');
+    expect(find.text('Balance check failed'), findsOneWidget);
+    expect(find.text('Actual balance ¥146,094.50'), findsOneWidget);
+    expect(find.text('Difference −¥145,994.50'), findsOneWidget);
   });
 
   testWidgets('journal: keyword search goes to the server; no match offers clearing', (tester) async {

@@ -225,7 +225,7 @@ void main() {
       final repo = JournalRepository(client, onMutated: () => mutated++);
       await repo.create(
         CreateTransactionRequest(
-          datetime: DateTime.utc(2026, 10, 2, 9, 30),
+          datetime: DateTime(2026, 10, 2, 9, 30),
           payee: 'Cafe',
           postings: [
             PostingRequest(account: 'Assets:WeChat', unit: Amount(Decimal.parse('-32.50'), 'CNY')),
@@ -235,7 +235,7 @@ void main() {
       );
       final body = adapter.last.data as Map<String, Object?>;
       expect(adapter.last.method, 'POST');
-      expect(body['datetime'], '2026-10-02T09:30:00Z');
+      expect(body['datetime'], '2026-10-02T09:30:00', reason: 'ledger wall clock, no offset');
       expect(body['narration'], '');
       expect((body['postings'] as List).first, {
         'account': 'Assets:WeChat',

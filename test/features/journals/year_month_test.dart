@@ -47,7 +47,7 @@ void main() {
       final m = YearMonth.of(now);
       expect(m.start, ZhangDates.startOfMonth(now));
       expect(m.end, ZhangDates.endOfMonth(now));
-      expect(ZhangDates.toRfc3339(m.start), endsWith('Z'));
+      expect(ZhangDates.toIsoDate(m.start), endsWith('-01'));
     });
   });
 }

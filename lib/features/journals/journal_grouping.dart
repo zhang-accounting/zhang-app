@@ -61,14 +61,15 @@ class JournalMonthGroup {
 
 /// Groups [items] (newest first) into months and days, preserving order.
 /// Items of the same day are merged even if not adjacent. When [hasMore] is
-/// true the oldest day is marked incomplete.
+/// true the oldest day is marked incomplete. The balance check of a
+/// `balance … with pad` is folded into its pad row ([foldBalancePads]).
 List<JournalMonthGroup> groupJournal(
   List<JournalItem> items, {
   required bool hasMore,
   String? operatingCurrency,
 }) {
   final days = <DateTime, List<JournalItem>>{};
-  for (final item in items) {
+  for (final item in foldBalancePads(items)) {
     final d = item.datetime;
     days.putIfAbsent(DateTime(d.year, d.month, d.day), () => []).add(item);
   }

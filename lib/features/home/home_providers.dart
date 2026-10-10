@@ -7,6 +7,7 @@ import '../../data/models/journal.dart';
 import '../../data/models/pageable.dart';
 import '../../data/models/statistic.dart';
 import '../../data/repositories/journal_repository.dart';
+import '../../data/repositories/ledger_data_providers.dart';
 import '../../data/repositories/ledger_revision.dart';
 import '../journals/journal_providers.dart' show browseRetry;
 import '../journals/year_month.dart';
@@ -18,8 +19,9 @@ const homeRecentCount = 10;
 final homeMonthProvider = NotifierProvider<HomeMonthController, YearMonth>(HomeMonthController.new);
 
 class HomeMonthController extends Notifier<YearMonth> {
+  /// The current month by the ledger's clock.
   @override
-  YearMonth build() => YearMonth.now();
+  YearMonth build() => YearMonth.of(ref.watch(ledgerClockProvider)());
 
   void previous() => state = state.previous;
 
@@ -28,7 +30,7 @@ class HomeMonthController extends Notifier<YearMonth> {
     if (canGoNext) state = state.next;
   }
 
-  bool get canGoNext => YearMonth.now().isAfter(state);
+  bool get canGoNext => YearMonth.of(ref.read(ledgerClockProvider)()).isAfter(state);
 }
 
 /// `GET /api/journals?page=1&size=10` – Home always shows the newest items,

@@ -26,17 +26,20 @@ const _mono = TextStyle(fontFamily: 'monospace', fontFamilyFallback: ['Menlo', '
 /// "copy as text" action. The item comes from the route `extra`; deep links
 /// fall back to [journalItemByIdProvider].
 class TransactionDetailScreen extends ConsumerWidget {
-  const TransactionDetailScreen({super.key, required this.id, this.initial});
+  const TransactionDetailScreen({super.key, required this.id, this.initial, this.searchHint});
 
   final String id;
   final JournalItem? initial;
+
+  /// Payee or narration to search for when [initial] is missing.
+  final String? searchHint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final item = initial;
     if (item != null) return _DetailScaffold(item: item);
-    final lookup = ref.watch(journalItemByIdProvider(id));
+    final lookup = ref.watch(journalItemByIdProvider((id, searchHint)));
     return lookup.when(
       data: (found) => found == null
           ? Scaffold(
@@ -55,7 +58,7 @@ class TransactionDetailScreen extends ConsumerWidget {
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: Text(l10n.trxTitle)),
-        body: ErrorView(error: e, onRetry: () => ref.invalidate(journalItemByIdProvider(id))),
+        body: ErrorView(error: e, onRetry: () => ref.invalidate(journalItemByIdProvider((id, searchHint)))),
       ),
     );
   }
@@ -79,7 +82,6 @@ class _DetailScaffold extends ConsumerWidget {
     final commodities = ref.watch(commoditiesProvider).value;
     final opCurrency = ref.watch(operatingCurrencyProvider);
     final item = this.item;
-    final failed = ref.watch(ledgerErrorIdsProvider).contains(item.id);
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.trxTitle),
@@ -102,7 +104,7 @@ class _DetailScaffold extends ConsumerWidget {
               classification: classify(item, operatingCurrency: opCurrency),
               commodities: commodities,
             ),
-            JournalBalance() => _BalanceHeader(item: item, failed: failed, commodities: commodities),
+            JournalBalance() => _BalanceHeader(item: item, commodities: commodities),
             JournalUnknown() => ListTile(title: Text(item.payee)),
           },
           if (item.postings.isNotEmpty) ...[
@@ -230,11 +232,13 @@ class _TransactionHeader extends StatelessWidget {
   }
 }
 
+/// Header of a balance check (asserted amount; checked balance and
+/// difference when it failed) or a pad (padded amount and the balance it
+/// pads to, with the folded check's result).
 class _BalanceHeader extends StatelessWidget {
-  const _BalanceHeader({required this.item, required this.failed, required this.commodities});
+  const _BalanceHeader({required this.item, required this.commodities});
 
   final JournalBalance item;
-  final bool failed;
   final Map<String, Commodity>? commodities;
 
   @override
@@ -242,31 +246,58 @@ class _BalanceHeader extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final posting = item.postings.isEmpty ? null : item.postings.first;
+    final failed = item.failed;
+    final check = item.isPad ? item.assertion : item;
     final title = item.isPad
         ? l10n.journalBalancePad
         : (failed ? l10n.journalBalanceFailed : l10n.journalBalanceCheck);
+    final amount = item.isPad ? item.paddedAmount : item.assertedAmount;
+    final target = item.isPad ? item.assertedAmount : null;
+    String fmt(Amount a, {bool signed = false}) => formatAmount(a, commodities, signed: signed);
+    final muted = theme.textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Column(
         children: [
           Chip(
-            avatar: Icon(item.isPad ? Icons.balance : Icons.fact_check_outlined, size: 18),
+            avatar: Icon(
+              item.isPad ? Icons.balance : (failed ? Icons.cancel_outlined : Icons.fact_check_outlined),
+              size: 18,
+            ),
             label: Text(title),
             backgroundColor: failed ? scheme.errorContainer : scheme.surfaceContainerHighest,
             side: BorderSide.none,
           ),
-          if (posting != null) ...[
+          if (amount != null) ...[
             const SizedBox(height: 8),
             Text(
-              formatAmount(posting.accountAfter, commodities),
+              fmt(amount, signed: item.isPad),
               key: const Key('trx.amount'),
               style: tabular(theme.textTheme.displaySmall)?.copyWith(color: context.zhangColors.neutral),
             ),
+          ],
+          const SizedBox(height: 8),
+          Text(item.account, style: _mono.merge(theme.textTheme.bodyMedium), textAlign: TextAlign.center),
+          if (target != null) ...[
+            const SizedBox(height: 4),
+            Text(l10n.journalPadTarget(fmt(target)), style: muted, textAlign: TextAlign.center),
+          ],
+          if (check != null && check.failed) ...[
             const SizedBox(height: 8),
-            Text(posting.account, style: _mono.merge(theme.textTheme.bodyMedium), textAlign: TextAlign.center),
-          ] else if (item.narration != null)
-            Text(item.narration!, style: theme.textTheme.titleMedium),
+            if (check.checkedBalance != null)
+              Text(
+                l10n.trxBalanceActual(fmt(check.checkedBalance!)),
+                key: const Key('trx.balanceActual'),
+                style: tabular(muted),
+                textAlign: TextAlign.center,
+              ),
+            if (check.difference != null)
+              Text(
+                l10n.trxBalanceDifference(fmt(check.difference!, signed: true)),
+                style: tabular(muted?.copyWith(color: scheme.error)),
+                textAlign: TextAlign.center,
+              ),
+          ],
         ],
       ),
     );

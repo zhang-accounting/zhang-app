@@ -30,6 +30,32 @@ final ledgerOptionsProvider = FutureProvider<LedgerOptions>((ref) {
   return ref.watch(ledgerRepositoryProvider).options();
 });
 
+/// Offset of the ledger's wall clock (built-in `ledger.now`, in the ledger's
+/// timezone) from this device's clock, rounded to 15 minutes; fetched once
+/// per profile. Zero while unknown or when the request fails.
+final ledgerClockOffsetProvider = FutureProvider<Duration>((ref) async {
+  final ledgerNow = await ref.watch(ledgerRepositoryProvider).now();
+  return roundClockOffset(ledgerNow.difference(DateTime.now()));
+}, retry: (_, _) => null);
+
+/// Rounds a clock offset to the nearest 15 minutes (timezone offsets are
+/// multiples of 15 minutes; the rest is request latency and clock skew).
+Duration roundClockOffset(Duration offset) {
+  const step = 15;
+  final minutes = (offset.inSeconds / 60 / step).round() * step;
+  return Duration(minutes: minutes);
+}
+
+/// "Now" by the ledger's wall clock: today, the current month and the
+/// default time of a new entry follow the ledger's timezone, not the
+/// device's. Falls back to the device clock until [ledgerClockOffsetProvider]
+/// is known.
+final ledgerClockProvider = Provider<DateTime Function()>((ref) {
+  final offset = ref.watch(ledgerClockOffsetProvider).value ?? Duration.zero;
+  if (offset == Duration.zero) return DateTime.now;
+  return () => DateTime.now().add(offset);
+});
+
 /// Commodities by name – use `commodities[code]?.format(amount)` to format
 /// amounts with the right precision and symbol.
 final commoditiesProvider = FutureProvider<Map<String, Commodity>>((ref) async {

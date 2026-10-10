@@ -468,8 +468,8 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String homeErrorLocation(String file, int offset) {
-    return '$file · 第 $offset 字节';
+  String homeErrorLocation(String file, int line) {
+    return '$file 第 $line 行';
   }
 
   @override
@@ -510,6 +510,26 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get journalBalanceFailed => '余额断言失败';
+
+  @override
+  String journalPadTarget(String amount) {
+    return '至 $amount';
+  }
+
+  @override
+  String trxBalanceActual(String amount) {
+    return '实际余额 $amount';
+  }
+
+  @override
+  String trxBalanceDifference(String amount) {
+    return '差额 $amount';
+  }
+
+  @override
+  String accountsSubAccount(String account) {
+    return '子账户 $account';
+  }
 
   @override
   String get journalSearch => '搜索';

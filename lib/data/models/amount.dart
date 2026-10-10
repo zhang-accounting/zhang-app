@@ -46,8 +46,9 @@ class Amount {
 
 /// `{"calculated": Amount, "detail": {"<commodity>": "<decimal>"}}`.
 ///
-/// [calculated] is converted to the operating currency by the server (only
-/// via direct prices, earliest price – see docs §1.4); [detail] holds the raw
+/// [calculated] is converted to the operating currency by the server (latest
+/// price on or before the date, inverse prices and cost currencies included;
+/// a commodity it cannot value counts 0); [detail] holds the raw
 /// per-commodity sums.
 @immutable
 class CalculatedAmount {

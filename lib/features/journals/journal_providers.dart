@@ -248,31 +248,40 @@ final ledgerErrorsProvider = FutureProvider<Pageable<LedgerError>>((ref) {
   return ref.watch(ledgerRepositoryProvider).errors(size: 100);
 }, retry: browseRetry);
 
-/// Ids of journal items that have a ledger error (failed balance checks,
-/// unbalanced transactions). Empty while loading / on error.
-final ledgerErrorIdsProvider = Provider<Set<String>>((ref) {
-  final errors = ref.watch(ledgerErrorsProvider).value;
-  if (errors == null) return const {};
-  return {
-    for (final e in errors.records) ...[e.id, ?e.metas['txn_id']],
-  };
-});
-
 /// Operating currency, or `null` until the options are loaded.
 final operatingCurrencyProvider = Provider<String?>(
   (ref) => ref.watch(ledgerOptionsProvider).value?.operatingCurrency,
 );
 
-/// A journal item by id for the detail screen when it was not passed as
-/// route `extra` (deep link / restored route): looks in the loaded journal
-/// pages first, then fetches page 1 (100 items). `null` = not found (ids
+/// A journal item by `(id, keyword)` for the detail screen when it was not
+/// passed as route `extra` (deep link, a row of an account's postings):
+/// looks in the loaded journal pages first, then searches `/api/journals`
+/// for `keyword` (the payee or narration, up to 5 pages of 100), then page 1.
+/// Pads come with their balance check folded in. `null` = not found (ids
 /// change on every ledger reload).
-final journalItemByIdProvider = FutureProvider.autoDispose.family<JournalItem?, String>((ref, id) async {
+final journalItemByIdProvider = FutureProvider.autoDispose.family<JournalItem?, (String, String?)>((
+  ref,
+  arg,
+) async {
+  final (id, keyword) = arg;
   final loaded = ref.read(journalListProvider).value?.byId(id);
   if (loaded != null) return loaded;
-  final page = await ref.watch(journalRepositoryProvider).list(const JournalQuery(page: 1, size: 100));
-  for (final item in page.records) {
-    if (item.id == id) return item;
+  final repository = ref.watch(journalRepositoryProvider);
+  JournalItem? find(List<JournalItem> records) {
+    for (final item in foldBalancePads(records)) {
+      if (item.id == id) return item;
+    }
+    return null;
   }
-  return null;
+
+  if (keyword != null && keyword.trim().isNotEmpty) {
+    for (var page = 1; page <= 5; page++) {
+      final result = await repository.list(JournalQuery(page: page, size: 100, keyword: keyword.trim()));
+      final found = find(result.records);
+      if (found != null) return found;
+      if (!result.hasNextPage) break;
+    }
+  }
+  final page = await repository.list(const JournalQuery(page: 1, size: 100));
+  return find(page.records);
 }, retry: browseRetry);

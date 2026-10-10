@@ -164,7 +164,7 @@ class ServerProfile {
         final user = basicUsername ?? '';
         final pass = basicPassword ?? '';
         final token = base64Encode(utf8.encode('$user:$pass'));
-        // zhang's scheme check is case-sensitive: must be exactly "Basic".
+        // zhang >= 0.2 accepts any case of the scheme; "Basic" works everywhere.
         return {'Authorization': 'Basic $token'};
       case AuthType.bearer:
         return {'Authorization': 'Bearer ${bearerToken ?? ''}'};

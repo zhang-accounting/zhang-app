@@ -109,6 +109,10 @@ class AccountJournalEntry {
     this.narration,
     required this.inferredUnit,
     required this.accountAfter,
+    this.asserted,
+    this.checkedBalance,
+    this.difference,
+    this.passed,
   });
 
   factory AccountJournalEntry.fromJson(JsonMap m) => AccountJournalEntry(
@@ -120,6 +124,10 @@ class AccountJournalEntry {
     narration: optString(m, 'narration'),
     inferredUnit: Amount.fromJson(m['inferred_unit']),
     accountAfter: Amount.fromJson(m['account_after']),
+    asserted: Amount.fromJsonOrNull(m['asserted']),
+    checkedBalance: Amount.fromJsonOrNull(m['checked_balance']),
+    difference: Amount.fromJsonOrNull(m['difference']),
+    passed: m['passed'] is bool ? m['passed'] as bool : null,
   );
 
   /// `report.top_postings` row: `[date, time, timestamp, account, id, payee,
@@ -167,7 +175,23 @@ class AccountJournalEntry {
   /// Running balance after this posting.
   final Amount accountAfter;
 
-  bool get isBalanceItem => payee == 'Balance Check' || payee == 'Balance Pad';
+  /// Balance-check rows: the asserted amount, the balance it was checked
+  /// against, their difference and whether it held (`null` for postings).
+  final Amount? asserted;
+  final Amount? checkedBalance;
+  final Amount? difference;
+  final bool? passed;
+
+  /// A balance check (its [inferredUnit] is a zero entry).
+  bool get isCheck => asserted != null || payee == 'Balance Check';
+
+  /// The posting of a pad.
+  bool get isPad => payee == 'Balance Pad';
+
+  bool get isBalanceItem => isCheck || isPad;
+
+  /// A check that did not hold.
+  bool get failed => passed == false;
 }
 
 /// One point of an account's balance history.

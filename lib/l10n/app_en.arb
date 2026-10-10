@@ -292,6 +292,38 @@
   "journalBalanceCheck": "Balance check",
   "journalBalancePad": "Balance pad",
   "journalBalanceFailed": "Balance check failed",
+  "journalPadTarget": "to {amount}",
+  "@journalPadTarget": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "trxBalanceActual": "Actual balance {amount}",
+  "@trxBalanceActual": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "trxBalanceDifference": "Difference {amount}",
+  "@trxBalanceDifference": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsSubAccount": "in {account}",
+  "@accountsSubAccount": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
   "journalSearch": "Search",
   "journalSearchHint": "Payee, narration, account, tag…",
   "journalCloseSearch": "Close search",

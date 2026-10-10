@@ -2,6 +2,7 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/utils/money.dart';
@@ -11,6 +12,7 @@ import '../../data/models/commodity.dart';
 import '../../data/repositories/ledger_data_providers.dart';
 import '../../l10n/l10n.dart';
 import '../../router.dart';
+import '../journals/journal_routes.dart';
 import 'accounts_providers.dart';
 import 'widgets/amount_format.dart';
 import 'widgets/balance_history_chart.dart';
@@ -22,7 +24,9 @@ String accountDetailLocation(String name, {String base = AppRoutes.accounts}) =>
     '$base/${Uri.encodeComponent(name)}';
 
 /// Account detail (S13): balances per commodity, status, balance-history
-/// step chart and the account's postings with running balance.
+/// step chart (the account and its sub-accounts) and the postings of the
+/// account and its sub-accounts with running balance; tapping a posting
+/// opens its transaction.
 class AccountDetailScreen extends ConsumerWidget {
   const AccountDetailScreen({super.key, required this.name});
 
@@ -122,8 +126,17 @@ class AccountDetailScreen extends ConsumerWidget {
                         itemBuilder: (context, i) => _JournalTile(
                           key: i == 0 ? const Key('accountDetail.firstRow') : null,
                           entry: list[i],
+                          pageAccount: name,
                           type: type,
                           commodities: commodities,
+                          onTap: list[i].trxId.isEmpty
+                              ? null
+                              : () => openAccountPostingDetail(
+                                  context,
+                                  GoRouterState.of(context).uri.path,
+                                  list[i].trxId,
+                                  (list[i].payee?.isNotEmpty ?? false) ? list[i].payee : list[i].narration,
+                                ),
                         ),
                       ),
                     ],
@@ -246,82 +259,113 @@ class _JournalHeader extends StatelessWidget {
 }
 
 class _JournalTile extends StatelessWidget {
-  const _JournalTile({super.key, required this.entry, required this.type, required this.commodities});
+  const _JournalTile({
+    super.key,
+    required this.entry,
+    required this.pageAccount,
+    required this.type,
+    required this.commodities,
+    this.onTap,
+  });
 
   final AccountJournalEntry entry;
+
+  /// The account whose page lists [entry] (the posting may be on a
+  /// sub-account).
+  final String pageAccount;
   final AccountType? type;
   final Map<String, Commodity> commodities;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final unit = entry.inferredUnit;
-    final isCheck = entry.payee == 'Balance Check';
-    final isPad = entry.payee == 'Balance Pad';
+    final isCheck = entry.isCheck;
+    final failed = entry.failed;
+    // A check row's own amount is a zero entry: show what was asserted.
+    final unit = isCheck ? (entry.asserted ?? entry.accountAfter) : entry.inferredUnit;
     final title = isCheck
-        ? l10n.accountsBalanceCheck
-        : isPad
+        ? (failed ? l10n.journalBalanceFailed : l10n.accountsBalanceCheck)
+        : entry.isPad
         ? l10n.accountsBalancePad
         : (entry.payee?.isNotEmpty ?? false)
         ? entry.payee!
         : (entry.narration ?? '');
     final date = DateFormat('yyyy-MM-dd HH:mm').format(entry.datetime);
     final narration = entry.isBalanceItem ? null : entry.narration;
-    final subtitle = [date, if (narration != null && narration.isNotEmpty && narration != title) narration]
-        .join(' · ');
+    final subAccount = entry.account != pageAccount && entry.account.startsWith('$pageAccount:')
+        ? entry.account.substring(pageAccount.length + 1)
+        : (entry.account != pageAccount ? entry.account : null);
+    final subtitle = [
+      date,
+      if (subAccount != null) l10n.accountsSubAccount(subAccount),
+      if (narration != null && narration.isNotEmpty && narration != title) narration,
+    ].join(' · ');
 
     // Earned income and spent expenses are shown in the income / expense
     // colours; asset and liability postings by direction; equity neutral.
-    final Color amountColorValue = switch (type) {
-      AccountType.income || AccountType.expenses => amountColor(context, unit.number, invert: true),
-      AccountType.equity || null => scheme.onSurfaceVariant,
-      _ => amountColor(context, unit.number),
-    };
-    final IconData icon = entry.isBalanceItem
-        ? Icons.fact_check_outlined
+    final Color amountColorValue = isCheck
+        ? scheme.onSurfaceVariant
+        : switch (type) {
+            AccountType.income || AccountType.expenses => amountColor(context, unit.number, invert: true),
+            AccountType.equity || null => scheme.onSurfaceVariant,
+            _ => amountColor(context, unit.number),
+          };
+    final IconData icon = isCheck
+        ? (failed ? Icons.cancel_outlined : Icons.fact_check_outlined)
+        : entry.isPad
+        ? Icons.balance
         : (unit.isNegative ? Icons.north_east : Icons.south_west);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: scheme.surfaceContainerHighest,
-            child: Icon(icon, size: 16, color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: failed ? scheme.errorContainer : scheme.surfaceContainerHighest,
+              child: Icon(icon, size: 16, color: failed ? scheme.error : scheme.onSurfaceVariant),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.bodyLarge?.copyWith(color: failed ? scheme.error : null),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(title, style: theme.textTheme.bodyLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
                 Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  formatAmount(commodities, unit.number, unit.commodity, signed: !entry.isBalanceItem),
+                  style: amountStyle(theme.textTheme.titleSmall?.copyWith(color: amountColorValue)),
+                ),
+                Text(
+                  formatAmount(commodities, entry.accountAfter.number, entry.accountAfter.commodity),
+                  style: amountStyle(theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                formatAmount(commodities, unit.number, unit.commodity, signed: !entry.isBalanceItem),
-                style: amountStyle(theme.textTheme.titleSmall?.copyWith(color: amountColorValue)),
-              ),
-              Text(
-                formatAmount(commodities, entry.accountAfter.number, entry.accountAfter.commodity),
-                style: amountStyle(theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

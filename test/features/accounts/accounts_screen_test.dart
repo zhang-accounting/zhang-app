@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zhang_app/router.dart';
 import 'package:zhang_app/features/accounts/account_detail_screen.dart';
+import 'package:zhang_app/features/journals/transaction_detail_screen.dart';
 
 import '../../helpers/builtin_fake.dart';
 import '../../helpers/fake_adapter.dart';
@@ -21,6 +23,7 @@ final _accounts = [
 
 ResponseBody _route(String path, RequestOptions o) {
   if (path == '/accounts') return data(_accounts);
+  if (path.startsWith('/journals')) return jsonResponse(fixture('journals.json'));
   if (path.endsWith('/journals')) return jsonResponse(fixture('account_journals.json'));
   if (path.startsWith('/accounts/')) return jsonResponse(fixture('account_detail.json'));
   return jsonResponse({'message': 'not found'}, status: 404);
@@ -109,11 +112,29 @@ void main() {
     expect(find.descendant(of: first, matching: find.text('Pending Shop')), findsOneWidget);
     expect(find.descendant(of: first, matching: find.text('−¥9.90')), findsOneWidget);
     expect(find.descendant(of: first, matching: find.text('¥146,039.60')), findsOneWidget); // running balance
+    // Check rows show the asserted amount (their own entry is zero).
+    await tester.scrollUntilVisible(
+      find.text('Balance check failed'),
+      200,
+      scrollable: _scrollable('accountDetail.list'),
+    );
+    expect(find.text('¥100.00'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Balance check'),
       200,
       scrollable: _scrollable('accountDetail.list'),
     );
+
+    // A posting opens its transaction (trx_id is the transaction id).
+    await tester.scrollUntilVisible(first, -400, scrollable: _scrollable('accountDetail.list'));
+    await tester.tap(first);
+    await tester.pumpAndSettle();
+    expect(find.byType(TransactionDetailScreen), findsOneWidget);
+    expect(find.text('Pending Shop · Awaiting refund'), findsOneWidget);
+    final lookup = adapter.requests.lastWhere((r) => r.path.startsWith('/journals'));
+    expect(lookup.uri.queryParameters['keyword'], 'Pending Shop');
+    await tester.pageBack();
+    await tester.pumpAndSettle();
 
     // Back to the tree.
     await tester.pageBack();
@@ -166,5 +187,38 @@ void main() {
     expect(find.text('No balance history yet'), findsOneWidget);
     expect(tester.widget<Text>(find.byKey(const Key('accountDetail.balance'))).data, '¥0.00');
     expect(container, isNotNull);
+  });
+
+  testWidgets('account detail: postings of sub-accounts name their account', (tester) async {
+    final (container, _) = await pumpLedgerApp(tester, (path, o) {
+      if (path == '/accounts') {
+        return data([accountJson('Assets:Bank', {'CNY': '0'}), accountJson('Assets:Bank:CMB', {'CNY': '25'})]);
+      }
+      if (path.endsWith('/journals')) {
+        return data([
+          {
+            'datetime': '2023-09-13T14:25:00',
+            'timestamp': 1694582700,
+            'account': 'Assets:Bank:CMB',
+            'trx_id': 'a236abdf-1855-c7fa-2c8a-9cc8a22f2c49',
+            'payee': 'Github Restaurant',
+            'narration': 'Fried Chicken',
+            'inferred_unit': {'number': '25', 'commodity': 'CNY'},
+            'account_after': {'number': '25', 'commodity': 'CNY'},
+            'asserted': null,
+            'checked_balance': null,
+            'difference': null,
+            'tolerance': null,
+            'passed': null,
+          },
+        ]);
+      }
+      return jsonResponse(fixture('account_detail.json'));
+    });
+    container.read(routerProvider).go('/accounts/${Uri.encodeComponent('Assets:Bank')}');
+    await tester.pumpAndSettle();
+    final row = find.byKey(const Key('accountDetail.firstRow'));
+    await tester.scrollUntilVisible(row, 200, scrollable: _scrollable('accountDetail.list'));
+    expect(find.descendant(of: row, matching: find.textContaining('in CMB')), findsOneWidget);
   });
 }

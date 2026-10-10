@@ -4,6 +4,7 @@ import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/models/amount.dart';
 import 'package:zhang_app/data/models/query_result.dart';
 import 'package:zhang_app/data/models/statistic.dart';
+import 'package:zhang_app/data/repositories/ledger_data_providers.dart';
 import 'package:zhang_app/features/home/home_providers.dart';
 import 'package:zhang_app/features/journals/journal_providers.dart';
 import 'package:zhang_app/features/journals/year_month.dart';
@@ -64,5 +65,33 @@ void main() {
     expect(notifier.canGoNext, isTrue);
     notifier.next();
     expect(container.read(homeMonthProvider), now);
+  });
+
+  test('clock offsets round to 15 minutes', () {
+    expect(roundClockOffset(const Duration(hours: 1, seconds: 40)), const Duration(hours: 1));
+    expect(roundClockOffset(const Duration(minutes: 7)), Duration.zero);
+    expect(roundClockOffset(const Duration(hours: -9, seconds: 3)), const Duration(hours: -9));
+    expect(roundClockOffset(const Duration(minutes: 5, hours: 5, seconds: 59)), const Duration(hours: 5));
+  });
+
+  test('home month follows the ledger clock (ledger.now), not the device', () async {
+    final server = FakeZhangServer();
+    server.builtins.answers['ledger.now'] = (_) => {
+      ...singleResult('ledger_now.json'),
+      'rows': [
+        ['2030-01-15', '10:00:00'],
+      ],
+    };
+    final container = ProviderContainer(
+      overrides: [zhangApiClientProvider.overrideWithValue(server.client)],
+      retry: (_, _) => null,
+    );
+    addTearDown(container.dispose);
+    container.listen(homeMonthProvider, (_, _) {});
+    await container.read(ledgerClockOffsetProvider.future);
+    expect(container.read(homeMonthProvider), YearMonth(2030, 1));
+    expect(container.read(homeMonthProvider.notifier).canGoNext, isFalse);
+    final now = container.read(ledgerClockProvider)();
+    expect(YearMonth.of(now), YearMonth(2030, 1));
   });
 }

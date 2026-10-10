@@ -1,3 +1,4 @@
+import 'package:decimal/decimal.dart';
 import 'package:zhang_app/data/models/journal.dart';
 
 /// `(account, number, commodity)`; `number == null` → implicit posting
@@ -74,33 +75,88 @@ JournalTransaction txn({
         )
         as JournalTransaction;
 
-/// JSON of a `BalanceCheck` item asserting [after] on [account].
+/// JSON of a `BalanceCheck` item asserting [asserted] on [account] whose
+/// balance is [checked] (it passes when they are equal).
 Map<String, Object?> balanceCheckJson({
   required String id,
   required String datetime,
   String account = 'Assets:WeChat',
-  String delta = '-145994.50',
-  String before = '146094.50',
-  String after = '100.00',
-}) => {
-  'type': 'BalanceCheck',
-  'id': id,
-  'sequence': 0,
-  'datetime': datetime,
-  'payee': 'Balance Check',
-  'narration': account,
-  'type_': 'C',
-  'postings': [
-    {
-      'account': account,
-      'unit': {'number': delta, 'commodity': 'CNY'},
-      'cost': null,
-      'inferred_unit': {'number': delta, 'commodity': 'CNY'},
-      'account_before': {'number': before, 'commodity': 'CNY'},
-      'account_after': {'number': after, 'commodity': 'CNY'},
-    },
-  ],
-};
+  String asserted = '100.00',
+  String checked = '146094.50',
+  int sequence = 0,
+}) {
+  final difference = Decimal.parse(asserted) - Decimal.parse(checked);
+  Map<String, Object?> cny(Object n) => {'number': '$n', 'commodity': 'CNY'};
+  return {
+    'type': 'BalanceCheck',
+    'id': id,
+    'sequence': sequence,
+    'datetime': datetime,
+    'payee': 'Balance Check',
+    'narration': account,
+    'type_': 'C',
+    // zhang >= 0.2: a zero entry whose balances are the checked balance.
+    'postings': [
+      {
+        'account': account,
+        'unit': null,
+        'cost': null,
+        'inferred_unit': cny('0'),
+        'account_before': cny(checked),
+        'account_after': cny(checked),
+        'metas': [],
+        'written': null,
+      },
+    ],
+    'asserted': cny(asserted),
+    'checked_balance': cny(checked),
+    'difference': cny(difference),
+    'tolerance': null,
+    'passed': difference == Decimal.zero,
+  };
+}
+
+/// A `BalancePad` item: [account] padded by [amount] from [pad] (the pad of
+/// a `balance … with pad`, which also yields a check at the same datetime).
+Map<String, Object?> balancePadJson({
+  required String id,
+  required String datetime,
+  String account = 'Assets:WeChat',
+  String pad = 'Equity:OpenBalancing',
+  String amount = '500',
+  String before = '0',
+  int sequence = 0,
+}) {
+  Map<String, Object?> cny(Object n) => {'number': '$n', 'commodity': 'CNY'};
+  final after = Decimal.parse(before) + Decimal.parse(amount);
+  return {
+    'type': 'BalancePad',
+    'id': id,
+    'sequence': sequence,
+    'datetime': datetime,
+    'payee': 'Balance Pad',
+    'narration': 'pad $account to $pad',
+    'type_': 'P',
+    'postings': [
+      {
+        'account': account,
+        'unit': cny(amount),
+        'cost': null,
+        'inferred_unit': cny(amount),
+        'account_before': cny(before),
+        'account_after': cny(after),
+      },
+      {
+        'account': pad,
+        'unit': null,
+        'cost': null,
+        'inferred_unit': cny('-$amount'),
+        'account_before': cny('0'),
+        'account_after': cny('-$amount'),
+      },
+    ],
+  };
+}
 
 /// A simple expense transaction (`Assets:WeChat -amount`, `Expenses:Food +amount`)
 /// on [datetime].

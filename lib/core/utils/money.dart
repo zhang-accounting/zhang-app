@@ -7,7 +7,7 @@ import '../theme/app_colors.dart';
 ///
 /// All amounts in the app are [Decimal]s (never `double`). The server sends
 /// numbers as strings whose scale is not normalised (`"-21"`, `"132768.0"`,
-/// `"1E-8"`), so always format for display with the commodity precision from
+/// `"1885.0000"`), so always format for display with the commodity precision from
 /// `/api/commodities` (see `commoditiesProvider`).
 
 /// Formats [value] with thousands separators and a fixed number of decimals.
