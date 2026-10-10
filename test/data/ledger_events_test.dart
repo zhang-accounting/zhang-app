@@ -166,6 +166,43 @@ void main() {
     expect(container.read(ledgerRevisionProvider), 1);
   });
 
+  test('a silent stream (dead connection) is reopened and refetches', () async {
+    final previous = LedgerEvents.idleTimeout;
+    LedgerEvents.idleTimeout = const Duration(milliseconds: 600);
+    addTearDown(() => LedgerEvents.idleTimeout = previous);
+    final streams = <_Stream>[];
+    final adapter = FakeAdapter((o) {
+      final s = _Stream();
+      streams.add(s);
+      return s.body;
+    });
+    final client = ZhangApiClient(_profile)..dio.httpClientAdapter = adapter;
+    final container = ProviderContainer(
+      overrides: [
+        zhangApiClientProvider.overrideWithValue(client),
+        ledgerEventsEnabledProvider.overrideWithValue(true),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(ledgerEventsProvider, (_, _) {});
+    await _wait();
+    streams.single.send('{"type":"Connected"}');
+    await _wait(400);
+    streams.single.controller.add(Uint8List.fromList(utf8.encode(': ping\n\n')));
+    await _wait(300);
+    expect(container.read(ledgerEventsProvider).connected, isTrue, reason: 'pings keep it open');
+    await _wait(600);
+    expect(container.read(ledgerEventsProvider).connected, isFalse);
+    // The reconnected stream (opened after the 1 s backoff) gets the normal
+    // timeout, so it cannot time out itself on a slow machine.
+    LedgerEvents.idleTimeout = previous;
+    await _wait(1100);
+    expect(streams, hasLength(2));
+    streams.last.send('{"type":"Connected"}');
+    await _wait(LedgerEvents.reloadDebounce.inMilliseconds + 100);
+    expect(container.read(ledgerRevisionProvider), 1);
+  });
+
   test('a profile switch closes the old stream and never reconnects to the old server', () async {
     final oldStreams = <_Stream>[];
     final newStreams = <_Stream>[];

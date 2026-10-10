@@ -54,6 +54,12 @@ class LedgerEvents extends Notifier<LedgerEventsState> {
   static const reloadDebounce = Duration(milliseconds: 150);
   static const _backoff = [Duration(seconds: 1), Duration(seconds: 3), Duration(seconds: 10), Duration(seconds: 30)];
 
+  /// zhang sends a `: ping` comment every ~10 s; a stream silent for this
+  /// long is a dead connection (e.g. after a network switch) and is
+  /// reopened.
+  @visibleForTesting
+  static Duration idleTimeout = const Duration(seconds: 45);
+
   CancelToken? _cancel;
   Timer? _retry;
   Timer? _debounce;
@@ -97,7 +103,8 @@ class LedgerEvents extends Notifier<LedgerEventsState> {
       );
       final body = res.data;
       if (body == null) throw StateError('empty event stream');
-      await for (final line in body.stream.cast<List<int>>().transform(utf8.decoder).transform(const LineSplitter())) {
+      final lines = body.stream.timeout(idleTimeout).cast<List<int>>().transform(utf8.decoder);
+      await for (final line in lines.transform(const LineSplitter())) {
         if (session != _session) return;
         final data = sseData(line);
         if (data == null) continue;
