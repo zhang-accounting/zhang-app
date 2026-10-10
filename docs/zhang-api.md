@@ -228,7 +228,9 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
   `{"text": string|null, "field_errors": [{posting, field, kind, value, message}], "unbalanced": [Amount]|null,
   "errors": [{error_type, metas:{…}}]}`. `unbalanced` is `[]` when balanced, `null` when a field is invalid;
   an unbalanced entry also lists `UnbalancedTransaction` in `errors`; an unopened account gives
-  `AccountDoesNotExist {account_name}`. The record screen saves only a clean preview and lists the problems otherwise.
+  `AccountDoesNotExist {account_name}`. The record screen refuses to save when a field is refused, the entry is unbalanced or an account is unknown /
+  closed (`TransactionPreview.isBlocked`); other ledger errors and notices (e.g. `CommodityDoesNotDefine` on a
+  beancount ledger that never declares a commodity) are listed as warnings with "Save anyway".
 * `PUT /api/transactions/{id}` replaces the transaction → `200 {"data":null}`; posting `cost` / `price` / `comment`
   are **kept** when the keys are omitted; unknown id → 404; plugin-generated → 400.
 * Not available: `DELETE /api/transactions/{id}` (405), an id in the create answer, idempotency keys.

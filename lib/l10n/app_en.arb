@@ -240,6 +240,27 @@
       }
     }
   },
+  "addPreviewWarning": "The ledger would report (the entry is not saved yet):",
+  "addSaveAnyway": "Save anyway",
+  "addPreviewCommodityUndeclared": "Commodity {commodity} is not declared in the ledger.",
+  "@addPreviewCommodityUndeclared": {
+    "placeholders": {
+      "commodity": {
+        "type": "String"
+      }
+    }
+  },
+  "addPreviewCommodityNotAllowed": "Account {account} does not list {commodity} in its open directive.",
+  "@addPreviewCommodityNotAllowed": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      },
+      "commodity": {
+        "type": "String"
+      }
+    }
+  },
   "addDiscardTitle": "Discard this entry?",
   "addDiscardMessage": "What you entered will be lost.",
   "addDiscard": "Discard",

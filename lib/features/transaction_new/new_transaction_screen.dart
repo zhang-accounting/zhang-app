@@ -211,7 +211,9 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     _submit(again: true);
   }
 
-  Future<void> _submit({required bool again}) async {
+  /// [acceptWarnings]: the user chose "Save anyway" for preview warnings
+  /// (blocking problems still stop the save).
+  Future<void> _submit({required bool again, bool acceptWarnings = false}) async {
     final r = _resolved;
     if (r == null || _submitting) return;
     final draft = EntryDraft(
@@ -245,9 +247,13 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     });
     try {
       // Validate first: an unbalanced entry or an unknown / closed account
-      // would still be written (and only show up as a ledger error).
+      // would still be written (and only show up as a ledger error). Other
+      // ledger errors / notices (e.g. an undeclared commodity) only warn.
       final preview = await repository.preview(request);
-      if (!preview.isClean) throw TransactionRejected(preview);
+      if (preview.isBlocked) throw TransactionRejected(preview);
+      if (!acceptWarnings && preview.warnings.isNotEmpty) {
+        throw TransactionNeedsConfirmation(preview, again: again);
+      }
       await repository.create(request);
     } catch (e) {
       if (!mounted) return;
@@ -692,7 +698,14 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (_error != null) _ErrorBanner(error: _error!, onClose: () => setState(() => _error = null)),
+            if (_error case final error?)
+              _ErrorBanner(
+                error: error,
+                onClose: () => setState(() => _error = null),
+                onSaveAnyway: error is TransactionNeedsConfirmation
+                    ? () => _submit(again: error.again, acceptWarnings: true)
+                    : null,
+              ),
             SizedBox(
               height: 48,
               child: ListView(
@@ -934,40 +947,65 @@ class _TransferAccountCard extends StatelessWidget {
   }
 }
 
+/// Save failure, blocking preview problems, or preview warnings with a
+/// "Save anyway" action ([onSaveAnyway]).
 class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.error, required this.onClose});
+  const _ErrorBanner({required this.error, required this.onClose, this.onSaveAnyway});
 
   final Object error;
   final VoidCallback onClose;
+  final VoidCallback? onSaveAnyway;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
+    final warning = error is TransactionNeedsConfirmation;
+    final background = warning ? scheme.tertiaryContainer : scheme.errorContainer;
+    final foreground = warning ? scheme.onTertiaryContainer : scheme.onErrorContainer;
     return Container(
-      key: const Key('add.error'),
+      key: Key(warning ? 'add.warning' : 'add.error'),
       width: double.infinity,
-      color: scheme.errorContainer,
+      color: background,
       padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
       child: Row(
         children: [
           Icon(
-            error is TransactionRejected ? Icons.rule : iconForApiError(error),
-            color: scheme.onErrorContainer,
+            switch (error) {
+              TransactionNeedsConfirmation() => Icons.warning_amber,
+              TransactionRejected() => Icons.rule,
+              _ => iconForApiError(error),
+            },
+            color: foreground,
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              switch (error) {
-                final TransactionRejected r => '${l10n.addPreviewRejected}\n${previewProblems(l10n, r.preview).join('\n')}',
-                _ => '${l10n.addSaveFailed}: ${describeApiError(l10n, error)}',
-              },
-              style: TextStyle(color: scheme.onErrorContainer),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  switch (error) {
+                    final TransactionRejected r =>
+                      '${l10n.addPreviewRejected}\n${previewProblems(l10n, r.preview).join('\n')}',
+                    final TransactionNeedsConfirmation c =>
+                      '${l10n.addPreviewWarning}\n${[for (final e in c.preview.warnings) previewErrorText(l10n, e)].join('\n')}',
+                    _ => '${l10n.addSaveFailed}: ${describeApiError(l10n, error)}',
+                  },
+                  style: TextStyle(color: foreground),
+                ),
+                if (onSaveAnyway != null)
+                  TextButton(
+                    key: const Key('add.saveAnyway'),
+                    onPressed: onSaveAnyway,
+                    style: TextButton.styleFrom(foregroundColor: foreground, padding: EdgeInsets.zero),
+                    child: Text(l10n.addSaveAnyway),
+                  ),
+              ],
             ),
           ),
           IconButton(
             tooltip: l10n.addClose,
-            icon: Icon(Icons.close, color: scheme.onErrorContainer),
+            icon: Icon(Icons.close, color: foreground),
             onPressed: onClose,
           ),
         ],
@@ -984,10 +1022,15 @@ List<String> previewProblems(AppLocalizations l10n, TransactionPreview preview) 
     l10n.addPreviewUnbalanced(preview.unbalanced!.map((a) => formatMoney(a.number, a.commodity, signed: true)).join(', ')),
   for (final e in preview.errors)
     // The unbalanced amounts are already listed above.
-    if (!(e.type == 'UnbalancedTransaction' && preview.isUnbalanced))
-      switch (e.type) {
-        'AccountDoesNotExist' => l10n.addPreviewAccountMissing(e.account ?? ''),
-        'AccountClosed' => l10n.addPreviewAccountClosed(e.account ?? ''),
-        _ => e.account == null ? e.type : '${e.type}: ${e.account}',
-      },
+    if (!(e.type == 'UnbalancedTransaction' && preview.isUnbalanced)) previewErrorText(l10n, e),
 ];
+
+/// One ledger error of a preview (localised for the common kinds, else the
+/// kind and its account).
+String previewErrorText(AppLocalizations l10n, PreviewLedgerError e) => switch (e.type) {
+  'AccountDoesNotExist' => l10n.addPreviewAccountMissing(e.account ?? ''),
+  'AccountClosed' => l10n.addPreviewAccountClosed(e.account ?? ''),
+  'CommodityDoesNotDefine' => l10n.addPreviewCommodityUndeclared(e.commodity ?? ''),
+  'CommodityNotAllowed' => l10n.addPreviewCommodityNotAllowed(e.account ?? '', e.commodity ?? ''),
+  _ => e.account == null ? e.type : '${e.type}: ${e.account}',
+};

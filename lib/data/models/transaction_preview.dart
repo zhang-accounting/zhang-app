@@ -39,8 +39,24 @@ class TransactionPreview {
 
   bool get isUnbalanced => unbalanced?.isNotEmpty ?? false;
 
+  /// Ledger error kinds that block the save: the entry would be written
+  /// against an account that is not open, or would not balance.
+  static const blockingErrorTypes = {'AccountDoesNotExist', 'AccountClosed', 'UnbalancedTransaction'};
+
   /// Nothing to complain about: safe to save.
   bool get isClean => fieldErrors.isEmpty && !isUnbalanced && errors.isEmpty;
+
+  /// The save must not go ahead: a refused field (the server would answer
+  /// 400), unbalanced postings, or an unknown / closed account.
+  bool get isBlocked =>
+      fieldErrors.isNotEmpty || isUnbalanced || errors.any((e) => blockingErrorTypes.contains(e.type));
+
+  /// Other ledger errors and notices (an undeclared commodity, a commodity
+  /// the account's `open` does not list, …): the user may save anyway.
+  List<PreviewLedgerError> get warnings => [
+    for (final e in errors)
+      if (!blockingErrorTypes.contains(e.type)) e,
+  ];
 }
 
 /// `{posting, field, kind, value, message}`; [posting] is the index of the
@@ -84,10 +100,15 @@ class PreviewLedgerError {
   final Map<String, String> metas;
 
   String? get account => metas['account_name'];
+
+  /// `CommodityDoesNotDefine` names it `commodity_name`,
+  /// `CommodityNotAllowed` `commodity`.
+  String? get commodity => metas['commodity_name'] ?? metas['commodity'];
 }
 
-/// Thrown by the record screen when the preview reports problems; the
-/// transaction was **not** saved.
+/// Thrown by the record screen when the preview reports problems that block
+/// the save ([TransactionPreview.isBlocked]); the transaction was **not**
+/// saved.
 class TransactionRejected implements Exception {
   const TransactionRejected(this.preview);
 
@@ -96,4 +117,17 @@ class TransactionRejected implements Exception {
   @override
   String toString() => 'TransactionRejected(${preview.fieldErrors.length} field errors, '
       'unbalanced: ${preview.unbalanced}, ${preview.errors.length} ledger errors)';
+}
+
+/// Thrown by the record screen when the preview only reports
+/// [TransactionPreview.warnings]: nothing was saved yet, the user may save
+/// anyway. [again] is the "save and add another" choice to repeat.
+class TransactionNeedsConfirmation implements Exception {
+  const TransactionNeedsConfirmation(this.preview, {required this.again});
+
+  final TransactionPreview preview;
+  final bool again;
+
+  @override
+  String toString() => 'TransactionNeedsConfirmation(${preview.warnings.map((e) => e.type).join(', ')})';
 }

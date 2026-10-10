@@ -472,6 +472,51 @@ void main() {
       expect(p.isUnbalanced, isTrue);
       expect(p.errors.single.type, 'AccountDoesNotExist');
       expect(p.errors.single.account, 'Assets:Nope');
+      expect(p.isBlocked, isTrue);
+      expect(p.warnings, isEmpty);
+    });
+
+    test('an unopened account blocks the save', () {
+      // Captured: preview of an entry dated before the accounts' `open`.
+      final p = TransactionPreview.fromJson({
+        'text': '1960-10-10 09:30:00 * "Cafe" ""\n  Assets:WeChat -12.50 CNY\n  Expenses:PersonalDiet:Lunch',
+        'field_errors': [],
+        'unbalanced': [],
+        'errors': [
+          {
+            'error_type': 'AccountDoesNotExist',
+            'metas': {'account_name': 'Assets:WeChat'},
+          },
+        ],
+      });
+      expect(p.isUnbalanced, isFalse);
+      expect(p.isBlocked, isTrue);
+      expect(p.warnings, isEmpty);
+    });
+
+    test('an undeclared commodity only warns', () {
+      // Captured from a beancount ledger that never declares USD.
+      final p = TransactionPreview.fromJson({
+        'text': '2026-10-10 * "Cafe" ""\n  time: "09:30:00"\n  Assets:Cash -12.50 USD\n  Expenses:Food',
+        'field_errors': [],
+        'unbalanced': [],
+        'errors': [
+          {
+            'error_type': 'CommodityDoesNotDefine',
+            'metas': {'commodity_name': 'USD'},
+          },
+          {
+            'error_type': 'CommodityNotAllowed',
+            'metas': {'commodity': 'USD', 'account_name': 'Assets:Cash'},
+          },
+        ],
+      });
+      expect(p.isClean, isFalse);
+      expect(p.isBlocked, isFalse);
+      expect(p.warnings.map((e) => e.type), ['CommodityDoesNotDefine', 'CommodityNotAllowed']);
+      expect(p.warnings.first.commodity, 'USD');
+      expect(p.warnings.last.commodity, 'USD');
+      expect(p.warnings.last.account, 'Assets:Cash');
     });
   });
 

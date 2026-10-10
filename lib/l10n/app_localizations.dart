@@ -800,6 +800,30 @@ abstract class AppLocalizations {
   /// **'Account {account} is closed.'**
   String addPreviewAccountClosed(String account);
 
+  /// No description provided for @addPreviewWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'The ledger would report (the entry is not saved yet):'**
+  String get addPreviewWarning;
+
+  /// No description provided for @addSaveAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Save anyway'**
+  String get addSaveAnyway;
+
+  /// No description provided for @addPreviewCommodityUndeclared.
+  ///
+  /// In en, this message translates to:
+  /// **'Commodity {commodity} is not declared in the ledger.'**
+  String addPreviewCommodityUndeclared(String commodity);
+
+  /// No description provided for @addPreviewCommodityNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Account {account} does not list {commodity} in its open directive.'**
+  String addPreviewCommodityNotAllowed(String account, String commodity);
+
   /// No description provided for @addDiscardTitle.
   ///
   /// In en, this message translates to:

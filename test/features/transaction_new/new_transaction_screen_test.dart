@@ -284,6 +284,7 @@ void main() {
     expect(find.textContaining('Not saved'), findsOneWidget);
     expect(find.textContaining('invalid account "Foo:Bar"'), findsOneWidget);
     expect(find.textContaining('Account Assets:Nope is not open.'), findsOneWidget);
+    expect(find.byKey(const Key('add.saveAnyway')), findsNothing, reason: 'blocking problems cannot be overridden');
     expect(_amountText(tester), '¥9');
 
     // Unbalanced (captured: off by -1.00 CNY, plus the matching ledger error).
@@ -293,6 +294,36 @@ void main() {
     expect(find.textContaining('do not balance (off by −1.00 CNY)'), findsOneWidget);
     expect(find.textContaining('UnbalancedTransaction'), findsNothing);
     expect(repo.requests, isEmpty);
+  });
+
+  testWidgets('ledger notices only warn: "Save anyway" saves', (tester) async {
+    final (repo, _) = await _pump(tester);
+    // Captured from a beancount ledger that never declares USD.
+    repo.previewResult = TransactionPreview.fromJson({
+      'text': '2026-10-10 * "Cafe" ""',
+      'field_errors': [],
+      'unbalanced': [],
+      'errors': [
+        {
+          'error_type': 'CommodityDoesNotDefine',
+          'metas': {'commodity_name': 'USD'},
+        },
+      ],
+    });
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Clothing')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '9');
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(repo.requests, isEmpty, reason: 'not saved before the user confirms');
+    expect(find.byKey(const Key('add.warning')), findsOneWidget);
+    expect(find.byKey(const Key('add.error')), findsNothing);
+    expect(find.textContaining('Commodity USD is not declared in the ledger.'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('add.saveAnyway')));
+    await tester.pumpAndSettle();
+    expect(repo.previews, hasLength(2), reason: 'blocking problems are still checked');
+    expect(repo.requests, hasLength(1));
   });
 
   testWidgets('transfer mode uses from / to accounts; income uses Income tiles', (tester) async {
