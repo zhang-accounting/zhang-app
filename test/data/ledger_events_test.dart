@@ -131,6 +131,11 @@ void main() {
     await _wait(LedgerEvents.reloadDebounce.inMilliseconds + 100);
     expect(container.read(ledgerEventsProvider).connected, isTrue);
     expect(revision(), before + 1);
+    expect(
+      container.read(ledgerEventsProvider).sawReloadEvent,
+      isFalse,
+      reason: 'a ReloadFailed may have been missed: /api/info is the source again',
+    );
   });
 
   test('a profile switch closes the old stream and never reconnects to the old server', () async {
