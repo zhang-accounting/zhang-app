@@ -158,18 +158,6 @@ abstract class AppLocalizations {
   /// **'Ledger: {name}'**
   String activeLedger(String name);
 
-  /// No description provided for @onboardingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Connect to your zhang server'**
-  String get onboardingTitle;
-
-  /// No description provided for @onboardingSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the address of your self-hosted zhang server. Credentials are stored securely on this device.'**
-  String get onboardingSubtitle;
-
   /// No description provided for @profileNameLabel.
   ///
   /// In en, this message translates to:
@@ -355,12 +343,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get save;
-
-  /// No description provided for @saveAndContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Save and continue'**
-  String get saveAndContinue;
 
   /// No description provided for @cancel.
   ///
@@ -1715,7 +1697,7 @@ abstract class AppLocalizations {
   /// No description provided for @signInNotNeeded.
   ///
   /// In en, this message translates to:
-  /// **'This server does not require sign-in. Choose “None” instead.'**
+  /// **'This server does not require sign-in. Choose “No sign-in” instead.'**
   String get signInNotNeeded;
 
   /// No description provided for @signInNotSupported.
@@ -1775,8 +1757,440 @@ abstract class AppLocalizations {
   /// No description provided for @errorPasskeyOnlyBrowser.
   ///
   /// In en, this message translates to:
-  /// **'This server only allows passkey sign-in. Choose “Browser” to sign in with a passkey.'**
+  /// **'This server only allows passkey sign-in. Choose “Browser sign-in” to sign in with a passkey.'**
   String get errorPasskeyOnlyBrowser;
+
+  /// No description provided for @welcomeTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Your plain-text books, in your pocket.'**
+  String get welcomeTagline;
+
+  /// No description provided for @welcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to the zhang server you host to check balances and record spending on the go.'**
+  String get welcomeBody;
+
+  /// No description provided for @welcomeWhatIsZhang.
+  ///
+  /// In en, this message translates to:
+  /// **'What is a zhang server?'**
+  String get welcomeWhatIsZhang;
+
+  /// No description provided for @welcomeAboutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'zhang is open-source, self-hosted accounting that keeps your books as plain-text files you own. You run the server yourself, with Docker or a single binary, and this app connects to it. The app needs zhang 0.2 or newer.'**
+  String get welcomeAboutBody;
+
+  /// No description provided for @welcomeReadDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Read the docs'**
+  String get welcomeReadDocs;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @welcomeConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to your server'**
+  String get welcomeConnect;
+
+  /// No description provided for @welcomeTryDemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Try the demo'**
+  String get welcomeTryDemo;
+
+  /// No description provided for @welcomeDemoCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'The demo is a fictional, read-only ledger hosted by the zhang project.'**
+  String get welcomeDemoCaption;
+
+  /// No description provided for @welcomeDemoWaking.
+  ///
+  /// In en, this message translates to:
+  /// **'Waking up the demo server. This can take up to a minute.'**
+  String get welcomeDemoWaking;
+
+  /// No description provided for @setupStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {total}'**
+  String setupStep(int step, int total);
+
+  /// No description provided for @setupServerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Where is your server?'**
+  String get setupServerTitle;
+
+  /// No description provided for @setupServerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the address you open zhang at in your browser.'**
+  String get setupServerBody;
+
+  /// No description provided for @setupUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Server address'**
+  String get setupUrlLabel;
+
+  /// No description provided for @setupUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'ledger.example.com or 192.168.1.10:8000'**
+  String get setupUrlHint;
+
+  /// No description provided for @setupPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get setupPaste;
+
+  /// No description provided for @setupUrlNormalized.
+  ///
+  /// In en, this message translates to:
+  /// **'Connects to {url}'**
+  String setupUrlNormalized(String url);
+
+  /// No description provided for @setupContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get setupContinue;
+
+  /// No description provided for @setupChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get setupChecking;
+
+  /// No description provided for @setupTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get setupTryAgain;
+
+  /// No description provided for @setupHintReach.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the address and the port, and that this phone can reach the server (same Wi-Fi or VPN).'**
+  String get setupHintReach;
+
+  /// No description provided for @setupSchemeHintHttps.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheme was entered, so https:// was used. Servers on your own network often use http://.'**
+  String get setupSchemeHintHttps;
+
+  /// No description provided for @setupSchemeHintHttp.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheme was entered, so http:// was used for this local address. Use https:// if the server has a certificate.'**
+  String get setupSchemeHintHttp;
+
+  /// No description provided for @setupTryUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {url}'**
+  String setupTryUrl(String url);
+
+  /// No description provided for @setupNotZhang.
+  ///
+  /// In en, this message translates to:
+  /// **'It answered, but not like a zhang server. Use the address of the zhang web UI, without /api.'**
+  String get setupNotZhang;
+
+  /// No description provided for @setupBehindGateway.
+  ///
+  /// In en, this message translates to:
+  /// **'It is behind a sign-in gateway'**
+  String get setupBehindGateway;
+
+  /// No description provided for @setupTooOldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This server needs an update'**
+  String get setupTooOldTitle;
+
+  /// No description provided for @setupTooOldBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It runs zhang {version} without the API this app uses. Upgrade the server to zhang 0.2 or newer, then try again.'**
+  String setupTooOldBody(String version);
+
+  /// No description provided for @setupHowToUpgrade.
+  ///
+  /// In en, this message translates to:
+  /// **'How to upgrade'**
+  String get setupHowToUpgrade;
+
+  /// No description provided for @setupSignInTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {ledger}'**
+  String setupSignInTitle(String ledger);
+
+  /// No description provided for @setupSignInTitleUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get setupSignInTitleUntitled;
+
+  /// No description provided for @setupSignInBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{host} asks you to sign in.'**
+  String setupSignInBody(String host);
+
+  /// No description provided for @setupBrowserStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Your server\'s sign-in page opens in a secure browser window.'**
+  String get setupBrowserStep1;
+
+  /// No description provided for @setupBrowserStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in there with a passkey or your password. The app keeps only a sign-in token, never your password.'**
+  String get setupBrowserStep2;
+
+  /// No description provided for @setupWaitingBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the browser…'**
+  String get setupWaitingBrowser;
+
+  /// No description provided for @setupUsePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Use username and password'**
+  String get setupUsePassword;
+
+  /// No description provided for @setupUseBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with browser instead'**
+  String get setupUseBrowser;
+
+  /// No description provided for @setupSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get setupSignIn;
+
+  /// No description provided for @setupPasskeyOnlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This server only accepts passkeys'**
+  String get setupPasskeyOnlyTitle;
+
+  /// No description provided for @setupPasskeyOnlyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The app signs in with a passkey through the server\'s sign-in page, and this zhang version cannot hand the sign-in back to the app. Upgrade the server, or turn on password sign-in.'**
+  String get setupPasskeyOnlyBody;
+
+  /// No description provided for @setupCheckAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get setupCheckAgain;
+
+  /// No description provided for @setupCredentialsUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'The server asks for credentials.'**
+  String get setupCredentialsUnknown;
+
+  /// No description provided for @setupGatewayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Something in front of zhang, such as a reverse proxy, asks for credentials. Enter them under “Reverse proxy or gateway”.'**
+  String get setupGatewayBody;
+
+  /// No description provided for @setupAdvancedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse proxy or gateway'**
+  String get setupAdvancedTitle;
+
+  /// No description provided for @setupAdvancedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearer token or custom headers'**
+  String get setupAdvancedSubtitle;
+
+  /// No description provided for @setupConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get setupConnect;
+
+  /// No description provided for @setupSignedInAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {user}'**
+  String setupSignedInAs(String user);
+
+  /// No description provided for @setupConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get setupConnected;
+
+  /// No description provided for @setupReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re connected'**
+  String get setupReadyTitle;
+
+  /// No description provided for @setupReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Name this ledger and pick a colour. You can change both later in Settings.'**
+  String get setupReadyBody;
+
+  /// No description provided for @setupFactCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get setupFactCurrency;
+
+  /// No description provided for @setupFactAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get setupFactAccounts;
+
+  /// No description provided for @setupFactAccountsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 open} other{{count} open}}'**
+  String setupFactAccountsValue(int count);
+
+  /// No description provided for @setupFactServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get setupFactServer;
+
+  /// No description provided for @setupFactSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as'**
+  String get setupFactSignedIn;
+
+  /// No description provided for @setupFactSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in'**
+  String get setupFactSignIn;
+
+  /// No description provided for @setupFactNoSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Not needed'**
+  String get setupFactNoSignIn;
+
+  /// No description provided for @setupFactUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the ledger details. You can still start.'**
+  String get setupFactUnavailable;
+
+  /// No description provided for @setupNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name on this device'**
+  String get setupNameLabel;
+
+  /// No description provided for @setupDemoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the zhang demo, a read-only ledger: browsing works, new entries are not saved.'**
+  String get setupDemoNote;
+
+  /// No description provided for @setupStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get setupStart;
+
+  /// No description provided for @profileSectionServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get profileSectionServer;
+
+  /// No description provided for @profileSectionSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in'**
+  String get profileSectionSignIn;
+
+  /// No description provided for @profileSectionAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get profileSectionAppearance;
+
+  /// No description provided for @authMethodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in method'**
+  String get authMethodLabel;
+
+  /// No description provided for @authNoneLong.
+  ///
+  /// In en, this message translates to:
+  /// **'No sign-in'**
+  String get authNoneLong;
+
+  /// No description provided for @authBasicLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Username and password'**
+  String get authBasicLong;
+
+  /// No description provided for @authSessionLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser sign-in (passkey or password)'**
+  String get authSessionLong;
+
+  /// No description provided for @authBearerLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Bearer token (reverse proxy)'**
+  String get authBearerLong;
+
+  /// No description provided for @authHeadersLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom headers (reverse proxy)'**
+  String get authHeadersLong;
+
+  /// No description provided for @setupProxyHeaders.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom headers'**
+  String get setupProxyHeaders;
+
+  /// No description provided for @setupUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot reach the server'**
+  String get setupUnreachable;
 }
 
 class _AppLocalizationsDelegate

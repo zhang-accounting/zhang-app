@@ -9,7 +9,7 @@ import 'features/accounts/accounts_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/journals/journal_routes.dart';
 import 'features/journals/journals_screen.dart';
-import 'features/onboarding/onboarding_screen.dart';
+import 'features/onboarding/server_setup_screen.dart';
 import 'features/settings/profile_edit_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/stats/reports_screen.dart';
@@ -58,7 +58,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', redirect: (_, _) => AppRoutes.home),
       GoRoute(
         path: AppRoutes.onboarding,
-        builder: (context, state) => const OnboardingScreen(),
+        builder: (context, state) => const ServerSetupScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -131,12 +131,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'profiles/new',
-            builder: (context, state) => const ProfileEditScreen(),
+            builder: (context, state) => const ServerSetupScreen(showWelcome: false),
           ),
           GoRoute(
             path: 'profiles/:id/edit',
             builder: (context, state) =>
-                ProfileEditScreen(profileId: state.pathParameters['id']),
+                ProfileEditScreen(profileId: state.pathParameters['id']!),
           ),
         ],
       ),

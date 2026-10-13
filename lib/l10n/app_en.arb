@@ -23,8 +23,6 @@
       }
     }
   },
-  "onboardingTitle": "Connect to your zhang server",
-  "onboardingSubtitle": "Enter the address of your self-hosted zhang server. Credentials are stored securely on this device.",
   "profileNameLabel": "Name",
   "profileNameHint": "e.g. Family ledger",
   "serverUrlLabel": "Server URL",
@@ -73,7 +71,6 @@
   },
   "untitledLedger": "Untitled ledger",
   "save": "Save",
-  "saveAndContinue": "Save and continue",
   "cancel": "Cancel",
   "delete": "Delete",
   "edit": "Edit",
@@ -586,7 +583,7 @@
   },
   "notSignedIn": "Not signed in",
   "signInFirst": "Sign in with the browser first.",
-  "signInNotNeeded": "This server does not require sign-in. Choose “None” instead.",
+  "signInNotNeeded": "This server does not require sign-in. Choose “No sign-in” instead.",
   "signInNotSupported": "This server does not support app sign-in yet; upgrade zhang (PR #786).",
   "signInCancelled": "Sign-in was cancelled.",
   "signInBrowserFailed": "Could not open the browser for sign-in.",
@@ -610,5 +607,136 @@
       }
     }
   },
-  "errorPasskeyOnlyBrowser": "This server only allows passkey sign-in. Choose “Browser” to sign in with a passkey."
+  "errorPasskeyOnlyBrowser": "This server only allows passkey sign-in. Choose “Browser sign-in” to sign in with a passkey.",
+  "welcomeTagline": "Your plain-text books, in your pocket.",
+  "welcomeBody": "Connect to the zhang server you host to check balances and record spending on the go.",
+  "welcomeWhatIsZhang": "What is a zhang server?",
+  "welcomeAboutBody": "zhang is open-source, self-hosted accounting that keeps your books as plain-text files you own. You run the server yourself, with Docker or a single binary, and this app connects to it. The app needs zhang 0.2 or newer.",
+  "welcomeReadDocs": "Read the docs",
+  "close": "Close",
+  "welcomeConnect": "Connect to your server",
+  "welcomeTryDemo": "Try the demo",
+  "welcomeDemoCaption": "The demo is a fictional, read-only ledger hosted by the zhang project.",
+  "welcomeDemoWaking": "Waking up the demo server. This can take up to a minute.",
+  "setupStep": "Step {step} of {total}",
+  "@setupStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "setupServerTitle": "Where is your server?",
+  "setupServerBody": "Enter the address you open zhang at in your browser.",
+  "setupUrlLabel": "Server address",
+  "setupUrlHint": "ledger.example.com or 192.168.1.10:8000",
+  "setupPaste": "Paste",
+  "setupUrlNormalized": "Connects to {url}",
+  "@setupUrlNormalized": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "setupContinue": "Continue",
+  "setupChecking": "Checking…",
+  "setupTryAgain": "Try again",
+  "setupHintReach": "Check the address and the port, and that this phone can reach the server (same Wi-Fi or VPN).",
+  "setupSchemeHintHttps": "No scheme was entered, so https:// was used. Servers on your own network often use http://.",
+  "setupSchemeHintHttp": "No scheme was entered, so http:// was used for this local address. Use https:// if the server has a certificate.",
+  "setupTryUrl": "Use {url}",
+  "@setupTryUrl": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "setupNotZhang": "It answered, but not like a zhang server. Use the address of the zhang web UI, without /api.",
+  "setupBehindGateway": "It is behind a sign-in gateway",
+  "setupTooOldTitle": "This server needs an update",
+  "setupTooOldBody": "It runs zhang {version} without the API this app uses. Upgrade the server to zhang 0.2 or newer, then try again.",
+  "@setupTooOldBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "setupHowToUpgrade": "How to upgrade",
+  "setupSignInTitle": "Sign in to {ledger}",
+  "@setupSignInTitle": {
+    "placeholders": {
+      "ledger": {
+        "type": "String"
+      }
+    }
+  },
+  "setupSignInTitleUntitled": "Sign in",
+  "setupSignInBody": "{host} asks you to sign in.",
+  "@setupSignInBody": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "setupBrowserStep1": "Your server's sign-in page opens in a secure browser window.",
+  "setupBrowserStep2": "Sign in there with a passkey or your password. The app keeps only a sign-in token, never your password.",
+  "setupWaitingBrowser": "Waiting for the browser…",
+  "setupUsePassword": "Use username and password",
+  "setupUseBrowser": "Sign in with browser instead",
+  "setupSignIn": "Sign in",
+  "setupPasskeyOnlyTitle": "This server only accepts passkeys",
+  "setupPasskeyOnlyBody": "The app signs in with a passkey through the server's sign-in page, and this zhang version cannot hand the sign-in back to the app. Upgrade the server, or turn on password sign-in.",
+  "setupCheckAgain": "Check again",
+  "setupCredentialsUnknown": "The server asks for credentials.",
+  "setupGatewayBody": "Something in front of zhang, such as a reverse proxy, asks for credentials. Enter them under “Reverse proxy or gateway”.",
+  "setupAdvancedTitle": "Reverse proxy or gateway",
+  "setupAdvancedSubtitle": "Bearer token or custom headers",
+  "setupConnect": "Connect",
+  "setupSignedInAs": "Signed in as {user}",
+  "@setupSignedInAs": {
+    "placeholders": {
+      "user": {
+        "type": "String"
+      }
+    }
+  },
+  "setupConnected": "Connected",
+  "setupReadyTitle": "You're connected",
+  "setupReadyBody": "Name this ledger and pick a colour. You can change both later in Settings.",
+  "setupFactCurrency": "Currency",
+  "setupFactAccounts": "Accounts",
+  "setupFactAccountsValue": "{count, plural, =1{1 open} other{{count} open}}",
+  "@setupFactAccountsValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "setupFactServer": "Server",
+  "setupFactSignedIn": "Signed in as",
+  "setupFactSignIn": "Sign-in",
+  "setupFactNoSignIn": "Not needed",
+  "setupFactUnavailable": "Could not read the ledger details. You can still start.",
+  "setupNameLabel": "Name on this device",
+  "setupDemoNote": "This is the zhang demo, a read-only ledger: browsing works, new entries are not saved.",
+  "setupStart": "Start",
+  "profileSectionServer": "Server",
+  "profileSectionSignIn": "Sign-in",
+  "profileSectionAppearance": "Appearance",
+  "authMethodLabel": "Sign-in method",
+  "authNoneLong": "No sign-in",
+  "authBasicLong": "Username and password",
+  "authSessionLong": "Browser sign-in (passkey or password)",
+  "authBearerLong": "Bearer token (reverse proxy)",
+  "authHeadersLong": "Custom headers (reverse proxy)",
+  "setupProxyHeaders": "Custom headers",
+  "setupUnreachable": "Cannot reach the server"
 }

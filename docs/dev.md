@@ -148,10 +148,29 @@ zhang checkout) on another port and forward `/api/*` to the server (any small re
 Python one on `:18101`), then use that port as the server URL in the app. The fixtures in `test/fixtures` were captured from `:18080` with
 plain curls (one file per response; the requests are the ones in `docs/compat-v0.2.md` Appendix A).
 
-Server URL to type in onboarding: iOS simulator `http://127.0.0.1:18080`, Android emulator
+Server URL to type in the setup wizard: iOS simulator `http://127.0.0.1:18080`, Android emulator
 `http://10.0.2.2:18080`, device `http://<Mac LAN IP>:18080`. Plain http is allowed on both
 platforms (`usesCleartextTraffic`, `NSAllowsArbitraryLoads`). URLs are normalised (`/api` and trailing
-`/` stripped, `https://` added when no scheme).
+`/` stripped; without a typed scheme `http://` for local addresses – `localhost`, `127.0.0.0/8`, `::1`, `10/8`,
+`172.16/12`, `192.168/16`, `*.local`, `*.lan`, single-label names – and `https://` otherwise, see
+`ServerProfile.defaultSchemeFor`; a typed scheme always wins). The wizard shows the result as "Connects to …" and
+offers the other scheme ("Use https://…" / "Use http://…") when an attempt with the picked one fails.
+
+### Setup wizard (`lib/features/onboarding/`)
+
+`ServerSetupScreen` (route `/onboarding`, and `/settings/profiles/new` without the welcome page) runs
+`ServerSetupController`: welcome (otter, "Connect to your server", "Try the demo" → the public read-only
+demo `https://zhang-demo.onrender.com`, whose first request after idling can take ~30 s; timeouts are
+retried twice) → **1** address: `ConnectionTester.probe` = `GET /api/auth/status` + `GET /api/info` without
+credentials (network error / too old / not zhang stay on step 1 with hints; the self-signed switch only
+appears for certificate errors) → **2** sign-in, only what `/api/auth/status` offers: `app_login` → "Sign in
+with browser" first (+ "Use username and password" when `methods.password`), password only → fields,
+passkey only without `app_login` → upgrade explanation, no zhang sign-in but a 401 → reverse-proxy Bearer
+token / custom headers (also under "Reverse proxy or gateway" on every sign-in page); each sign-in is
+verified at once with `ConnectionTester.test` → **3** summary (`ConnectionTester.overview`: operating
+currency, open accounts; zhang version, user), name (pre-filled with the ledger title) and colour → "Start"
+saves with `activate: true` and lands on Home. Open servers skip step 2. Editing a saved server uses the
+compact `ProfileForm` (sections Server / Sign-in / Appearance, sign-in method `DropdownMenu`).
 
 Builds:
 
@@ -179,7 +198,11 @@ flutter test           # unit + widget tests (no server needed)
   (`callsTo('report.flows').last.params`) and can fail a call (`intercept`). `FakeZhangServer` and `pumpLedgerApp`
   use it.
 * Widget tests override `sharedPreferencesProvider`, `secretStoreProvider` (`InMemorySecretStore`),
-  `initialProfilesStateProvider` and `connectionTesterProvider`; see `test/widget_test.dart`. The SSE stream is off
+  `initialProfilesStateProvider` and `connectionTesterProvider`; see `test/widget_test.dart`. The setup wizard
+  tests (`test/features/onboarding/server_setup_test.dart`) use `FakeSetupServer`
+  (`test/helpers/fake_setup_server.dart`): one fake zhang behind `FakeAdapter` that serves
+  `connectionTesterProvider` and `browserSignInProvider` (sign-in switches, gateway, zhang 0.1, injected
+  network/TLS failures, a gate to hold requests). The SSE stream is off
   unless `ledgerEventsEnabledProvider` is overridden (only `bootstrap()` turns it on).
 * `integration_test/*_live_test.dart` – end-to-end on a simulator against a live server (not run by
   `flutter test`; they clear the saved profiles). Each prints `ZHANG_RESULT …` lines:
@@ -187,7 +210,8 @@ flutter test           # unit + widget tests (no server needed)
   ```sh
   D=C72765EE-0200-4184-98B4-677679E629EB     # "iPhone 17 Pro"
   flutter test integration_test/onboarding_live_test.dart       -d $D --dart-define=ZHANG_URL=http://127.0.0.1:18081 \
-    [--dart-define=ZHANG_OLD_URL=http://127.0.0.1:18082]      # demo:secret by default (ZHANG_USER / ZHANG_PASS)
+    [--dart-define=ZHANG_OLD_URL=http://127.0.0.1:18082]      # demo:secret by default (ZHANG_USER / ZHANG_PASS);
+                                                              # the server must have the app login handoff
   flutter test integration_test/browse_live_test.dart           -d $D --dart-define=ZHANG_URL=http://127.0.0.1:18080
   flutter test integration_test/add_transaction_live_test.dart  -d $D --dart-define=ZHANG_URL=http://127.0.0.1:18080 \
     --dart-define=ZHANG_LEDGER_DIR=/tmp/zhang-v3-ledger
@@ -195,6 +219,10 @@ flutter test           # unit + widget tests (no server needed)
   flutter test integration_test/session_login_live_test.dart    -d $D --dart-define=ZHANG_URL=http://127.0.0.1:18100
   ```
 
+  `onboarding_live_test.dart` walks the wizard (welcome, step 1 hint, an unreachable `.invalid` host, the
+  too-old server, step 2 browser page and one dark / Chinese frame, wrong then right password, step 3 facts,
+  Start, Settings → Edit server); with `--dart-define=ZHANG_SCREENSHOT_PAUSE=4` it holds each state after
+  printing `ZHANG_STATE <name>`, so `xcrun simctl io <id> screenshot <name>.png` can capture it.
   `session_login_live_test.dart` replaces the browser (`webAuthLauncherProvider`, passed to
   `bootstrap(overrides:)`) with `POST /api/auth/login` + `POST /api/auth/app/code` over HTTP and feeds the returned
   `zhang-app://auth/callback?code=…` into the app's real callback → exchange → Bearer path, then signs out and in
@@ -222,7 +250,7 @@ lib/
   data/repositories/        one repository + provider per API group (barrel: repositories.dart),
                             ledgerRevisionProvider, ledgerEventsProvider (SSE), shared data providers
                             (server gate, info, options, ledger clock, commodities)
-  features/<feature>/       screens; onboarding/ and settings/ are done, the rest are placeholders
+  features/<feature>/       screens; onboarding/ = the server setup wizard (see "Setup wizard" above)
   l10n/                     app_en.arb (template), app_zh.arb, generated AppLocalizations, l10n.dart (context.l10n)
 ```
 

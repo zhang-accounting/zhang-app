@@ -42,10 +42,44 @@ void main() {
       'https://x.com/zhang/api//': 'https://x.com/zhang',
       'https://x.com/rapi': 'https://x.com/rapi',
       'http://127.0.0.1:18010': 'http://127.0.0.1:18010',
+      // No scheme: http for local addresses, https for everything else.
+      '127.0.0.1:18011/api/': 'http://127.0.0.1:18011',
+      'localhost:8000': 'http://localhost:8000',
+      '[::1]:8000': 'http://[::1]:8000',
+      '192.168.1.2:8000': 'http://192.168.1.2:8000',
+      'nas.local': 'http://nas.local',
+      'https://192.168.1.2/': 'https://192.168.1.2', // a typed scheme wins
+      'HTTPS://nas.lan:8443': 'https://nas.lan:8443',
+      '8.8.8.8': 'https://8.8.8.8',
+      'ledger.example.com:8000/zhang': 'https://ledger.example.com:8000/zhang',
     };
     cases.forEach((input, expected) {
       test('"$input" -> "$expected"', () {
         expect(ServerProfile.normalizeBaseUrl(input), expected);
+      });
+    });
+
+    group('default scheme without a typed one', () {
+      const local = [
+        'localhost', 'app.localhost', '127.0.0.1', '127.1.2.3', '::1', '10.0.0.8', '172.16.0.1',
+        '172.31.255.254', '192.168.1.10', 'nas.local', 'router.lan', 'nas', 'raspberrypi', 'NAS.LOCAL.',
+      ];
+      const public = [
+        'ledger.example.com', 'zhang-demo.onrender.com', '8.8.8.8', '172.15.0.1', '172.32.0.1',
+        '192.169.1.1', '11.0.0.1', '2001:db8::1', 'local.example.com', 'lan.example.com', '999.1.1.1',
+      ];
+      for (final host in local) {
+        test('$host is local → http', () => expect(ServerProfile.isLocalHost(host), isTrue));
+      }
+      for (final host in public) {
+        test('$host is not local → https', () => expect(ServerProfile.isLocalHost(host), isFalse));
+      }
+      test('host is taken without user info, port, path and brackets', () {
+        expect(ServerProfile.defaultSchemeFor('me@192.168.1.2:8000/api'), 'http');
+        expect(ServerProfile.defaultSchemeFor('[::1]:8000'), 'http');
+        expect(ServerProfile.defaultSchemeFor('[2001:db8::1]:443'), 'https');
+        expect(ServerProfile.defaultSchemeFor('ledger.example.com/nas'), 'https');
+        expect(ServerProfile.defaultSchemeFor('nas:8000/x?y#z'), 'http');
       });
     });
 

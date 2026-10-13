@@ -42,13 +42,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get onboardingTitle => 'Connect to your zhang server';
-
-  @override
-  String get onboardingSubtitle =>
-      'Enter the address of your self-hosted zhang server. Credentials are stored securely on this device.';
-
-  @override
   String get profileNameLabel => 'Name';
 
   @override
@@ -145,9 +138,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get save => 'Save';
-
-  @override
-  String get saveAndContinue => 'Save and continue';
 
   @override
   String get cancel => 'Cancel';
@@ -930,7 +920,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signInNotNeeded =>
-      'This server does not require sign-in. Choose “None” instead.';
+      'This server does not require sign-in. Choose “No sign-in” instead.';
 
   @override
   String get signInNotSupported =>
@@ -970,5 +960,259 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorPasskeyOnlyBrowser =>
-      'This server only allows passkey sign-in. Choose “Browser” to sign in with a passkey.';
+      'This server only allows passkey sign-in. Choose “Browser sign-in” to sign in with a passkey.';
+
+  @override
+  String get welcomeTagline => 'Your plain-text books, in your pocket.';
+
+  @override
+  String get welcomeBody =>
+      'Connect to the zhang server you host to check balances and record spending on the go.';
+
+  @override
+  String get welcomeWhatIsZhang => 'What is a zhang server?';
+
+  @override
+  String get welcomeAboutBody =>
+      'zhang is open-source, self-hosted accounting that keeps your books as plain-text files you own. You run the server yourself, with Docker or a single binary, and this app connects to it. The app needs zhang 0.2 or newer.';
+
+  @override
+  String get welcomeReadDocs => 'Read the docs';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get welcomeConnect => 'Connect to your server';
+
+  @override
+  String get welcomeTryDemo => 'Try the demo';
+
+  @override
+  String get welcomeDemoCaption =>
+      'The demo is a fictional, read-only ledger hosted by the zhang project.';
+
+  @override
+  String get welcomeDemoWaking =>
+      'Waking up the demo server. This can take up to a minute.';
+
+  @override
+  String setupStep(int step, int total) {
+    return 'Step $step of $total';
+  }
+
+  @override
+  String get setupServerTitle => 'Where is your server?';
+
+  @override
+  String get setupServerBody =>
+      'Enter the address you open zhang at in your browser.';
+
+  @override
+  String get setupUrlLabel => 'Server address';
+
+  @override
+  String get setupUrlHint => 'ledger.example.com or 192.168.1.10:8000';
+
+  @override
+  String get setupPaste => 'Paste';
+
+  @override
+  String setupUrlNormalized(String url) {
+    return 'Connects to $url';
+  }
+
+  @override
+  String get setupContinue => 'Continue';
+
+  @override
+  String get setupChecking => 'Checking…';
+
+  @override
+  String get setupTryAgain => 'Try again';
+
+  @override
+  String get setupHintReach =>
+      'Check the address and the port, and that this phone can reach the server (same Wi-Fi or VPN).';
+
+  @override
+  String get setupSchemeHintHttps =>
+      'No scheme was entered, so https:// was used. Servers on your own network often use http://.';
+
+  @override
+  String get setupSchemeHintHttp =>
+      'No scheme was entered, so http:// was used for this local address. Use https:// if the server has a certificate.';
+
+  @override
+  String setupTryUrl(String url) {
+    return 'Use $url';
+  }
+
+  @override
+  String get setupNotZhang =>
+      'It answered, but not like a zhang server. Use the address of the zhang web UI, without /api.';
+
+  @override
+  String get setupBehindGateway => 'It is behind a sign-in gateway';
+
+  @override
+  String get setupTooOldTitle => 'This server needs an update';
+
+  @override
+  String setupTooOldBody(String version) {
+    return 'It runs zhang $version without the API this app uses. Upgrade the server to zhang 0.2 or newer, then try again.';
+  }
+
+  @override
+  String get setupHowToUpgrade => 'How to upgrade';
+
+  @override
+  String setupSignInTitle(String ledger) {
+    return 'Sign in to $ledger';
+  }
+
+  @override
+  String get setupSignInTitleUntitled => 'Sign in';
+
+  @override
+  String setupSignInBody(String host) {
+    return '$host asks you to sign in.';
+  }
+
+  @override
+  String get setupBrowserStep1 =>
+      'Your server\'s sign-in page opens in a secure browser window.';
+
+  @override
+  String get setupBrowserStep2 =>
+      'Sign in there with a passkey or your password. The app keeps only a sign-in token, never your password.';
+
+  @override
+  String get setupWaitingBrowser => 'Waiting for the browser…';
+
+  @override
+  String get setupUsePassword => 'Use username and password';
+
+  @override
+  String get setupUseBrowser => 'Sign in with browser instead';
+
+  @override
+  String get setupSignIn => 'Sign in';
+
+  @override
+  String get setupPasskeyOnlyTitle => 'This server only accepts passkeys';
+
+  @override
+  String get setupPasskeyOnlyBody =>
+      'The app signs in with a passkey through the server\'s sign-in page, and this zhang version cannot hand the sign-in back to the app. Upgrade the server, or turn on password sign-in.';
+
+  @override
+  String get setupCheckAgain => 'Check again';
+
+  @override
+  String get setupCredentialsUnknown => 'The server asks for credentials.';
+
+  @override
+  String get setupGatewayBody =>
+      'Something in front of zhang, such as a reverse proxy, asks for credentials. Enter them under “Reverse proxy or gateway”.';
+
+  @override
+  String get setupAdvancedTitle => 'Reverse proxy or gateway';
+
+  @override
+  String get setupAdvancedSubtitle => 'Bearer token or custom headers';
+
+  @override
+  String get setupConnect => 'Connect';
+
+  @override
+  String setupSignedInAs(String user) {
+    return 'Signed in as $user';
+  }
+
+  @override
+  String get setupConnected => 'Connected';
+
+  @override
+  String get setupReadyTitle => 'You\'re connected';
+
+  @override
+  String get setupReadyBody =>
+      'Name this ledger and pick a colour. You can change both later in Settings.';
+
+  @override
+  String get setupFactCurrency => 'Currency';
+
+  @override
+  String get setupFactAccounts => 'Accounts';
+
+  @override
+  String setupFactAccountsValue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count open',
+      one: '1 open',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get setupFactServer => 'Server';
+
+  @override
+  String get setupFactSignedIn => 'Signed in as';
+
+  @override
+  String get setupFactSignIn => 'Sign-in';
+
+  @override
+  String get setupFactNoSignIn => 'Not needed';
+
+  @override
+  String get setupFactUnavailable =>
+      'Could not read the ledger details. You can still start.';
+
+  @override
+  String get setupNameLabel => 'Name on this device';
+
+  @override
+  String get setupDemoNote =>
+      'This is the zhang demo, a read-only ledger: browsing works, new entries are not saved.';
+
+  @override
+  String get setupStart => 'Start';
+
+  @override
+  String get profileSectionServer => 'Server';
+
+  @override
+  String get profileSectionSignIn => 'Sign-in';
+
+  @override
+  String get profileSectionAppearance => 'Appearance';
+
+  @override
+  String get authMethodLabel => 'Sign-in method';
+
+  @override
+  String get authNoneLong => 'No sign-in';
+
+  @override
+  String get authBasicLong => 'Username and password';
+
+  @override
+  String get authSessionLong => 'Browser sign-in (passkey or password)';
+
+  @override
+  String get authBearerLong => 'Bearer token (reverse proxy)';
+
+  @override
+  String get authHeadersLong => 'Custom headers (reverse proxy)';
+
+  @override
+  String get setupProxyHeaders => 'Custom headers';
+
+  @override
+  String get setupUnreachable => 'Cannot reach the server';
 }

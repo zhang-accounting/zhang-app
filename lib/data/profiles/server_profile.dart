@@ -232,17 +232,19 @@ class ServerProfile {
   }
 
   /// Normalises user input into a [baseUrl]:
-  /// trims, adds `https://` when no scheme is given, lower-cases the scheme,
-  /// and strips trailing `/` and a trailing `/api` segment.
+  /// trims, adds a scheme when none is given ([defaultSchemeFor]: `http` for
+  /// local addresses, else `https`), lower-cases the scheme, and strips
+  /// trailing `/` and a trailing `/api` segment. A typed scheme always wins.
   ///
   /// `ledger.example.com/api/` → `https://ledger.example.com`
-  /// `http://192.168.1.2:8000/` → `http://192.168.1.2:8000`
+  /// `192.168.1.2:8000/` → `http://192.168.1.2:8000`
+  /// `https://192.168.1.2/` → `https://192.168.1.2`
   static String normalizeBaseUrl(String input) {
     var url = input.trim();
     if (url.isEmpty) return url;
-    final scheme = RegExp(r'^([a-zA-Z][a-zA-Z0-9+.-]*)://').firstMatch(url);
+    final scheme = schemePattern.firstMatch(url);
     if (scheme == null) {
-      url = 'https://$url';
+      url = '${defaultSchemeFor(url)}://$url';
     } else {
       url = '${scheme.group(1)!.toLowerCase()}${url.substring(scheme.group(1)!.length)}';
     }
@@ -251,6 +253,57 @@ class ServerProfile {
       url = _stripTrailingSlashes(url.substring(0, url.length - 4));
     }
     return url;
+  }
+
+  /// A leading `scheme://`.
+  static final schemePattern = RegExp(r'^([a-zA-Z][a-zA-Z0-9+.-]*)://');
+
+  /// Scheme for an address typed without one: `http` when the host is local
+  /// (servers on a home network rarely have a certificate), else `https`.
+  ///
+  /// Local: `localhost` (and `*.localhost`), `127.0.0.0/8`, `::1`,
+  /// `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `*.local`, `*.lan` and
+  /// single-label names (`nas`, `raspberrypi`).
+  static String defaultSchemeFor(String addressWithoutScheme) =>
+      isLocalHost(_hostOf(addressWithoutScheme)) ? 'http' : 'https';
+
+  /// Host part of an address without scheme: no user info, port, path,
+  /// query or fragment; IPv6 without brackets; lower case.
+  static String _hostOf(String address) {
+    var rest = address.trim();
+    final end = rest.indexOf(RegExp(r'[/?#]'));
+    if (end >= 0) rest = rest.substring(0, end);
+    final at = rest.lastIndexOf('@');
+    if (at >= 0) rest = rest.substring(at + 1);
+    if (rest.startsWith('[')) {
+      final close = rest.indexOf(']');
+      return (close < 0 ? rest.substring(1) : rest.substring(1, close)).toLowerCase();
+    }
+    // One colon: host:port. More: a bare IPv6 address.
+    if (':'.allMatches(rest).length == 1) rest = rest.substring(0, rest.indexOf(':'));
+    return rest.toLowerCase();
+  }
+
+  /// See [defaultSchemeFor].
+  @visibleForTesting
+  static bool isLocalHost(String host) {
+    var h = host.toLowerCase();
+    if (h.endsWith('.')) h = h.substring(0, h.length - 1);
+    if (h.isEmpty) return false;
+    if (h == 'localhost' || h.endsWith('.localhost')) return true;
+    if (h == '::1' || h == '0:0:0:0:0:0:0:1') return true;
+    if (h.contains(':')) return false; // other IPv6
+    final ipv4 = RegExp(r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$').firstMatch(h);
+    if (ipv4 != null) {
+      final o = [for (var i = 1; i <= 4; i++) int.parse(ipv4.group(i)!)];
+      if (o.any((n) => n > 255)) return false;
+      return o[0] == 127 ||
+          o[0] == 10 ||
+          (o[0] == 172 && o[1] >= 16 && o[1] <= 31) ||
+          (o[0] == 192 && o[1] == 168);
+    }
+    if (h.endsWith('.local') || h.endsWith('.lan')) return true;
+    return !h.contains('.');
   }
 
   /// Whether [normalized] (output of [normalizeBaseUrl]) is a usable http(s)

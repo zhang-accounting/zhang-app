@@ -1,31 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/widgets/error_view.dart';
+import '../../core/widgets/notice_card.dart';
 import '../../data/api/zhang_api_client.dart';
 import '../../data/auth/browser_sign_in.dart';
 import '../../data/models/info.dart';
 import '../../data/profiles/profile_repository.dart';
 import '../../data/profiles/server_profile.dart';
 import '../../l10n/l10n.dart';
+import 'header_row.dart';
+import 'profile_color_picker.dart';
 import 'session_actions.dart';
 
-/// Colours offered for tagging a ledger (ARGB). `null` = theme primary.
-const List<int> kProfilePalette = [
-  0xFF1F6F8B, // teal blue
-  0xFF3949AB, // indigo
-  0xFF00897B, // teal
-  0xFF2E7D32, // green
-  0xFFF9A825, // amber
-  0xFFEF6C00, // orange
-  0xFFC62828, // red
-  0xFF8E24AA, // purple
-];
-
-/// Shared add/edit form for a [ServerProfile] (onboarding + settings):
-/// name, URL, auth type with matching fields, self-signed toggle, colour,
-/// "Test connection" (GET /api/info) and a submit button.
+/// Compact form for editing a [ServerProfile] (Settings → Edit server), in
+/// three sections: Server (name, URL, self-signed certificate), Sign-in
+/// (method chooser with matching fields, "Test connection") and Appearance
+/// (colour). New servers go through the setup wizard instead
+/// (`ServerSetupScreen`).
 ///
 /// The "Browser" auth type ([AuthType.session]) has no credential fields: a
 /// "Sign in with browser" button runs [BrowserSignIn.signIn] and the form
@@ -50,20 +42,6 @@ class ProfileForm extends ConsumerStatefulWidget {
   ConsumerState<ProfileForm> createState() => _ProfileFormState();
 }
 
-class _HeaderRow {
-  _HeaderRow([String name = '', String value = ''])
-    : name = TextEditingController(text: name),
-      value = TextEditingController(text: value);
-
-  final TextEditingController name;
-  final TextEditingController value;
-
-  void dispose() {
-    name.dispose();
-    value.dispose();
-  }
-}
-
 class _ProfileFormState extends ConsumerState<ProfileForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
@@ -71,7 +49,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
   late final TextEditingController _username;
   late final TextEditingController _password;
   late final TextEditingController _token;
-  late final List<_HeaderRow> _headers;
+  late final List<HeaderRow> _headers;
   late AuthType _authType;
   late bool _allowSelfSigned;
   int? _color;
@@ -102,9 +80,9 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     _token = TextEditingController(text: p?.bearerToken ?? '');
     _headers = [
       for (final e in (p?.customHeaders ?? const <String, String>{}).entries)
-        _HeaderRow(e.key, e.value),
+        HeaderRow(e.key, e.value),
     ];
-    if (_headers.isEmpty) _headers.add(_HeaderRow());
+    if (_headers.isEmpty) _headers.add(HeaderRow());
     _authType = p?.authType ?? AuthType.none;
     _allowSelfSigned = p?.allowSelfSigned ?? false;
     _color = p?.color;
@@ -158,12 +136,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
       basicUsername: _authType == AuthType.basic ? _username.text.trim() : null,
       basicPassword: _authType == AuthType.basic ? _password.text : null,
       bearerToken: _authType == AuthType.bearer ? _token.text.trim() : null,
-      customHeaders: _authType == AuthType.headers
-          ? {
-              for (final h in _headers)
-                if (h.name.text.trim().isNotEmpty) h.name.text.trim(): h.value.text,
-            }
-          : const {},
+      customHeaders: _authType == AuthType.headers ? HeaderRow.toMap(_headers) : const {},
       sessionToken: session ? _sessionToken : null,
       sessionExpiresAt: session ? _sessionExpiresAt : null,
       sessionUser: session ? _sessionUser : null,
@@ -255,6 +228,25 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     }
   }
 
+  static String authLabel(AppLocalizations l10n, AuthType type) => switch (type) {
+    AuthType.none => l10n.authNoneLong,
+    AuthType.basic => l10n.authBasicLong,
+    AuthType.session => l10n.authSessionLong,
+    AuthType.bearer => l10n.authBearerLong,
+    AuthType.headers => l10n.authHeadersLong,
+  };
+
+  static IconData _authIcon(AuthType type) => switch (type) {
+    AuthType.none => Icons.lock_open_outlined,
+    AuthType.basic => Icons.password_outlined,
+    AuthType.session => Icons.open_in_browser,
+    AuthType.bearer => Icons.token_outlined,
+    AuthType.headers => Icons.vpn_lock_outlined,
+  };
+
+  /// Menu order: zhang's own sign-ins first, reverse proxy ones last.
+  static const _authOrder = [AuthType.none, AuthType.basic, AuthType.session, AuthType.bearer, AuthType.headers];
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -264,6 +256,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _FormSection(l10n.profileSectionServer, first: true),
           TextFormField(
             key: const Key('profileForm.name'),
             controller: _name,
@@ -294,36 +287,8 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
               }
             },
           ),
-          gap,
-          Text(l10n.authTypeLabel, style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: 8),
-          // Five segments do not fit a phone's width: scroll sideways.
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SegmentedButton<AuthType>(
-              key: const Key('profileForm.authType'),
-              showSelectedIcon: false,
-              style: const ButtonStyle(visualDensity: VisualDensity.compact),
-              segments: [
-                ButtonSegment(value: AuthType.none, label: Text(l10n.authNone)),
-                ButtonSegment(value: AuthType.basic, label: Text(l10n.authBasic)),
-                ButtonSegment(value: AuthType.bearer, label: Text(l10n.authBearer)),
-                ButtonSegment(value: AuthType.headers, label: Text(l10n.authHeaders)),
-                ButtonSegment(value: AuthType.session, label: Text(l10n.authSession)),
-              ],
-              selected: {_authType},
-              onSelectionChanged: (s) {
-                setState(() {
-                  _authType = s.first;
-                  _signInError = null;
-                });
-                _resetTest();
-              },
-            ),
-          ),
-          gap,
-          ..._authFields(l10n),
           SwitchListTile(
+            key: const Key('profileForm.allowSelfSigned'),
             contentPadding: EdgeInsets.zero,
             title: Text(l10n.allowSelfSignedLabel),
             subtitle: Text(l10n.allowSelfSignedHelp),
@@ -333,14 +298,30 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
               _resetTest();
             },
           ),
-          const SizedBox(height: 8),
-          Text(l10n.colorLabel, style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: 8),
-          _ColorPicker(
-            selected: _color,
-            onChanged: (c) => setState(() => _color = c),
+          _FormSection(l10n.profileSectionSignIn),
+          DropdownMenu<AuthType>(
+            key: const Key('profileForm.authType'),
+            initialSelection: _authType,
+            expandedInsets: EdgeInsets.zero,
+            label: Text(l10n.authMethodLabel),
+            leadingIcon: Icon(_authIcon(_authType)),
+            requestFocusOnTap: false,
+            enableSearch: false,
+            dropdownMenuEntries: [
+              for (final t in _authOrder)
+                DropdownMenuEntry(value: t, label: authLabel(l10n, t), leadingIcon: Icon(_authIcon(t))),
+            ],
+            onSelected: (t) {
+              if (t == null || t == _authType) return;
+              setState(() {
+                _authType = t;
+                _signInError = null;
+              });
+              _resetTest();
+            },
           ),
-          const SizedBox(height: 24),
+          gap,
+          ..._authFields(l10n),
           OutlinedButton.icon(
             key: const Key('profileForm.test'),
             onPressed: _testing || _saving || _signingIn || _needsSignIn ? null : _test,
@@ -356,9 +337,17 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
             const SizedBox(height: 12),
             _TestResultCard(info: _testInfo, error: _testError),
           ],
+          _FormSection(l10n.profileSectionAppearance),
+          Text(l10n.colorLabel, style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 12),
+          ProfileColorPicker(
+            selected: _color,
+            onChanged: (c) => setState(() => _color = c),
+          ),
+          const SizedBox(height: 32),
           FilledButton(
             key: const Key('profileForm.submit'),
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
             onPressed: _saving || _signingIn || _needsSignIn ? null : _submit,
             child: _saving
                 ? const SizedBox.square(
@@ -460,7 +449,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
           Row(
             children: [
               TextButton.icon(
-                onPressed: () => setState(() => _headers.add(_HeaderRow())),
+                onPressed: () => setState(() => _headers.add(HeaderRow())),
                 icon: const Icon(Icons.add),
                 label: Text(l10n.addHeader),
               ),
@@ -521,7 +510,24 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
   }
 }
 
-/// Green (ok) / red result card under the sign-in button.
+/// Section title of the form ("Server", "Sign-in", "Appearance").
+class _FormSection extends StatelessWidget {
+  const _FormSection(this.text, {this.first = false});
+
+  final String text;
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(top: first ? 4 : 28, bottom: 12),
+      child: Text(text, style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary)),
+    );
+  }
+}
+
+/// Result line under the browser sign-in button.
 class _StatusCard extends StatelessWidget {
   const _StatusCard({super.key, required this.ok, required this.icon, required this.title});
 
@@ -530,73 +536,8 @@ class _StatusCard extends StatelessWidget {
   final String title;
 
   @override
-  Widget build(BuildContext context) {
-    final colors = context.zhangColors;
-    final foreground = ok ? colors.onIncomeContainer : colors.onExpenseContainer;
-    return Card(
-      color: ok ? colors.incomeContainer : colors.expenseContainer,
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: foreground),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(title, style: TextStyle(color: foreground, fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ColorPicker extends StatelessWidget {
-  const _ColorPicker({required this.selected, required this.onChanged});
-
-  final int? selected;
-  final ValueChanged<int?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    Widget swatch(int? value) {
-      final color = value == null ? scheme.primary : Color(value);
-      final isSelected = selected == value;
-      return Semantics(
-        selected: isSelected,
-        button: true,
-        label: value == null ? context.l10n.colorDefault : '#${value.toRadixString(16)}',
-        child: InkResponse(
-          onTap: () => onChanged(value),
-          radius: 22,
-          child: Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? scheme.onSurface : Colors.transparent,
-                width: 2.5,
-              ),
-            ),
-            child: value == null
-                ? Icon(Icons.auto_awesome, size: 16, color: scheme.onPrimary)
-                : (isSelected ? const Icon(Icons.check, size: 18, color: Colors.white) : null),
-          ),
-        ),
-      );
-    }
-
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [swatch(null), for (final c in kProfilePalette) swatch(c)],
-    );
-  }
+  Widget build(BuildContext context) =>
+      NoticeCard(tone: ok ? NoticeTone.success : NoticeTone.error, icon: icon, title: title);
 }
 
 class _TestResultCard extends StatelessWidget {
@@ -608,42 +549,22 @@ class _TestResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final colors = context.zhangColors;
     final ok = info != null;
-    final background = ok ? colors.incomeContainer : colors.expenseContainer;
-    final foreground = ok ? colors.onIncomeContainer : colors.onExpenseContainer;
-    final title = ok
-        ? l10n.connectionOk(
-            (info!.title == null || info!.title!.isEmpty) ? l10n.untitledLedger : info!.title!,
-          )
-        : describeApiError(l10n, error!);
-    return Card(
-      key: Key(ok ? 'profileForm.testOk' : 'profileForm.testError'),
-      color: background,
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(ok ? Icons.check_circle : iconForApiError(error!), color: foreground),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(color: foreground, fontWeight: FontWeight.w600)),
-                  if (ok)
-                    Text(
-                      l10n.connectionOkDetail(info!.version, info!.buildDate),
-                      style: TextStyle(color: foreground),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    if (!ok) {
+      return NoticeCard(
+        key: const Key('profileForm.testError'),
+        tone: NoticeTone.error,
+        icon: iconForApiError(error!),
+        title: describeApiError(l10n, error!),
+      );
+    }
+    final title = (info!.title == null || info!.title!.isEmpty) ? l10n.untitledLedger : info!.title!;
+    return NoticeCard(
+      key: const Key('profileForm.testOk'),
+      tone: NoticeTone.success,
+      icon: Icons.check_circle,
+      title: l10n.connectionOk(title),
+      body: l10n.connectionOkDetail(info!.version, info!.buildDate),
     );
   }
 }
