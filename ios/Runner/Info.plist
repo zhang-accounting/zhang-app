@@ -33,7 +33,7 @@
 		     (ASWebAuthenticationSession also catches it without this; listed for completeness). -->
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>me.kilerd.zhangApp.auth</string>
+			<string>com.zhangaccounting.app.auth</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>zhang-app</string>

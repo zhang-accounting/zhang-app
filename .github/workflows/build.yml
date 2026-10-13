@@ -45,14 +45,38 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      # Release build signed with the debug keystore until a real keystore is
-      # configured (see docs/ci.md). Installable by sideloading.
-      - run: flutter build apk --release
-      - run: cp build/app/outputs/flutter-apk/app-release.apk zhang-app-android.apk
+      # Release signing with the upload keystore from the ANDROID_* secrets.
+      # Fork pull requests cannot read secrets: the step is skipped and Gradle
+      # falls back to the debug keystore (see android/app/build.gradle.kts).
+      - name: install upload keystore
+        if: env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload-keystore.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/upload-keystore.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > android/key.properties
+      - run: flutter build apk --release --build-number=${{ github.run_number }}
+      - run: flutter build appbundle --release --build-number=${{ github.run_number }}
+      - run: |
+          cp build/app/outputs/flutter-apk/app-release.apk zhang-app-android.apk
+          cp build/app/outputs/bundle/release/app-release.aab zhang-app-android.aab
+      - name: verify signer
+        run: |
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --print-certs zhang-app-android.apk | grep -E "Signer #1 certificate (DN|SHA-256)"
       - uses: actions/upload-artifact@v4
         with:
           name: zhang-app-android
-          path: zhang-app-android.apk
+          path: |
+            zhang-app-android.apk
+            zhang-app-android.aab
           if-no-files-found: error
 
   # Pull requests (incl. forks, which can't read secrets) only verify the build
@@ -164,4 +188,5 @@ jobs:
         with:
           files: |
             dist/zhang-app-android.apk
+            dist/zhang-app-android.aab
           generate_release_notes: true
