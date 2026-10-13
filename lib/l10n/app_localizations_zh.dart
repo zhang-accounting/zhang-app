@@ -42,12 +42,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get onboardingTitle => '连接你的 zhang 服务器';
-
-  @override
-  String get onboardingSubtitle => '填写自建 zhang 服务器的地址。凭据会安全地保存在本机。';
-
-  @override
   String get profileNameLabel => '名称';
 
   @override
@@ -143,9 +137,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get save => '保存';
-
-  @override
-  String get saveAndContinue => '保存并继续';
 
   @override
   String get cancel => '取消';
@@ -904,7 +895,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get signInFirst => '请先用浏览器登录。';
 
   @override
-  String get signInNotNeeded => '该服务器无需登录，请选择「无」。';
+  String get signInNotNeeded => '该服务器无需登录，请选择「无需登录」。';
 
   @override
   String get signInNotSupported => '该服务器尚不支持 App 登录，请升级 zhang（PR #786）。';
@@ -939,4 +930,232 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get errorPasskeyOnlyBrowser => '该服务器只允许通行密钥（passkey）登录，请选择「浏览器登录」。';
+
+  @override
+  String get welcomeTagline => '纯文本账本，随身携带。';
+
+  @override
+  String get welcomeBody => '连接你自己部署的 zhang 服务器，随时查看余额、记一笔。';
+
+  @override
+  String get welcomeWhatIsZhang => '什么是 zhang 服务器？';
+
+  @override
+  String get welcomeAboutBody =>
+      'zhang 是开源、自托管的记账工具，账本是你自己持有的纯文本文件。服务器由你自己运行（Docker 或单个可执行文件），App 连接到它使用。App 需要 zhang 0.2 或更新版本。';
+
+  @override
+  String get welcomeReadDocs => '查看文档';
+
+  @override
+  String get close => '关闭';
+
+  @override
+  String get welcomeConnect => '连接我的服务器';
+
+  @override
+  String get welcomeTryDemo => '试用 Demo';
+
+  @override
+  String get welcomeDemoCaption => 'Demo 是 zhang 项目托管的一套虚构的只读账本。';
+
+  @override
+  String get welcomeDemoWaking => '正在唤醒 Demo 服务器，最长可能需要一分钟。';
+
+  @override
+  String setupStep(int step, int total) {
+    return '第 $step 步，共 $total 步';
+  }
+
+  @override
+  String get setupServerTitle => '你的服务器在哪里？';
+
+  @override
+  String get setupServerBody => '填写你在浏览器里打开 zhang 时用的地址。';
+
+  @override
+  String get setupUrlLabel => '服务器地址';
+
+  @override
+  String get setupUrlHint => 'ledger.example.com 或 192.168.1.10:8000';
+
+  @override
+  String get setupPaste => '粘贴';
+
+  @override
+  String setupUrlNormalized(String url) {
+    return '将连接 $url';
+  }
+
+  @override
+  String get setupContinue => '继续';
+
+  @override
+  String get setupChecking => '正在检查…';
+
+  @override
+  String get setupTryAgain => '重试';
+
+  @override
+  String get setupHintReach => '检查地址和端口，并确认这台手机能访问到服务器（同一 Wi-Fi 或 VPN）。';
+
+  @override
+  String get setupHttpHint => '没有填写协议，所以使用了 https://。局域网里的服务器通常用 http://。';
+
+  @override
+  String setupTryHttp(String url) {
+    return '改用 $url';
+  }
+
+  @override
+  String get setupNotZhang => '服务器有响应，但不像是 zhang。请填写 zhang 网页的地址，不需要 /api。';
+
+  @override
+  String get setupBehindGateway => '前面有登录网关';
+
+  @override
+  String get setupTooOldTitle => '这台服务器需要升级';
+
+  @override
+  String setupTooOldBody(String version) {
+    return '它运行的 zhang $version 缺少 App 需要的 API。请把服务器升级到 zhang 0.2 或更新版本，然后重试。';
+  }
+
+  @override
+  String get setupHowToUpgrade => '如何升级';
+
+  @override
+  String setupSignInTitle(String ledger) {
+    return '登录「$ledger」';
+  }
+
+  @override
+  String get setupSignInTitleUntitled => '登录';
+
+  @override
+  String setupSignInBody(String host) {
+    return '$host 需要登录。';
+  }
+
+  @override
+  String get setupBrowserStep1 => '服务器的登录页会在安全的浏览器窗口中打开。';
+
+  @override
+  String get setupBrowserStep2 => '在那里用通行密钥或密码登录。App 只保存登录令牌，不保存密码。';
+
+  @override
+  String get setupWaitingBrowser => '正在等待浏览器…';
+
+  @override
+  String get setupUsePassword => '使用用户名和密码';
+
+  @override
+  String get setupUseBrowser => '改用浏览器登录';
+
+  @override
+  String get setupSignIn => '登录';
+
+  @override
+  String get setupPasskeyOnlyTitle => '这台服务器只接受通行密钥';
+
+  @override
+  String get setupPasskeyOnlyBody =>
+      'App 通过服务器的登录页使用通行密钥，但这个版本的 zhang 还不能把登录结果交回 App。请升级服务器，或开启密码登录。';
+
+  @override
+  String get setupCheckAgain => '重新检查';
+
+  @override
+  String get setupCredentialsUnknown => '服务器要求提供凭据。';
+
+  @override
+  String get setupGatewayBody => 'zhang 前面的反向代理或网关要求提供凭据，请在「反向代理或网关」中填写。';
+
+  @override
+  String get setupAdvancedTitle => '反向代理或网关';
+
+  @override
+  String get setupAdvancedSubtitle => 'Bearer 令牌或自定义 Header';
+
+  @override
+  String get setupConnect => '连接';
+
+  @override
+  String setupSignedInAs(String user) {
+    return '已登录为 $user';
+  }
+
+  @override
+  String get setupConnected => '已连接';
+
+  @override
+  String get setupReadyTitle => '连接成功';
+
+  @override
+  String get setupReadyBody => '给账本起个名字、选个颜色，之后都可以在设置里修改。';
+
+  @override
+  String get setupFactCurrency => '记账货币';
+
+  @override
+  String get setupFactAccounts => '账户';
+
+  @override
+  String setupFactAccountsValue(int count) {
+    return '$count 个';
+  }
+
+  @override
+  String get setupFactServer => '服务器';
+
+  @override
+  String get setupFactSignedIn => '登录身份';
+
+  @override
+  String get setupFactSignIn => '登录';
+
+  @override
+  String get setupFactNoSignIn => '无需登录';
+
+  @override
+  String get setupFactUnavailable => '无法读取账本详情，仍可以开始使用。';
+
+  @override
+  String get setupNameLabel => '在本机显示的名称';
+
+  @override
+  String get setupDemoNote => '这是 zhang 的 Demo，一套只读账本：可以浏览，新记录不会被保存。';
+
+  @override
+  String get setupStart => '开始使用';
+
+  @override
+  String get profileSectionServer => '服务器';
+
+  @override
+  String get profileSectionSignIn => '登录';
+
+  @override
+  String get profileSectionAppearance => '外观';
+
+  @override
+  String get authMethodLabel => '登录方式';
+
+  @override
+  String get authNoneLong => '无需登录';
+
+  @override
+  String get authBasicLong => '用户名和密码';
+
+  @override
+  String get authSessionLong => '浏览器登录（通行密钥或密码）';
+
+  @override
+  String get authBearerLong => 'Bearer 令牌（反向代理）';
+
+  @override
+  String get authHeadersLong => '自定义 Header（反向代理）';
+
+  @override
+  String get setupProxyHeaders => '自定义 Header';
 }
