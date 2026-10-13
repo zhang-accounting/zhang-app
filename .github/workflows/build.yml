@@ -69,8 +69,17 @@ jobs:
           cp build/app/outputs/flutter-apk/app-release.apk zhang-app-android.apk
           cp build/app/outputs/bundle/release/app-release.aab zhang-app-android.aab
       - name: verify signer
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          # SHA-256 of the upload keystore certificate (docs/ci.md).
+          EXPECTED_SHA256: 2da507b3b35fbe8607c31e52f7e5cf2fd7a850438eb4e815161288bf55b2f690
         run: |
-          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --print-certs zhang-app-android.apk | grep -E "Signer #1 certificate (DN|SHA-256)"
+          BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)"
+          echo "apksigner from $BT"
+          "$BT/apksigner" verify --verbose --print-certs zhang-app-android.apk | tee signer.txt
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            grep -qi "$EXPECTED_SHA256" signer.txt || { echo "::error::apk is not signed with the upload keystore"; exit 1; }
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: zhang-app-android
