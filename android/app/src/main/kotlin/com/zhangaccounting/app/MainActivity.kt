@@ -1,4 +1,4 @@
-package me.kilerd.zhang_app
+package com.zhangaccounting.app
 
 import io.flutter.embedding.android.FlutterActivity
 
