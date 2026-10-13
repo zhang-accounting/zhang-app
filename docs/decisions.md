@@ -30,3 +30,9 @@
 - 无预算写接口（budget-add / budget-transfer）。
 - 表单建议（`journals.payees`）无使用频次信号；账户不暴露允许的币种。
 - 2026-10-10 起 App 只支持 zhang ≥ 0.2（内置查询 API），见 docs/compat-v0.2.md；仍存在的服务器问题见 docs/zhang-api.md §5。
+
+## 服务器配置向导（2026-10-14）
+- 作者反馈「整个 APP 的 onboarding 页面似乎做得不太好」：原先是一张长表单（名称、URL、溢出屏幕的 5 段鉴权选择、自签名开关、颜色、测试、保存）。改为按 design-research S01 的分步向导：欢迎页（仅首次启动；「连接我的服务器」/「试用 Demo」）→ 1 服务器地址（探测 `/api/auth/status` + `/api/info`）→ 2 登录（只显示服务器支持的方式，浏览器登录优先；开放的服务器跳过）→ 3 账本概览、名称、颜色 →「开始使用」。
+- 「试用 Demo」连 zhang README 里的公开只读 Demo `https://zhang-demo.onrender.com`（无需登录，v0.2 API；Render 免费实例闲置后首个请求约 30 s，超时自动重试两次）。
+- 设置 →「添加服务器」复用向导（无欢迎页）；「编辑服务器」保留紧凑表单，分为「服务器 / 登录 / 外观」三节，登录方式改用 `DropdownMenu`。
+- 仍只用 Material 3 原生组件，配色沿用种子色与 `ZhangColors`；成功 / 失败提示改用 M3 的 primaryContainer / errorContainer，不再借用收支色（收支色将来会随红涨绿跌设置互换）。
