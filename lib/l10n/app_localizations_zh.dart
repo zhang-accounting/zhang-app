@@ -1158,4 +1158,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get setupProxyHeaders => '自定义 Header';
+
+  @override
+  String get setupUnreachable => '无法连接到服务器';
 }

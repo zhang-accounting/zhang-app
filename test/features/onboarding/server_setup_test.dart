@@ -142,7 +142,7 @@ void main() {
     await _toServer(tester, '127.0.0.1:18120');
 
     expect(find.byKey(const Key('setup.probeError')), findsOneWidget);
-    expect(find.text('Cannot reach the server. Check the URL and your network.'), findsOneWidget);
+    expect(find.text('Cannot reach the server'), findsOneWidget);
     expect(find.textContaining('same Wi-Fi or VPN'), findsOneWidget);
     expect(find.textContaining('No scheme was entered'), findsOneWidget);
     expect(find.byKey(const Key('setup.allowSelfSigned')), findsNothing);

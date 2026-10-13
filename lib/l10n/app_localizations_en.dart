@@ -1208,4 +1208,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setupProxyHeaders => 'Custom headers';
+
+  @override
+  String get setupUnreachable => 'Cannot reach the server';
 }

@@ -2,14 +2,15 @@
 // a running zhang server with the app login handoff (zhang PR #786). NOT part
 // of `flutter test` (needs a server + device):
 //
-//   ZHANG_SESSION_SECRET=pk-test zhang serve /tmp/zhang-pk-ledger --addr 127.0.0.1 \
-//     --port 18100 --auth demo:secret --no-report
+//   ZHANG_SESSION_SECRET=ob-test zhang serve /tmp/zhang-ob-ledger --addr 127.0.0.1 \
+//     --port 18121 --auth demo:secret --no-report
 //   flutter test integration_test/session_login_live_test.dart -d <simulator-id> \
-//     [--dart-define=ZHANG_URL=http://127.0.0.1:18100] \
+//     [--dart-define=ZHANG_URL=http://127.0.0.1:18121] \
 //     [--dart-define=ZHANG_USER=demo --dart-define=ZHANG_PASS=secret] \
 //     [--dart-define=ZHANG_SCREENSHOT_PAUSE=8]   # seconds to hold each state for screenshots
 //
-// No browser is driven: the launcher ([webAuthLauncherProvider]) is replaced
+// The setup wizard probes the server, offers "Sign in with browser" first and
+// verifies the session inline. No browser is driven: the launcher ([webAuthLauncherProvider]) is replaced
 // by one that does what the login page does – `POST /api/auth/login`, then
 // `POST /api/auth/app/code` with the session cookie – and returns the
 // `zhang-app://auth/callback?code=…` redirect. Everything after the callback
@@ -31,7 +32,7 @@ import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/ledger_events.dart';
 import 'package:zhang_app/main.dart' as app;
 
-const _url = String.fromEnvironment('ZHANG_URL', defaultValue: 'http://127.0.0.1:18100');
+const _url = String.fromEnvironment('ZHANG_URL', defaultValue: 'http://127.0.0.1:18121');
 const _user = String.fromEnvironment('ZHANG_USER', defaultValue: 'demo');
 const _pass = String.fromEnvironment('ZHANG_PASS', defaultValue: 'secret');
 const _pause = int.fromEnvironment('ZHANG_SCREENSHOT_PAUSE');
@@ -122,45 +123,43 @@ void main() {
       await app.bootstrap(overrides: [webAuthLauncherProvider.overrideWithValue(launcher)]),
     );
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('profileForm.url')), findsOneWidget);
-
-    await tester.enterText(find.byKey(const Key('profileForm.name')), 'Passkey ledger');
-    final url = find.byKey(const Key('profileForm.url'));
+    await _tapKey(tester, 'welcome.connect');
+    await tester.pumpAndSettle();
+    final url = find.byKey(const Key('setup.url'));
     await tester.tap(url);
     await tester.pumpAndSettle();
     await tester.enterText(url, _url);
     await tester.pumpAndSettle();
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Browser'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Browser'));
-    await tester.pumpAndSettle();
-    expect(tester.widget<FilledButton>(find.byKey(const Key('profileForm.submit'))).onPressed, isNull);
-    await _hold(tester, 'form-browser');
+    await _tapKey(tester, 'setup.submitUrl');
+    await _waitFor(tester, () => _present('setup.signInBrowser') || _present('setup.probeError'));
+    // The probe found the app handoff: the browser sign-in is the main path.
+    expect(find.byKey(const Key('setup.signInBrowser')), findsOneWidget);
+    _result('step 2 offers: browser=${_present('setup.signInBrowser')} password=${_present('setup.usePassword')}');
+    await _hold(tester, 'wizard-browser');
 
-    // 1. "Sign in with browser": /api/auth/status, launcher, callback, exchange.
-    await _tapKey(tester, 'profileForm.signIn');
-    await _waitFor(tester, () => _present('profileForm.signedIn') || _present('profileForm.signInError'));
+    // 1. "Sign in with browser": launcher, callback, exchange, then /api/info
+    // with the session (verified inline).
+    await _tapKey(tester, 'setup.signInBrowser');
+    await _waitFor(tester, () => _present('setup.result.ok') || _present('setup.result.error'));
     _result('launched ${launched.single}');
     expect(launched.single, '$_url/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback');
-    for (final key in ['profileForm.signedIn', 'profileForm.signInError']) {
+    for (final key in ['setup.result.ok', 'setup.result.error']) {
       if (_present(key)) _result('$key: ${_texts(find.byKey(Key(key)))}');
     }
-    expect(find.byKey(const Key('profileForm.signedIn')), findsOneWidget);
-    expect(find.textContaining('Signed in as $_user, valid until'), findsOneWidget);
-    await _hold(tester, 'form-signed-in');
+    expect(find.byKey(const Key('setup.result.ok')), findsOneWidget);
+    expect(find.text('Signed in as $_user'), findsOneWidget);
+    await _hold(tester, 'wizard-signed-in');
 
-    // 2. "Test connection" with the session token → /api/info.
-    await _tapKey(tester, 'profileForm.test');
-    await _waitFor(tester, () => _present('profileForm.testOk') || _present('profileForm.testError'));
-    for (final key in ['profileForm.testOk', 'profileForm.testError']) {
-      if (_present(key)) _result('$key: ${_texts(find.byKey(Key(key)))}');
-    }
-    expect(find.byKey(const Key('profileForm.testOk')), findsOneWidget);
+    // 2. Step 3: the ledger facts read with the session token.
+    await _tapKey(tester, 'setup.continue');
+    await _waitFor(tester, () => _present('setup.fact.accounts') || _present('setup.overviewError'));
+    expect(find.byKey(const Key('setup.fact.user')), findsOneWidget);
+    _result('ready: ${_texts(find.byKey(const Key('setup.ledgerCard')))}');
+    await tester.enterText(find.byKey(const Key('setup.name')), 'Passkey ledger');
+    await tester.pumpAndSettle();
 
-    // 3. Save → profile with a Bearer session (secure storage) → Home loads.
-    await _tapKey(tester, 'profileForm.submit');
+    // 3. Start → profile with a Bearer session (secure storage) → Home loads.
+    await _tapKey(tester, 'setup.start');
     await _waitFor(tester, () => _present('home.summary.expense') || _present('home.authBanner'), seconds: 20);
     final container = ProviderScope.containerOf(tester.element(find.byKey(const Key('home.list'))));
     final profile = container.read(activeProfileProvider)!;

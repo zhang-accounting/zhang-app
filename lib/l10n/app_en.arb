@@ -736,5 +736,6 @@
   "authSessionLong": "Browser sign-in (passkey or password)",
   "authBearerLong": "Bearer token (reverse proxy)",
   "authHeadersLong": "Custom headers (reverse proxy)",
-  "setupProxyHeaders": "Custom headers"
+  "setupProxyHeaders": "Custom headers",
+  "setupUnreachable": "Cannot reach the server"
 }

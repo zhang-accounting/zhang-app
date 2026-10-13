@@ -2179,6 +2179,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Custom headers'**
   String get setupProxyHeaders;
+
+  /// No description provided for @setupUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot reach the server'**
+  String get setupUnreachable;
 }
 
 class _AppLocalizationsDelegate

@@ -207,19 +207,23 @@ class _Fact extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: muted),
           const SizedBox(width: 12),
-          Expanded(child: Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: muted))),
-          if (value == null)
-            const SizedBox.square(dimension: 14, child: CircularProgressIndicator(strokeWidth: 2))
-          else
-            Flexible(
-              child: Text(
-                value!,
-                key: valueKey,
-                textAlign: TextAlign.end,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
+          Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: muted)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: value == null
+                ? const Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: SizedBox.square(dimension: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
+                : Text(
+                    value!,
+                    key: valueKey,
+                    textAlign: TextAlign.end,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+          ),
         ],
       ),
     );

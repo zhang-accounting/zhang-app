@@ -138,7 +138,11 @@ class _ProbeErrorCard extends StatelessWidget {
       key: const Key('setup.probeError'),
       tone: NoticeTone.error,
       icon: iconForApiError(error),
-      title: describeApiError(l10n, error),
+      // The hints below say what to check; the title only says what failed.
+      title: switch (error) {
+        ApiNetworkError(kind: NetworkErrorKind.connection) => l10n.setupUnreachable,
+        _ => describeApiError(l10n, error),
+      },
       body: hints.isEmpty ? null : hints.join('\n\n'),
       actions: [
         if (network && http != null)
