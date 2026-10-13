@@ -59,6 +59,16 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+# App icon, from zhang's docs/src/assets/logo.png (corners filled, upscaled to
+# 1024). Regenerate with: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: assets/icon/app_icon.png
+  ios: true
+  remove_alpha_ios: true
+  android: true
+
 flutter:
   # Generates lib/l10n/app_localizations*.dart from the ARB files (see l10n.yaml).
   generate: true
