@@ -16,8 +16,29 @@
 
 ## 之后接入正式签名
 - **Android**：把 keystore base64 后存到仓库 secret（如 `ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`），在 `android` job 里解码到 `android/app/upload-keystore.jks`，生成 `android/key.properties`，并在 `android/app/build.gradle.kts` 的 release `signingConfig` 读取它。
-- **iOS**：需要 Apple Developer 账号。推荐 `apple-actions/import-codesign-certs` + `apple-actions/download-provisioning-profiles`（或 fastlane match）导入证书和描述文件，然后把 `--no-codesign` 换成 `flutter build ipa --export-options-plist=ios/ExportOptions.plist`，产物改为 `build/ios/ipa/*.ipa`。
+- **iOS**：已接入 TestFlight，见下文。
 - 未签名 ipa 的临时安装方式：Sideloadly / AltStore / Xcode「Devices and Simulators」拖入，用个人证书重签。
+
+## iOS 签名 + TestFlight（`testflight` job）
+
+只在 push `v*` tag 或手动 `workflow_dispatch` 时运行：导入发布证书和描述文件，在 CI 里临时把 `ios/Flutter/Release.xcconfig` 改成手动签名，再执行 `flutter build ipa`（build number 用 `github.run_number`），然后上传到 TestFlight。签名后的 ipa 也会作为 `zhang-app-ios-signed` artifact 上传。
+
+一次性准备：
+1. App Store Connect 里用 Bundle ID `com.zhangaccounting.app` 创建 App。
+2. 导出 **Apple Distribution** 证书为 `.p12`（钥匙串 → 导出，设置密码）。
+3. 在 Developer 后台创建这个 Bundle ID 的 **App Store** 描述文件并下载。
+4. App Store Connect → 用户和访问 → 集成 → 创建 API Key（App Manager 权限），下载 `.p8`。
+
+仓库 Secrets：
+| Secret | 内容 |
+|---|---|
+| `APPLE_TEAM_ID` | 10 位 Team ID |
+| `IOS_DIST_CERT_P12_BASE64` | `base64 -i dist.p12 \| pbcopy` |
+| `IOS_DIST_CERT_PASSWORD` | p12 密码 |
+| `IOS_PROVISIONING_PROFILE_BASE64` | `base64 -i app.mobileprovision \| pbcopy` |
+| `APP_STORE_CONNECT_KEY_ID` | API Key ID |
+| `APP_STORE_CONNECT_ISSUER_ID` | Issuer ID |
+| `APP_STORE_CONNECT_PRIVATE_KEY` | `.p8` 文件的完整内容 |
 
 ## 本地等价命令
 ```sh
