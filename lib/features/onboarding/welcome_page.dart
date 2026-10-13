@@ -105,11 +105,12 @@ class WelcomePage extends StatelessWidget {
   Future<void> _showAbout(BuildContext context) => showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
+    isScrollControlled: true,
     builder: (context) {
       final l10n = context.l10n;
       final theme = Theme.of(context);
       return SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,

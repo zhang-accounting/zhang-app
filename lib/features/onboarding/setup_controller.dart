@@ -213,8 +213,9 @@ class ServerSetupController extends ChangeNotifier {
   /// once it is on, so it can be turned off again).
   bool get showSelfSignedSwitch => allowSelfSigned || certificateRejected;
 
+  /// The address was edited: clears the last error and refreshes the
+  /// normalisation hint.
   void urlChanged() {
-    if (urlProblem == null && probeError == null) return;
     urlProblem = null;
     probeError = null;
     _notify();

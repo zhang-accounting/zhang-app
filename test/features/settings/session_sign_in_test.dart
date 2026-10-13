@@ -140,14 +140,29 @@ void main() {
     );
   });
 
-  testWidgets('onboarding "Browser": status check, sign-in, then save with a Bearer session', (tester) async {
+  testWidgets('edit server → "Browser sign-in": status check, sign-in, then save with a Bearer session', (
+    tester,
+  ) async {
     final auth = _FakeAuthServer()..appLogin = false;
-    final container = await _pump(tester, auth: auth);
+    const basic = ServerProfile(
+      id: 'p1',
+      name: 'Passkey ledger',
+      baseUrl: _base,
+      authType: AuthType.basic,
+      basicUsername: 'demo',
+      basicPassword: 'secret',
+    );
+    final container = await _pump(tester, auth: auth, initial: const ProfilesState(profiles: [basic], activeId: 'p1'));
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const Key('profileForm.url')), '127.0.0.1:18100');
-    // Overwrite with an http URL (normalisation would add https://).
-    await tester.enterText(find.byKey(const Key('profileForm.url')), _base);
-    await _tapVisible(tester, find.text('Browser'));
+    await _tapVisible(tester, find.byKey(const Key('profileForm.authType')));
+    await tester.tap(find.text('Browser sign-in (passkey or password)').last);
+    await tester.pumpAndSettle();
     expect(find.text('Sign in with a passkey or password in the browser'), findsOneWidget);
     expect(find.byKey(const Key('profileForm.username')), findsNothing);
     expect(find.byKey(const Key('profileForm.signInFirst')), findsOneWidget);
@@ -169,7 +184,7 @@ void main() {
       ..appLogin = true
       ..enabled = false;
     await _tapVisible(tester, find.byKey(const Key('profileForm.signIn')));
-    expect(find.text('This server does not require sign-in. Choose “None” instead.'), findsOneWidget);
+    expect(find.text('This server does not require sign-in. Choose “No sign-in” instead.'), findsOneWidget);
     expect(auth.launched, isEmpty);
 
     // (a) handoff supported: browser → callback → exchange.
@@ -195,6 +210,7 @@ void main() {
     expect(active.sessionUser, 'demo');
     expect(active.sessionExpiresAt, DateTime.utc(2026, 11, 9, 3, 7, 29));
     expect(active.authHeaders(), {'Authorization': 'Bearer tok1.sig'});
+    expect(active.basicPassword, isNull);
   });
 
   testWidgets('home: 401 on a session profile → "Sign in again" stores a new session and reloads', (tester) async {

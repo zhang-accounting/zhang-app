@@ -76,23 +76,62 @@ void main() {
     );
   });
 
-  testWidgets('without a profile the app shows onboarding', (tester) async {
+  testWidgets('without a profile the app shows the welcome page of the setup wizard', (tester) async {
     await _pumpApp(tester);
-    expect(find.text('Connect to your zhang server'), findsOneWidget);
-    expect(find.byKey(const Key('profileForm.url')), findsOneWidget);
+    expect(find.byKey(const Key('welcome.connect')), findsOneWidget);
+    expect(find.byKey(const Key('welcome.demo')), findsOneWidget);
   });
 
-  testWidgets('onboarding: test connection success, 401, then save → home', (tester) async {
+  testWidgets('settings: "Add server" opens the wizard at step 1 (no welcome); back returns', (tester) async {
+    await _pumpApp(tester, initial: const ProfilesState(profiles: [_profile], activeId: 'p1'));
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings.addServer')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('welcome.connect')), findsNothing);
+    expect(find.text('Step 1 of 3'), findsOneWidget);
+    expect(find.byKey(const Key('setup.url')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('setup.back')));
+    await tester.pumpAndSettle();
+    expect(find.text('Servers'), findsOneWidget);
+  });
+
+  testWidgets('edit server: sections, sign-in method menu, test connection (ok, 401), save', (tester) async {
     var fail = false;
     final fake = _FakeTester((p) async {
       if (fail) throw const ApiUnauthorized();
-      return const ServerInfo(title: 'My Accounting', version: '0.1.0', buildDate: '2026-10-02');
+      return const ServerInfo(title: 'My Accounting', version: '0.1.0', buildDate: '2026-10-02', format: 'zhang');
     });
-    final container = await _pumpApp(tester, connectionTester: fake);
+    const open = ServerProfile(id: 'p1', name: 'Family', baseUrl: 'http://127.0.0.1:18011');
+    final container = await _pumpApp(
+      tester,
+      initial: const ProfilesState(profiles: [open], activeId: 'p1'),
+      connectionTester: fake,
+    );
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Edit server'), findsOneWidget);
+    for (final section in ['Server', 'Sign-in', 'Appearance']) {
+      expect(find.text(section), findsWidgets);
+    }
+    expect(find.text('No sign-in'), findsWidgets);
 
-    await tester.enterText(find.byKey(const Key('profileForm.name')), 'Family');
-    await tester.enterText(find.byKey(const Key('profileForm.url')), '127.0.0.1:18011/api/');
-    await tester.tap(find.text('Basic'));
+    // The sign-in method menu (replaces the five segments that overflowed).
+    await tester.tap(find.byKey(const Key('profileForm.authType')));
+    await tester.pumpAndSettle();
+    for (final label in [
+      'Username and password',
+      'Browser sign-in (passkey or password)',
+      'Bearer token (reverse proxy)',
+      'Custom headers (reverse proxy)',
+    ]) {
+      expect(find.text(label), findsWidgets);
+    }
+    await tester.tap(find.text('Username and password').last);
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('profileForm.username')), 'demo');
     await tester.enterText(find.byKey(const Key('profileForm.password')), 'secret');
@@ -101,8 +140,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('profileForm.test')));
     await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.testOk')), findsOneWidget);
     expect(find.text('Connected to “My Accounting”'), findsOneWidget);
-    expect(fake.tested.last.baseUrl, 'https://127.0.0.1:18011');
     expect(fake.tested.last.authHeaders()['Authorization'], startsWith('Basic '));
 
     fail = true;
@@ -114,16 +153,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('profileForm.submit')));
     await tester.pumpAndSettle();
-
-    final active = container.read(activeProfileProvider);
-    expect(active?.name, 'Family');
-    expect(active?.basicPassword, 'secret');
-    // Main shell with four tabs + the centre FAB.
-    expect(find.text('Home'), findsWidgets);
-    expect(find.text('Journal'), findsOneWidget);
-    expect(find.text('Reports'), findsOneWidget);
-    expect(find.text('Accounts'), findsOneWidget);
-    expect(find.byKey(const Key('shell.newTransaction')), findsOneWidget);
+    final active = container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.basic);
+    expect(active.basicPassword, 'secret');
+    expect(find.text('Servers'), findsOneWidget);
   });
 
   testWidgets('shell: tabs switch and FAB opens /transactions/new', (tester) async {
@@ -163,7 +196,7 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(container.read(profilesProvider).profiles, isEmpty);
-    expect(find.text('Connect to your zhang server'), findsOneWidget);
+    expect(find.byKey(const Key('welcome.connect')), findsOneWidget);
   });
 
   test('ProfilesController.save activates the first profile', () async {
