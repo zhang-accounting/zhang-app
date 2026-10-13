@@ -1036,11 +1036,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check the address and the port, and that this phone can reach the server (same Wi-Fi or VPN).';
 
   @override
-  String get setupHttpHint =>
+  String get setupSchemeHintHttps =>
       'No scheme was entered, so https:// was used. Servers on your own network often use http://.';
 
   @override
-  String setupTryHttp(String url) {
+  String get setupSchemeHintHttp =>
+      'No scheme was entered, so http:// was used for this local address. Use https:// if the server has a certificate.';
+
+  @override
+  String setupTryUrl(String url) {
     return 'Use $url';
   }
 

@@ -1886,17 +1886,23 @@ abstract class AppLocalizations {
   /// **'Check the address and the port, and that this phone can reach the server (same Wi-Fi or VPN).'**
   String get setupHintReach;
 
-  /// No description provided for @setupHttpHint.
+  /// No description provided for @setupSchemeHintHttps.
   ///
   /// In en, this message translates to:
   /// **'No scheme was entered, so https:// was used. Servers on your own network often use http://.'**
-  String get setupHttpHint;
+  String get setupSchemeHintHttps;
 
-  /// No description provided for @setupTryHttp.
+  /// No description provided for @setupSchemeHintHttp.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheme was entered, so http:// was used for this local address. Use https:// if the server has a certificate.'**
+  String get setupSchemeHintHttp;
+
+  /// No description provided for @setupTryUrl.
   ///
   /// In en, this message translates to:
   /// **'Use {url}'**
-  String setupTryHttp(String url);
+  String setupTryUrl(String url);
 
   /// No description provided for @setupNotZhang.
   ///

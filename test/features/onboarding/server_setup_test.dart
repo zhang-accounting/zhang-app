@@ -92,7 +92,18 @@ void main() {
     await tester.enterText(find.byKey(const Key('setup.url')), '127.0.0.1:18011/api/');
     await tester.pumpAndSettle();
     expect(find.text('Enter the server URL'), findsNothing);
-    expect(find.text('Connects to https://127.0.0.1:18011'), findsOneWidget);
+    // No scheme typed: http for a local address, https for anything else; a
+    // typed scheme wins.
+    expect(find.text('Connects to http://127.0.0.1:18011'), findsOneWidget);
+    for (final (input, hint) in [
+      ('nas.local:8000', 'Connects to http://nas.local:8000'),
+      ('ledger.example.com/api', 'Connects to https://ledger.example.com'),
+      ('https://192.168.1.2', 'Connects to https://192.168.1.2'),
+    ]) {
+      await tester.enterText(find.byKey(const Key('setup.url')), input);
+      await tester.pumpAndSettle();
+      expect(find.text(hint), findsOneWidget);
+    }
 
     await tester.enterText(find.byKey(const Key('setup.url')), 'http://');
     await tester.pumpAndSettle();
@@ -134,24 +145,40 @@ void main() {
     expect(find.byKey(const Key('shell.newTransaction')), findsOneWidget);
   });
 
-  testWidgets('unreachable: hints, "Use http://…" retries with http', (tester) async {
+  testWidgets('unreachable: hints, "Use http://…" retries with the other scheme', (tester) async {
     final server = FakeSetupServer()
       ..enabled = false
       ..fail = _error(DioExceptionType.connectionError, const SocketException('Connection refused'));
-    await _pump(tester, server);
-    await _toServer(tester, '127.0.0.1:18120');
+    final container = await _pump(tester, server);
+    await _toServer(tester, 'ledger.example.com:8000');
 
     expect(find.byKey(const Key('setup.probeError')), findsOneWidget);
     expect(find.text('Cannot reach the server'), findsOneWidget);
     expect(find.textContaining('same Wi-Fi or VPN'), findsOneWidget);
-    expect(find.textContaining('No scheme was entered'), findsOneWidget);
+    expect(find.textContaining('so https:// was used'), findsOneWidget);
     expect(find.byKey(const Key('setup.allowSelfSigned')), findsNothing);
     expect(find.text('Try again'), findsOneWidget);
 
     server.fail = null;
-    await _tap(tester, 'setup.tryHttp');
+    await _tap(tester, 'setup.tryOtherScheme');
     expect(find.text('Step 3 of 3'), findsOneWidget);
-    expect(find.text('127.0.0.1:18120'), findsOneWidget); // host line of the ledger card
+    expect(find.text('ledger.example.com:8000'), findsOneWidget); // host line of the ledger card
+    await _tap(tester, 'setup.start');
+    expect(container.read(activeProfileProvider)!.baseUrl, 'http://ledger.example.com:8000');
+  });
+
+  testWidgets('unreachable local address (http by default): "Use https://…"', (tester) async {
+    final server = FakeSetupServer()
+      ..fail = _error(DioExceptionType.connectionError, const SocketException('Connection refused'));
+    await _pump(tester, server);
+    await _toServer(tester, '192.168.1.10:8000');
+    expect(server.requests.single.uri.toString(), startsWith('http://192.168.1.10:8000/'));
+    expect(find.textContaining('http:// was used for this local address'), findsOneWidget);
+    expect(find.text('Use https://192.168.1.10:8000'), findsOneWidget);
+
+    // A typed scheme is never swapped.
+    await _toServer(tester, 'http://192.168.1.10:8000');
+    expect(find.byKey(const Key('setup.tryOtherScheme')), findsNothing);
   });
 
   testWidgets('TLS: a certificate error offers the self-signed switch; a plain-http port suggests http', (
@@ -167,7 +194,7 @@ void main() {
     await _toServer(tester, 'https://ledger.example.com');
     expect(find.textContaining('TLS certificate was rejected'), findsOneWidget);
     expect(find.byKey(const Key('setup.allowSelfSigned')), findsOneWidget);
-    expect(find.byKey(const Key('setup.tryHttp')), findsNothing); // a scheme was typed
+    expect(find.byKey(const Key('setup.tryOtherScheme')), findsNothing); // a scheme was typed
 
     await _tap(tester, 'setup.allowSelfSigned');
     server.fail = null;
@@ -183,9 +210,9 @@ void main() {
         const HandshakeException('Handshake error in client (OS Error: WRONG_VERSION_NUMBER)'),
       );
     await _pump(tester, server);
-    await _toServer(tester, '192.168.1.10:8000');
+    await _toServer(tester, 'nas.example.com:8000');
     expect(find.byKey(const Key('setup.allowSelfSigned')), findsNothing);
-    expect(find.text('Use http://192.168.1.10:8000'), findsOneWidget);
+    expect(find.text('Use http://nas.example.com:8000'), findsOneWidget);
   });
 
   testWidgets('zhang 0.1: "needs an update" and the wizard stays on step 1', (tester) async {

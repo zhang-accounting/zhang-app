@@ -151,8 +151,10 @@ plain curls (one file per response; the requests are the ones in `docs/compat-v0
 Server URL to type in the setup wizard: iOS simulator `http://127.0.0.1:18080`, Android emulator
 `http://10.0.2.2:18080`, device `http://<Mac LAN IP>:18080`. Plain http is allowed on both
 platforms (`usesCleartextTraffic`, `NSAllowsArbitraryLoads`). URLs are normalised (`/api` and trailing
-`/` stripped, `https://` added when no scheme; the wizard shows the result as "Connects to …" and offers
-"Use http://…" when an https attempt without a typed scheme fails).
+`/` stripped; without a typed scheme `http://` for local addresses – `localhost`, `127.0.0.0/8`, `::1`, `10/8`,
+`172.16/12`, `192.168/16`, `*.local`, `*.lan`, single-label names – and `https://` otherwise, see
+`ServerProfile.defaultSchemeFor`; a typed scheme always wins). The wizard shows the result as "Connects to …" and
+offers the other scheme ("Use https://…" / "Use http://…") when an attempt with the picked one fails.
 
 ### Setup wizard (`lib/features/onboarding/`)
 

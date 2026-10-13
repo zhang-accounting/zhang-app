@@ -1000,10 +1000,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get setupHintReach => '检查地址和端口，并确认这台手机能访问到服务器（同一 Wi-Fi 或 VPN）。';
 
   @override
-  String get setupHttpHint => '没有填写协议，所以使用了 https://。局域网里的服务器通常用 http://。';
+  String get setupSchemeHintHttps =>
+      '没有填写协议，所以使用了 https://。局域网里的服务器通常用 http://。';
 
   @override
-  String setupTryHttp(String url) {
+  String get setupSchemeHintHttp =>
+      '没有填写协议，局域网地址默认使用 http://。如果服务器配置了证书，请改用 https://。';
+
+  @override
+  String setupTryUrl(String url) {
     return '改用 $url';
   }
 

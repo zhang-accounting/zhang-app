@@ -70,8 +70,6 @@ class ServerSetupController extends ChangeNotifier {
   final ConnectionTester tester;
   final BrowserSignIn browser;
 
-  static final _schemePattern = RegExp(r'^[a-zA-Z][a-zA-Z0-9+.-]*://');
-
   /// Times a timed-out demo probe is retried (the demo sleeps when idle).
   static const demoTimeoutRetries = 2;
 
@@ -189,12 +187,18 @@ class ServerSetupController extends ChangeNotifier {
   /// The address can be probed.
   bool get urlValid => url.text.trim().isNotEmpty && ServerProfile.isValidBaseUrl(normalizedUrl);
 
-  /// The address with `http://` instead of the `https://` normalisation
-  /// added (no scheme typed); `null` when a scheme was typed.
-  String? get httpAlternative {
-    if (_schemePattern.hasMatch(url.text.trim())) return null;
+  /// No scheme was typed: normalisation picked one
+  /// ([ServerProfile.defaultSchemeFor]).
+  bool get schemeDefaulted => !ServerProfile.schemePattern.hasMatch(url.text.trim());
+
+  /// The address with the other scheme (http ↔ https) when the scheme was
+  /// picked by normalisation; `null` when the user typed one.
+  String? get schemeAlternative {
+    if (!schemeDefaulted) return null;
     final normalized = normalizedUrl;
-    return normalized.startsWith('https://') ? 'http://${normalized.substring(8)}' : null;
+    if (normalized.startsWith('https://')) return 'http://${normalized.substring(8)}';
+    if (normalized.startsWith('http://')) return 'https://${normalized.substring(7)}';
+    return null;
   }
 
   /// The probe failed in the TLS handshake because of the certificate (not
@@ -226,9 +230,10 @@ class ServerSetupController extends ChangeNotifier {
     _notify();
   }
 
-  /// "Use http://…" after a failed https attempt.
-  Future<void> useHttp() async {
-    final alternative = httpAlternative;
+  /// "Use http://…" / "Use https://…" after a failed attempt with the
+  /// scheme normalisation picked.
+  Future<void> useSchemeAlternative() async {
+    final alternative = schemeAlternative;
     if (alternative == null) return;
     url.text = alternative;
     url.selection = TextSelection.collapsed(offset: alternative.length);

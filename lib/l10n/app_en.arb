@@ -646,9 +646,10 @@
   "setupChecking": "Checking…",
   "setupTryAgain": "Try again",
   "setupHintReach": "Check the address and the port, and that this phone can reach the server (same Wi-Fi or VPN).",
-  "setupHttpHint": "No scheme was entered, so https:// was used. Servers on your own network often use http://.",
-  "setupTryHttp": "Use {url}",
-  "@setupTryHttp": {
+  "setupSchemeHintHttps": "No scheme was entered, so https:// was used. Servers on your own network often use http://.",
+  "setupSchemeHintHttp": "No scheme was entered, so http:// was used for this local address. Use https:// if the server has a certificate.",
+  "setupTryUrl": "Use {url}",
+  "@setupTryUrl": {
     "placeholders": {
       "url": {
         "type": "String"

@@ -98,7 +98,7 @@ class ServerStep extends StatelessWidget {
   }
 }
 
-/// Why the probe failed and what to try: http instead of https, the
+/// Why the probe failed and what to try: the other scheme, the
 /// self-signed switch (above), a gateway, or upgrading the server.
 class _ProbeErrorCard extends StatelessWidget {
   const _ProbeErrorCard({required this.controller, required this.error});
@@ -126,12 +126,13 @@ class _ProbeErrorCard extends StatelessWidget {
         ],
       );
     }
-    final http = c.httpAlternative;
+    final alternative = c.schemeAlternative;
     final network = error is ApiNetworkError;
     final notZhang = error is ApiParseError || error is ApiNotFound;
     final hints = <String>[
       if (network && !c.certificateRejected) l10n.setupHintReach,
-      if (network && http != null) l10n.setupHttpHint,
+      if (network && alternative != null)
+        alternative.startsWith('https://') ? l10n.setupSchemeHintHttp : l10n.setupSchemeHintHttps,
       if (notZhang) l10n.setupNotZhang,
     ];
     return NoticeCard(
@@ -145,11 +146,11 @@ class _ProbeErrorCard extends StatelessWidget {
       },
       body: hints.isEmpty ? null : hints.join('\n\n'),
       actions: [
-        if (network && http != null)
+        if (network && alternative != null)
           TextButton(
-            key: const Key('setup.tryHttp'),
-            onPressed: c.useHttp,
-            child: Text(l10n.setupTryHttp(http), overflow: TextOverflow.ellipsis),
+            key: const Key('setup.tryOtherScheme'),
+            onPressed: c.useSchemeAlternative,
+            child: Text(l10n.setupTryUrl(alternative), overflow: TextOverflow.ellipsis),
           ),
         if (notZhang || error is ApiUnauthorized)
           TextButton(
