@@ -20,10 +20,9 @@ class WelcomePage extends StatelessWidget {
     final theme = Theme.of(context);
     final c = controller;
     return SetupLayout(
-      top: 40,
+      top: 64,
       content: [
-        Align(
-          alignment: AlignmentDirectional.centerStart,
+        Center(
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(32),
@@ -44,24 +43,26 @@ class WelcomePage extends StatelessWidget {
         const SizedBox(height: 40),
         Text(
           l10n.appTitle,
+          textAlign: TextAlign.center,
           style: theme.textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.8),
         ),
         const SizedBox(height: 8),
         Text(
           l10n.welcomeTagline,
+          textAlign: TextAlign.center,
           style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary, height: 1.3),
         ),
         const SizedBox(height: 16),
         Text(
           l10n.welcomeBody,
+          textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.45),
         ),
         const SizedBox(height: 12),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
+        Center(
           child: TextButton.icon(
             key: const Key('welcome.about'),
-            style: TextButton.styleFrom(padding: const EdgeInsetsDirectional.only(start: 0, end: 12)),
+            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12)),
             onPressed: () => _showAbout(context),
             icon: const Icon(Icons.help_outline, size: 20),
             label: Text(l10n.welcomeWhatIsZhang),
