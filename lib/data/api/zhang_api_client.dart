@@ -14,6 +14,8 @@ import 'api_exception.dart';
 import 'auth_interceptor.dart';
 import 'endpoints.dart';
 
+export 'connection_tester.dart';
+
 /// Decodes the payload inside the `{"data": …}` envelope.
 typedef DataDecoder<T> = T Function(Object? data);
 
@@ -298,46 +300,3 @@ final zhangApiClientProvider = Provider<ZhangApiClient>((ref) {
   ref.onDispose(client.close);
   return client;
 });
-
-/// Probes a not-yet-saved profile (onboarding / settings "Test connection").
-class ConnectionTester {
-  const ConnectionTester({this.createClient = ZhangApiClient.new});
-
-  /// Builds the client for the probed profile (tests inject a fake adapter).
-  final ZhangApiClient Function(ServerProfile profile) createClient;
-
-  /// Calls `GET /api/info` with [profile]'s URL and credentials and applies
-  /// the version gate ([ApiServerTooOld] for zhang < 0.2). When the
-  /// credentials are refused, `GET /api/auth/status` tells a passkey-only
-  /// server ([ApiPasskeyOnly]) from a wrong password ([ApiUnauthorized]).
-  Future<ServerInfo> test(ServerProfile profile) async {
-    final client = createClient(profile);
-    try {
-      return await client.supportedInfo();
-    } on ApiUnauthorized {
-      // A browser sign-in profile is refused because its session ended (or
-      // it is signed out), not because of the sign-in methods.
-      if (profile.authType == AuthType.session) rethrow;
-      final status = await _authStatus(client);
-      if (status != null && status.isPasskeyOnly) {
-        throw ApiPasskeyOnly(appLogin: status.supportsAppLogin);
-      }
-      rethrow;
-    } finally {
-      client.close();
-    }
-  }
-
-  /// Best effort: `null` when the server cannot tell (older servers answer
-  /// 401 or a text page here).
-  static Future<AuthStatus?> _authStatus(ZhangApiClient client) async {
-    try {
-      return await client.authStatus();
-    } on ZhangApiException {
-      return null;
-    }
-  }
-}
-
-/// Overridable in widget tests.
-final connectionTesterProvider = Provider<ConnectionTester>((ref) => const ConnectionTester());
