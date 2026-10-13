@@ -136,7 +136,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'profiles/:id/edit',
             builder: (context, state) =>
-                ProfileEditScreen(profileId: state.pathParameters['id']),
+                ProfileEditScreen(profileId: state.pathParameters['id']!),
           ),
         ],
       ),

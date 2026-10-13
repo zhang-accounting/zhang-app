@@ -6,27 +6,24 @@ import '../../data/profiles/profile_providers.dart';
 import '../../l10n/l10n.dart';
 import 'profile_form.dart';
 
-/// `/settings/profiles/new` and `/settings/profiles/:id/edit`.
+/// `/settings/profiles/:id/edit` (new servers: the setup wizard,
+/// `ServerSetupScreen`).
 class ProfileEditScreen extends ConsumerWidget {
-  const ProfileEditScreen({super.key, this.profileId});
+  const ProfileEditScreen({super.key, required this.profileId});
 
-  /// `null` → add a new profile.
-  final String? profileId;
+  final String profileId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    final profile = profileId == null
-        ? null
-        : ref.watch(profilesProvider.select((s) => s.byId(profileId!)));
-    final isEdit = profileId != null;
+    final profile = ref.watch(profilesProvider.select((s) => s.byId(profileId)));
     return Scaffold(
-      appBar: AppBar(title: Text(isEdit ? l10n.editServer : l10n.addServer)),
-      body: (isEdit && profile == null)
+      appBar: AppBar(title: Text(l10n.editServer)),
+      body: profile == null
           ? Center(child: Text(l10n.errorNotFound))
           : SafeArea(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 children: [
                   ProfileForm(
                     initial: profile,
