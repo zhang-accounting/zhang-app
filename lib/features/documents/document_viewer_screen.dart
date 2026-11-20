@@ -2,13 +2,14 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/widgets/error_view.dart';
+import '../../data/api/api_exception.dart';
 import '../../data/models/document.dart';
 import '../../data/repositories/document_repository.dart';
 import '../../l10n/l10n.dart';
 import '../accounts/widgets/amount_format.dart' show accountPathStyle;
+import 'document_share.dart';
 import 'widgets/document_tile.dart';
 
 /// Hands a downloaded document to the system share sheet, from which it can
@@ -18,17 +19,14 @@ typedef DocumentSharer = Future<void> Function(DocumentEntity document, Uint8Lis
 /// The sharer (overridden in tests: the platform share sheet needs a device).
 final documentSharerProvider = Provider<DocumentSharer>((ref) => shareDocumentBytes);
 
-/// Shares [bytes] as a file named like [document] (`share_plus` writes it to
-/// a temporary file first).
-Future<void> shareDocumentBytes(DocumentEntity document, Uint8List bytes, Rect? origin) async {
-  await SharePlus.instance.share(
-    ShareParams(
-      files: [XFile.fromData(bytes, mimeType: document.mimeType ?? 'application/octet-stream')],
-      fileNameOverrides: [document.filename],
-      sharePositionOrigin: origin,
-    ),
-  );
-}
+/// Largest document downloaded to the phone (to preview or share); bigger
+/// files stop downloading with a message instead of filling the memory.
+final documentDownloadLimitProvider = Provider<int>((ref) => 50 * 1024 * 1024);
+
+/// Message for a failed download or share.
+String describeDocumentError(AppLocalizations l10n, Object error) => error is ResponseTooLarge
+    ? l10n.documentsTooLarge((error.maxBytes / (1024 * 1024)).round())
+    : describeApiError(l10n, error);
 
 /// A document (S15, read-only). Images are downloaded through the API client
 /// (so the profile's auth applies) and shown with pinch-to-zoom; other files
@@ -56,7 +54,8 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
     if (_document.isImage) _bytes = _download();
   }
 
-  Future<Uint8List> _download() => ref.read(documentRepositoryProvider).download(_document);
+  Future<Uint8List> _download() =>
+      ref.read(documentRepositoryProvider).download(_document, maxBytes: ref.read(documentDownloadLimitProvider));
 
   void _retry() => setState(() {
     _bytes = _download();
@@ -77,7 +76,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
       if (mounted && !_document.isImage) _bytes = null;
       messenger
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(describeApiError(l10n, e))));
+        ..showSnackBar(SnackBar(content: Text(describeDocumentError(l10n, e))));
     } finally {
       if (mounted) setState(() => _sharing = false);
     }
@@ -106,6 +105,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   }
 
   Widget _imageBody(BuildContext context) {
+    final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
@@ -116,20 +116,30 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
             child: FutureBuilder<Uint8List>(
               future: _bytes,
               builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return ErrorView(error: snapshot.error!, onRetry: _retry);
+                final error = snapshot.error;
+                if (error is ResponseTooLarge) {
+                  return Center(
+                    child: _NoPreview(document: _document, message: describeDocumentError(l10n, error)),
+                  );
                 }
+                if (error != null) return ErrorView(error: error, onRetry: _retry);
                 final bytes = snapshot.data;
                 if (bytes == null) return const Center(child: CircularProgressIndicator());
-                return InteractiveViewer(
-                  key: const Key('document.zoom'),
-                  maxScale: 8,
-                  child: Center(
-                    child: Image.memory(
-                      bytes,
-                      key: const Key('document.image'),
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, _, _) => _NoPreview(document: _document),
+                return LayoutBuilder(
+                  builder: (context, constraints) => InteractiveViewer(
+                    key: const Key('document.zoom'),
+                    maxScale: 8,
+                    child: Center(
+                      child: Image.memory(
+                        bytes,
+                        key: const Key('document.image'),
+                        fit: BoxFit.contain,
+                        // Decode at twice the screen width (enough detail to
+                        // zoom into a receipt), not at the photo's full size;
+                        // smaller images are not upscaled.
+                        cacheWidth: (constraints.maxWidth * MediaQuery.devicePixelRatioOf(context) * 2).round(),
+                        errorBuilder: (context, _, _) => _NoPreview(document: _document),
+                      ),
                     ),
                   ),
                 );
@@ -178,9 +188,12 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
 /// Large file icon, name and type (non-images, or an image that cannot be
 /// decoded).
 class _NoPreview extends StatelessWidget {
-  const _NoPreview({required this.document});
+  const _NoPreview({required this.document, this.message});
 
   final DocumentEntity document;
+
+  /// Replaces "no preview for this file type".
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +209,7 @@ class _NoPreview extends StatelessWidget {
           Text(document.filename, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
           const SizedBox(height: 4),
           Text(
-            context.l10n.documentsNoPreview,
+            message ?? context.l10n.documentsNoPreview,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),

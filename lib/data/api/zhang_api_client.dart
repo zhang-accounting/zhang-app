@@ -113,13 +113,40 @@ class ZhangApiClient {
     throw ApiParseError(_notJsonMessage(res));
   }
 
-  /// GET raw bytes (document downloads).
-  Future<Uint8List> getBytes(String path) async {
-    final res = await _send('GET', path, responseType: ResponseType.bytes);
+  /// GET raw bytes (document downloads). With [maxBytes] the download is
+  /// cancelled as soon as the announced or received size exceeds it and
+  /// [ResponseTooLarge] is thrown.
+  Future<Uint8List> getBytes(String path, {int? maxBytes}) async {
+    final cancel = maxBytes == null ? null : CancelToken();
+    var tooLarge = false;
+    final Response<Object?> res;
+    try {
+      res = await _send(
+        'GET',
+        path,
+        responseType: ResponseType.bytes,
+        cancelToken: cancel,
+        onReceiveProgress: maxBytes == null
+            ? null
+            : (received, total) {
+                if (tooLarge || (received <= maxBytes && total <= maxBytes)) return;
+                tooLarge = true;
+                cancel!.cancel('larger than $maxBytes bytes');
+              },
+      );
+    } on ApiNetworkError {
+      if (tooLarge) throw ResponseTooLarge(maxBytes!);
+      rethrow;
+    }
     final data = res.data;
-    if (data is Uint8List) return data;
-    if (data is List<int>) return Uint8List.fromList(data);
-    return Uint8List(0);
+    final bytes = data is Uint8List
+        ? data
+        : data is List<int>
+        ? Uint8List.fromList(data)
+        : Uint8List(0);
+    // The body may have arrived in one chunk before the cancel took effect.
+    if (tooLarge || (maxBytes != null && bytes.length > maxBytes)) throw ResponseTooLarge(maxBytes!);
+    return bytes;
   }
 
   /// Releases sockets. Called automatically by [zhangApiClientProvider].
@@ -153,6 +180,8 @@ class ZhangApiClient {
     Object? body,
     Map<String, Object?>? query,
     ResponseType? responseType,
+    CancelToken? cancelToken,
+    ProgressCallback? onReceiveProgress,
   }) async {
     try {
       return await dio.request<Object?>(
@@ -169,6 +198,8 @@ class ZhangApiClient {
           responseType: responseType,
           contentType: body == null ? null : Headers.jsonContentType,
         ),
+        cancelToken: cancelToken,
+        onReceiveProgress: onReceiveProgress,
       );
     } on DioException catch (e) {
       throw mapDioException(e);

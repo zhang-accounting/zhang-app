@@ -151,6 +151,38 @@ void main() {
     expect(_key('document.image'), findsOneWidget);
   });
 
+  testWidgets('documents: files over the download limit are not downloaded', (tester) async {
+    final shared = <String>[];
+    await pumpLedgerApp(
+      tester,
+      _route,
+      overrides: [
+        documentDownloadLimitProvider.overrideWithValue(10),
+        documentSharerProvider.overrideWithValue((d, _, _) async => shared.add(d.filename)),
+      ],
+    );
+    await tester.tap(find.text('Accounts'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('accounts.menu'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('accounts.documents'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_key('document.$_photo'));
+    await tester.pumpAndSettle();
+    expect(_key('document.image'), findsNothing);
+    expect(find.textContaining('too large to download'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(_key('document.$_txt'));
+    await tester.pumpAndSettle();
+    await tester.tap(_key('document.open'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('too large to download'), findsOneWidget); // snack bar
+    expect(shared, isEmpty);
+  });
+
   testWidgets('documents: account detail section and transaction attachments', (tester) async {
     final builtins = FakeBuiltins();
     final (container, _) = await pumpLedgerApp(tester, _route, builtins: builtins);
@@ -186,6 +218,21 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pageBack();
     await tester.pumpAndSettle();
+    expect(builtins.callsTo('journals.documents'), hasLength(1));
+
+    // The ledger's documents are kept for the revision: opening it again
+    // does not refetch them.
+    await tester.tap(find.text('Mobile Test Cafe'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      _key('trx.documents'),
+      200,
+      scrollable: find.descendant(of: _key('trx.body'), matching: find.byType(Scrollable)).first,
+    );
+    expect(builtins.callsTo('journals.documents'), hasLength(1));
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    builtins.calls.clear();
 
     final list = find
         .descendant(of: find.byKey(const PageStorageKey<String>('journal.list')), matching: find.byType(Scrollable))
@@ -196,5 +243,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(TransactionDetailScreen), findsOneWidget);
     expect(_key('trx.documents'), findsNothing);
+    // No `document` meta: nothing is requested.
+    expect(builtins.callsTo('journals.documents'), isEmpty);
   });
 }

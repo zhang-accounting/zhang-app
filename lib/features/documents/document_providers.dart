@@ -7,8 +7,9 @@ import '../../data/repositories/ledger_revision.dart';
 
 /// Every document of the ledger, newest first (`journals.documents`):
 /// `document` directives and the `document` metadata of transactions and
-/// postings.
-final ledgerDocumentsProvider = FutureProvider.autoDispose<List<DocumentEntity>>((ref) {
+/// postings. Kept for the ledger revision (like `commoditiesProvider`), so
+/// opening transactions does not refetch it.
+final ledgerDocumentsProvider = FutureProvider<List<DocumentEntity>>((ref) {
   ref.watch(ledgerRevisionProvider);
   return ref.watch(documentRepositoryProvider).list();
 });
@@ -22,7 +23,8 @@ final accountDocumentsProvider = FutureProvider.autoDispose.family<List<Document
 });
 
 /// Documents attached to the transaction [id] (its own or its postings'
-/// `document` metadata), from [ledgerDocumentsProvider].
+/// `document` metadata), from [ledgerDocumentsProvider]. Only watch it for
+/// a transaction that names a document (`JournalTransaction.hasDocuments`).
 final transactionDocumentsProvider = FutureProvider.autoDispose.family<List<DocumentEntity>, String>((ref, id) async {
   final all = await ref.watch(ledgerDocumentsProvider.future);
   return [

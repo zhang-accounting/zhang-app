@@ -391,6 +391,11 @@ void main() {
       expect(docs, hasLength(3));
       await DocumentRepository(client).download(docs.last);
       expect(adapter.last.uri.path, '/api/documents/YXR0YWNobWVudHMvcmVjZWlwdC50eHQ=');
+      expect(utf8.decode(await DocumentRepository(client).download(docs.last, maxBytes: 13)), 'hello receipt');
+      await expectLater(
+        DocumentRepository(client).download(docs.last, maxBytes: 12),
+        throwsA(isA<ResponseTooLarge>().having((e) => e.maxBytes, 'maxBytes', 12)),
+      );
     });
 
     test('budgets: history items at the same instant keep events before postings, in query order', () async {

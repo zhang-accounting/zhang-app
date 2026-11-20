@@ -104,8 +104,8 @@ class _AccountDocumentsSectionState extends ConsumerState<AccountDocumentsSectio
 
 /// Documents attached to a transaction (its own or its postings' `document`
 /// metadata, read from `journals.documents` by transaction id) on the
-/// transaction detail page. Shows nothing when there is none; loading and
-/// errors only show when the transaction names a document itself.
+/// transaction detail page. A transaction without a `document` meta shows
+/// nothing and requests nothing.
 class TransactionDocumentsSection extends ConsumerWidget {
   const TransactionDocumentsSection({super.key, required this.transaction});
 
@@ -113,10 +113,9 @@ class TransactionDocumentsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!transaction.hasDocuments) return const SizedBox.shrink();
     final l10n = context.l10n;
-    final id = transaction.id;
-    final namesDocument = transaction.metas.any((m) => m.key == 'document');
-    final documents = ref.watch(transactionDocumentsProvider(id));
+    final documents = ref.watch(transactionDocumentsProvider(transaction.id));
     return documents.when(
       data: (list) => list.isEmpty
           ? const SizedBox.shrink()
@@ -128,27 +127,23 @@ class TransactionDocumentsSection extends ConsumerWidget {
                 for (final d in list) DocumentTile(document: d, showOwner: false),
               ],
             ),
-      loading: () => namesDocument
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _SectionTitle(l10n.documentsTitle),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: LinearProgressIndicator(minHeight: 2),
-                ),
-              ],
-            )
-          : const SizedBox.shrink(),
-      error: (e, _) => namesDocument
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _SectionTitle(l10n.documentsTitle),
-                _InlineError(error: e, onRetry: () => ref.invalidate(ledgerDocumentsProvider)),
-              ],
-            )
-          : const SizedBox.shrink(),
+      loading: () => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(l10n.documentsTitle),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
+        ],
+      ),
+      error: (e, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(l10n.documentsTitle),
+          _InlineError(error: e, onRetry: () => ref.invalidate(ledgerDocumentsProvider)),
+        ],
+      ),
     );
   }
 }
