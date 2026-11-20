@@ -153,9 +153,6 @@ final class ApiPasskeyOnly extends ZhangApiException {
   int get statusCode => 401;
 }
 
-/// Thrown by `zhangApiClientProvider` when read without an active profile.
-/// The router keeps the app on onboarding in that case, so feature screens
-/// should never see this.
 /// A download was stopped because it is larger than [maxBytes]
 /// (`ZhangApiClient.getBytes(maxBytes:)`). Not a server error, so it is not
 /// part of the [ZhangApiException] hierarchy.
@@ -168,6 +165,9 @@ final class ResponseTooLarge implements Exception {
   String toString() => 'ResponseTooLarge(larger than $maxBytes bytes)';
 }
 
+/// Thrown by `zhangApiClientProvider` when read without an active profile.
+/// The router keeps the app on onboarding in that case, so feature screens
+/// should never see this.
 final class NoActiveProfileException implements Exception {
   const NoActiveProfileException();
 
