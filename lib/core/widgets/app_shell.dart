@@ -35,10 +35,11 @@ final shellDestinations = <ShellDestination>[
 ///
 /// Version gate: the tabs are only built once `GET /api/info` of the active
 /// server is known ([serverGateProvider]). A server older than zhang 0.2 (no
-/// `format` key) gets [ServerTooOldView] instead, and nothing else is
-/// requested from it. When `/api/info` itself fails (offline, 401) the tabs
-/// are shown and report the error themselves. While the tabs are shown the
-/// SSE stream ([ledgerEventsProvider]) drives the refreshes.
+/// `format` key) gets [ServerTooOldView] instead; the client itself sends it
+/// nothing but the version probes (`gatedClient`), whatever else is on
+/// screen. When `/api/info` itself fails (offline, 401) the tabs are shown
+/// and report the error themselves. While the tabs are shown the SSE stream
+/// ([ledgerEventsProvider]) drives the refreshes.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -54,7 +55,8 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final gate = ref.watch(serverGateProvider);
-    // After a profile switch the previous value belongs to the other server.
+    // A reload (e.g. a new client in the same container) would still carry
+    // the other server's value.
     final unknown = !gate.hasValue && !gate.hasError || gate.isReloading;
     final tooOld = !unknown && !gate.hasError && !gate.requireValue.isSupported;
     final Widget body;
@@ -73,6 +75,10 @@ class AppShell extends ConsumerWidget {
       floatingActionButton: ready
           ? FloatingActionButton(
               key: const Key('shell.newTransaction'),
+              // No hero: after a profile switch the shell rebuilds under the
+              // Settings page (gate loading → tabs) and the outgoing and
+              // incoming FAB would share the default tag when it is popped.
+              heroTag: null,
               tooltip: l10n.newTransactionTitle,
               onPressed: () => context.push(AppRoutes.newTransaction),
               child: const Icon(Icons.add),
