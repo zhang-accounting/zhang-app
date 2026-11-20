@@ -1622,6 +1622,156 @@ abstract class AppLocalizations {
   /// **'Open account'**
   String get reportsOpenAccount;
 
+  /// No description provided for @reportsSegmentFlows.
+  ///
+  /// In en, this message translates to:
+  /// **'Income & expense'**
+  String get reportsSegmentFlows;
+
+  /// No description provided for @reportsSegmentBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'Budgets'**
+  String get reportsSegmentBudgets;
+
+  /// No description provided for @budgetsAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get budgetsAssigned;
+
+  /// No description provided for @budgetsActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get budgetsActivity;
+
+  /// No description provided for @budgetsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get budgetsAvailable;
+
+  /// No description provided for @budgetsUncategorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncategorized'**
+  String get budgetsUncategorized;
+
+  /// No description provided for @budgetsClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get budgetsClosed;
+
+  /// No description provided for @budgetsOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Over budget'**
+  String get budgetsOver;
+
+  /// No description provided for @budgetsOverCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 budget over} other{{count} budgets over}}'**
+  String budgetsOverCount(int count);
+
+  /// No description provided for @budgetsDaysLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Last day of the month} other{{count} days left this month}}'**
+  String budgetsDaysLeft(int count);
+
+  /// No description provided for @budgetsSpentOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent {spent} of {assigned}'**
+  String budgetsSpentOf(String spent, String assigned);
+
+  /// No description provided for @budgetsOverBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Over budget by {amount}'**
+  String budgetsOverBy(String amount);
+
+  /// No description provided for @budgetsPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {amount} a day'**
+  String budgetsPerDay(String amount);
+
+  /// No description provided for @budgetsProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of the assigned money spent'**
+  String get budgetsProgressLabel;
+
+  /// No description provided for @budgetsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No budgets this month'**
+  String get budgetsEmptyTitle;
+
+  /// No description provided for @budgetsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Budgets are written in the ledger: a budget directive creates one, budget-add assigns money to it for a month, and a budget metadata on an open links an expense account to it.'**
+  String get budgetsEmptyBody;
+
+  /// No description provided for @budgetsReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'The app shows budgets; change them in the ledger file.'**
+  String get budgetsReadOnly;
+
+  /// No description provided for @budgetsAssignedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned includes what was left (or overspent) last month.'**
+  String get budgetsAssignedHint;
+
+  /// No description provided for @budgetsLinkedAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked accounts'**
+  String get budgetsLinkedAccounts;
+
+  /// No description provided for @budgetsNoLinkedAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'No account is linked: add a budget metadata to an open directive.'**
+  String get budgetsNoLinkedAccounts;
+
+  /// No description provided for @budgetsHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get budgetsHistory;
+
+  /// No description provided for @budgetsNoHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing assigned or spent this month'**
+  String get budgetsNoHistory;
+
+  /// No description provided for @budgetsEventAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get budgetsEventAssigned;
+
+  /// No description provided for @budgetsEventMovedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved to another budget'**
+  String get budgetsEventMovedOut;
+
+  /// No description provided for @budgetsEventMovedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved from another budget'**
+  String get budgetsEventMovedIn;
+
   /// Auth type segment: sign in on the server's login page in the system browser
   ///
   /// In en, this message translates to:

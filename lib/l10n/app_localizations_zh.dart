@@ -851,6 +851,103 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsOpenAccount => '查看账户';
 
   @override
+  String get reportsSegmentFlows => '收支';
+
+  @override
+  String get reportsSegmentBudgets => '预算';
+
+  @override
+  String get budgetsAssigned => '已分配';
+
+  @override
+  String get budgetsActivity => '已花';
+
+  @override
+  String get budgetsAvailable => '可用';
+
+  @override
+  String get budgetsUncategorized => '未分类';
+
+  @override
+  String get budgetsClosed => '已关闭';
+
+  @override
+  String get budgetsOver => '超支';
+
+  @override
+  String budgetsOverCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个预算超支',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String budgetsDaysLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '本月还剩 $count 天',
+      one: '本月最后一天',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String budgetsSpentOf(String spent, String assigned) {
+    return '已花 $spent / 分配 $assigned';
+  }
+
+  @override
+  String budgetsOverBy(String amount) {
+    return '超支 $amount';
+  }
+
+  @override
+  String budgetsPerDay(String amount) {
+    return '日均可用 $amount';
+  }
+
+  @override
+  String get budgetsProgressLabel => '已花费占分配金额的比例';
+
+  @override
+  String get budgetsEmptyTitle => '本月没有预算';
+
+  @override
+  String get budgetsEmptyBody =>
+      '预算写在账本里：budget 指令创建预算，budget-add 为某个月分配金额，open 指令上的 budget 元数据把支出账户关联到预算。';
+
+  @override
+  String get budgetsReadOnly => 'App 只显示预算；要修改请编辑账本文件。';
+
+  @override
+  String get budgetsAssignedHint => '已分配包含上月结余（或超支）的结转。';
+
+  @override
+  String get budgetsLinkedAccounts => '关联账户';
+
+  @override
+  String get budgetsNoLinkedAccounts => '没有关联账户：在 open 指令上加 budget 元数据即可关联。';
+
+  @override
+  String get budgetsHistory => '本月明细';
+
+  @override
+  String get budgetsNoHistory => '本月没有分配，也没有花费';
+
+  @override
+  String get budgetsEventAssigned => '分配';
+
+  @override
+  String get budgetsEventMovedOut => '转到其他预算';
+
+  @override
+  String get budgetsEventMovedIn => '从其他预算转入';
+
+  @override
   String get authSession => '浏览器登录';
 
   @override

@@ -7,6 +7,8 @@ import 'core/widgets/app_shell.dart';
 import 'data/profiles/profile_providers.dart';
 import 'features/accounts/account_detail_screen.dart';
 import 'features/accounts/accounts_screen.dart';
+import 'features/budgets/budget_detail_screen.dart';
+import 'features/budgets/budget_routes.dart';
 import 'features/home/home_screen.dart';
 import 'features/journals/journal_routes.dart';
 import 'features/journals/journals_screen.dart';
@@ -106,6 +108,16 @@ GoRouter createAppRouter(ValueListenable<bool> hasProfile) {
                     path: 'accounts/:name',
                     builder: (context, state) =>
                         AccountDetailScreen(name: state.pathParameters['name']!),
+                    routes: [JournalRoutes.accountDetailRoute()],
+                  ),
+                  // `/reports/budgets/<YYYY-MM>/<name>`, see budgetDetailLocation().
+                  GoRoute(
+                    path: 'budgets/:month/:name',
+                    builder: (context, state) => BudgetDetailScreen(
+                      name: state.pathParameters['name']!,
+                      month: parseBudgetMonth(state.pathParameters['month']!) ??
+                          DateTime(DateTime.now().year, DateTime.now().month),
+                    ),
                     routes: [JournalRoutes.accountDetailRoute()],
                   ),
                 ],
