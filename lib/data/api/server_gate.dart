@@ -43,10 +43,18 @@ ZhangApiClient gatedClient(Ref ref, ZhangApiClient client) {
 /// when the server could not be asked. A gate that failed before is asked
 /// again (without a loading state: `AppShell` keeps what it shows).
 Future<void> waitForServerGate(ProviderContainer container) async {
-  final gate = container.read(serverGateProvider);
-  if (gate.hasError && !gate.isLoading) container.invalidate(serverGateProvider);
-  final info = await container.read(serverGateProvider.future);
-  if (!info.isSupported) throw ApiServerTooOld(info.version);
+  // Listen while waiting: a pending retry (the container's retry policy)
+  // only rebuilds a provider that is listened to, and `AppShell`'s listener
+  // is paused while another page covers the shell.
+  final subscription = container.listen(serverGateProvider, (_, _) {});
+  try {
+    final gate = subscription.read();
+    if (gate.hasError && !gate.isLoading) container.invalidate(serverGateProvider);
+    final info = await container.read(serverGateProvider.future);
+    if (!info.isSupported) throw ApiServerTooOld(info.version);
+  } finally {
+    subscription.close();
+  }
 }
 
 /// Holds each request until [passed] completes and fails it with
