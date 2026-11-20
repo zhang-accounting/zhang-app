@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:zhang_app/core/utils/dates.dart';
+import 'package:zhang_app/core/utils/device_clock.dart';
 
 import 'fake_adapter.dart';
 import 'fixtures.dart';
@@ -25,6 +27,22 @@ Map<String, Object?> batchResult(String fixtureName, int index) =>
 /// The `data` of a captured single-query fixture.
 Map<String, Object?> singleResult(String fixtureName) => (fixtureData(fixtureName)! as Map).cast<String, Object?>();
 
+/// `ledger.now` answering [now] (default: the device clock, `deviceNow()`)
+/// as the ledger's wall clock.
+BuiltinAnswer ledgerNowAnswer([DateTime Function() now = deviceNow]) => (_) {
+  final t = now();
+  return {
+    ...singleResult('ledger_now.json'),
+    'rows': [
+      [ZhangDates.toIsoDate(t), ZhangDates.toNaiveIso(t).substring(11)],
+    ],
+  };
+};
+
+/// `ledger.now` as captured from the test ledger (`2026-10-10 12:07:59`), for
+/// tests that compare against the captured row.
+Map<String, Object?> capturedLedgerNow(Map<String, Object?> _) => singleResult('ledger_now.json');
+
 /// An empty result with [columns] (all typed `str`).
 Map<String, Object?> emptyResult(List<String> columns) => {
   'columns': [
@@ -36,6 +54,11 @@ Map<String, Object?> emptyResult(List<String> columns) => {
 /// Fake for `POST /api/query/builtins[/{name}]`, answering from the zhang
 /// v0.2 captures in `test/fixtures` (override single queries with
 /// [answers]) and logging every call in [calls].
+///
+/// Except `ledger.now`: it answers the device clock ([ledgerNowAnswer]), so
+/// "today" / "this month" in the app is the day the test runs on – as with
+/// a real server – and no test depends on the date the captures were taken.
+/// Use [capturedLedgerNow] to get the captured row.
 class FakeBuiltins {
   FakeBuiltins([Map<String, BuiltinAnswer> answers = const {}]) : answers = {...defaults(), ...answers};
 
@@ -48,7 +71,8 @@ class FakeBuiltins {
 
   List<BuiltinCall> callsTo(String name) => [for (final c in calls) if (c.name == name) c];
 
-  /// Answers captured from the v0.2 test ledger.
+  /// Answers captured from the v0.2 test ledger (`ledger.now`: the device
+  /// clock).
   static Map<String, BuiltinAnswer> defaults() => {
     'report.net_worth': (_) => batchResult('statistic_summary.json', 0),
     'report.liabilities': (_) => batchResult('statistic_summary.json', 1),
@@ -62,7 +86,7 @@ class FakeBuiltins {
     'journals.errors': (_) => singleResult('errors.json'),
     'journals.payees': (_) => batchResult('for_new_transaction.json', 0),
     'journals.accounts': (_) => batchResult('for_new_transaction.json', 1),
-    'ledger.now': (_) => singleResult('ledger_now.json'),
+    'ledger.now': ledgerNowAnswer(),
     'budgets.month': (_) => singleResult('budgets.json'),
     'budgets.budget': (_) => batchResult('budget_detail.json', 0),
     'budgets.budget_month': (_) => batchResult('budget_detail.json', 1),
