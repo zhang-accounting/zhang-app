@@ -3,6 +3,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zhang_app/data/api/api_exception.dart';
+import 'package:zhang_app/data/api/server_gate.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/profiles/profile_providers.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
@@ -53,6 +54,23 @@ ResponseBody _oldInfo() => jsonResponse({
 });
 
 void main() {
+  test('the real zhangApiClientProvider is gated', () {
+    fakeAsync((async) {
+      final container = ProviderContainer(
+        overrides: [activeProfileProvider.overrideWithValue(_profile)],
+        retry: (_, _) => null,
+      );
+      final client = container.read(zhangApiClientProvider);
+      expect(client.dio.interceptors.whereType<ServerGateInterceptor>(), hasLength(1));
+      // Only the transport is replaced: the client is the production one.
+      final adapter = FakeAdapter((o) => o.path == '/info' ? _oldInfo() : jsonResponse(fixture('options.json')));
+      client.dio.httpClientAdapter = adapter;
+      expect(_errorOf(async, container.read(ledgerRepositoryProvider).options()), isA<ApiServerTooOld>());
+      expect(_paths(adapter), ['/api/info']);
+      container.dispose();
+    });
+  });
+
   test('probes go at once; everything else waits for a passed gate', () {
     fakeAsync((async) {
       final (container, adapter) = _gated((o) {
