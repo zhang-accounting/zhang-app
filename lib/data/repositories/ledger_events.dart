@@ -105,21 +105,37 @@ class LedgerEvents extends Notifier<LedgerEventsState> {
       );
       final body = res.data;
       if (body == null) throw StateError('empty event stream');
-      final lines = body.stream.timeout(idleTimeout).cast<List<int>>().transform(utf8.decoder);
-      await for (final line in lines.transform(const LineSplitter())) {
-        if (session != _session) return;
-        final data = sseData(line);
-        if (data == null) continue;
-        ServerEvent event;
-        try {
-          event = ServerEvent.parse(data);
-        } on FormatException {
-          continue;
+      // Silent for [idleTimeout]: a dead connection, cancelled here (the
+      // loop then ends with the cancel error and reconnects). A plain timer
+      // rather than `Stream.timeout`, which never delivers the end of the
+      // stream under fake time (tests).
+      Timer? idle;
+      void resetIdle() {
+        idle?.cancel();
+        idle = Timer(idleTimeout, cancel.cancel);
+      }
+
+      resetIdle();
+      try {
+        final lines = body.stream.cast<List<int>>().transform(utf8.decoder).transform(const LineSplitter());
+        await for (final line in lines) {
+          if (session != _session) return;
+          resetIdle();
+          final data = sseData(line);
+          if (data == null) continue;
+          ServerEvent event;
+          try {
+            event = ServerEvent.parse(data);
+          } on FormatException {
+            continue;
+          }
+          _handle(event);
         }
-        _handle(event);
+      } finally {
+        idle?.cancel();
       }
     } catch (_) {
-      // Network error, 401, cancelled: fall through to the reconnect.
+      // Network error, 401, cancelled, idle: fall through to the reconnect.
     }
     if (session != _session) return;
     if (state.connected) state = state.copyWith(connected: false);

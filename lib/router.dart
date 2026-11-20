@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,16 +36,28 @@ abstract final class AppRoutes {
 
 final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
-/// The app router. Created once; redirects re-run whenever the presence of
-/// an active profile changes (no profile → `/onboarding`).
+/// The app router. `LedgerSessionHost` creates one for the app's lifetime
+/// (with [createAppRouter]) and hands it to every ledger session, so a
+/// profile switch keeps the navigation stack. Without the host (widget tests
+/// that pump `ZhangApp` in one container) this default builds its own.
 final routerProvider = Provider<GoRouter>((ref) {
   final hasProfile = ValueNotifier<bool>(ref.read(activeProfileProvider) != null);
   ref.listen(
     activeProfileProvider.select((p) => p != null),
     (_, next) => hasProfile.value = next,
   );
+  final router = createAppRouter(hasProfile);
+  ref.onDispose(() {
+    router.dispose();
+    hasProfile.dispose();
+  });
+  return router;
+});
 
-  final router = GoRouter(
+/// Builds the app's [GoRouter]. Redirects re-run whenever [hasProfile]
+/// changes (no active profile → `/onboarding`).
+GoRouter createAppRouter(ValueListenable<bool> hasProfile) {
+  return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.home,
     refreshListenable: hasProfile,
@@ -142,9 +155,4 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
-  ref.onDispose(() {
-    router.dispose();
-    hasProfile.dispose();
-  });
-  return router;
-});
+}

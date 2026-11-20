@@ -305,7 +305,7 @@ void main() {
     });
 
     test('ledger clock: ledger.now as a naive wall-clock DateTime', () async {
-      final builtins = FakeBuiltins();
+      final builtins = FakeBuiltins({'ledger.now': capturedLedgerNow});
       final (client, _) = _client(_base, (o) => builtins.handle(o)!);
       final now = await LedgerRepository(client).now();
       final row = (singleResult('ledger_now.json')['rows']! as List).single as List;
@@ -328,7 +328,7 @@ void main() {
     });
 
     test('form data: ledger.now first, then payees + accounts open at that instant', () async {
-      final builtins = FakeBuiltins();
+      final builtins = FakeBuiltins({'ledger.now': capturedLedgerNow});
       final (client, adapter) = _client(_base, (o) => builtins.handle(o)!);
       final f = await JournalRepository(client).forNewTransaction();
       expect(adapter.requests.map((r) => r.uri.path), [

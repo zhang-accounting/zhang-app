@@ -184,7 +184,13 @@ flutter build ios --simulator --no-codesign
 ```sh
 flutter analyze        # must report "No issues found!"
 flutter test           # unit + widget tests (no server needed)
+flutter test --dart-define=ZHANG_TEST_NOW=2031-01-31T23:58:00   # same, as if the device clock read that date
 ```
+
+No test may depend on the date it runs on. App code reads the calendar date through `deviceNow()`
+(`lib/core/utils/device_clock.dart`) or the ledger clock (`ledgerClockProvider`), never `DateTime.now()`;
+`ZHANG_TEST_NOW` (read by `test/flutter_test_config.dart`) shifts `deviceNow()` for the whole run, so try a month
+or year end before relying on "today" / "this month" in a test.
 
 * `test/fixtures/*.json` – responses captured from a zhang v0.2 server on the test ledger above (built-in query
   results are the `data` of `POST /api/query/builtins[/{name}]`: batches are lists, single queries objects;
@@ -196,9 +202,13 @@ flutter test           # unit + widget tests (no server needed)
 * `test/helpers/builtin_fake.dart` – `FakeBuiltins` answers `POST /api/query/builtins[/{name}]` from the captured
   fixtures (override one query with `FakeBuiltins({'ledger.now': (params) => …})`), logs every call
   (`callsTo('report.flows').last.params`) and can fail a call (`intercept`). `FakeZhangServer` and `pumpLedgerApp`
-  use it.
+  use it. `ledger.now` is the exception: it answers the device clock (`ledgerNowAnswer()`, so the ledger clock
+  offset is zero and "this month" is the month the test runs in); `capturedLedgerNow` gives the captured row.
 * Widget tests override `sharedPreferencesProvider`, `secretStoreProvider` (`InMemorySecretStore`),
-  `initialProfilesStateProvider` and `connectionTesterProvider`; see `test/widget_test.dart`. The setup wizard
+  `initialProfilesStateProvider` and `connectionTesterProvider`; see `test/widget_test.dart`. To run the app as
+  `bootstrap()` does – in a `LedgerSessionHost`, one container per active profile – use `pumpAppHost`
+  (`test/helpers/app_host.dart`; `app.container` is the current session's container and changes with every
+  switch / edit of the active profile; see `test/features/shell/profile_switch_test.dart`). The setup wizard
   tests (`test/features/onboarding/server_setup_test.dart`) use `FakeSetupServer`
   (`test/helpers/fake_setup_server.dart`): one fake zhang behind `FakeAdapter` that serves
   `connectionTesterProvider` and `browserSignInProvider` (sign-in switches, gateway, zhang 0.1, injected
@@ -232,11 +242,13 @@ flutter test           # unit + widget tests (no server needed)
 
 ```
 lib/
-  main.dart                 bootstrap(): loads profiles, ProviderScope overrides, retry policy
+  main.dart                 bootstrap(): loads profiles, session overrides, retry policy
+  ledger_session.dart       LedgerSessionHost: one ProviderContainer ("ledger session") per active profile
   app.dart                  MaterialApp.router, light/dark theme, zh/en locale resolution
   router.dart               AppRoutes (all paths) + routerProvider (go_router, redirects)
   core/theme/               app_theme.dart (M3 seed), app_colors.dart (ZhangColors: income/expense…)
-  core/utils/               money.dart (formatMoney, formatDecimal, toneOf/amountColor), dates.dart (ZhangDates)
+  core/utils/               money.dart (formatMoney, formatDecimal, toneOf/amountColor), dates.dart (ZhangDates),
+                            device_clock.dart (deviceNow: the device's calendar clock, shiftable in tests)
   core/widgets/             app_shell.dart (4 tabs + centre FAB), error_view.dart (ErrorView,
                             describeApiError), ledger_widgets.dart (ActiveLedgerTitle, SettingsButton,
                             LedgerDot, PlaceholderScreen)
@@ -245,7 +257,8 @@ lib/
                             app/exchange → SessionGrant), webAuthLauncherProvider / browserSignInProvider
   data/api/                 ZhangApiClient + zhangApiClientProvider, ZhangApiException hierarchy,
                             AuthInterceptor, ZhangEndpoints, ConnectionTester (version gate),
-                            BuiltinQueryClient (`client.builtins`)
+                            BuiltinQueryClient (`client.builtins`), server_gate.dart (serverGateProvider,
+                            gatedClient: nothing but /info and /auth/status before the gate passed)
   data/models/              hand-written DTOs (barrel: models.dart)
   data/repositories/        one repository + provider per API group (barrel: repositories.dart),
                             ledgerRevisionProvider, ledgerEventsProvider (SSE), shared data providers
@@ -293,7 +306,7 @@ check at the same datetime (`foldBalancePads`).
    ```dart
    final accountsProvider = FutureProvider<List<Account>>((ref) {
      ref.watch(ledgerRevisionProvider);                // refetch after writes / pull-to-refresh
-     return ref.watch(accountRepositoryProvider).list(); // refetch on profile switch
+     return ref.watch(accountRepositoryProvider).list(); // behind the version gate
    });
 
    // in build():
@@ -304,7 +317,9 @@ check at the same datetime (`foldBalancePads`).
    );
    ```
 
-   For parameterised data use `FutureProvider.family`. Format money with
+   A profile switch starts a new ledger session (a new `ProviderContainer`), so every provider starts empty
+   for the new ledger without doing anything; keep server data in providers only (see "账本会话" in
+   docs/architecture.md for the rules). For parameterised data use `FutureProvider.family`. Format money with
    `commodities[code]?.format(amount)` (from `commoditiesProvider`) or `formatMoney(amount, code)`;
    colour it with `amountColor(context, amount)` / `context.zhangColors`.
 3. Strings: add keys to **both** `lib/l10n/app_en.arb` and `lib/l10n/app_zh.arb`, then

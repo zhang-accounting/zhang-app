@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zhang_app/core/utils/device_clock.dart';
 import 'package:zhang_app/data/api/api_exception.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/models/account.dart';
@@ -45,7 +46,7 @@ final _accounts = [
 ];
 
 HistoryEntry _entry(int daysAgo, String payee, Map<String, String> postings, {String narration = ''}) => HistoryEntry(
-  datetime: DateTime.now().subtract(Duration(days: daysAgo)),
+  datetime: deviceNow().subtract(Duration(days: daysAgo)),
   payee: payee,
   narration: narration,
   postings: [for (final e in postings.entries) HistoryPosting(e.key, Decimal.parse(e.value), 'CNY')],

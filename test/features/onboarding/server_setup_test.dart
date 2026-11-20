@@ -3,11 +3,9 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zhang_app/app.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/auth/browser_sign_in.dart';
 import 'package:zhang_app/data/profiles/profile_providers.dart';
@@ -16,15 +14,18 @@ import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/features/onboarding/setup_links.dart';
 import 'package:zhang_app/main.dart' show zhangRetryPolicy;
 
+import '../../helpers/app_host.dart';
 import '../../helpers/fake_setup_server.dart';
 
-Future<ProviderContainer> _pump(WidgetTester tester, FakeSetupServer server) async {
+/// The app as `bootstrap()` builds it (ledger sessions included).
+Future<AppHost> _pump(WidgetTester tester, FakeSetupServer server) async {
   tester.view.physicalSize = const Size(1170, 2532);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  final container = ProviderContainer(
+  return pumpAppHost(
+    tester,
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       secretStoreProvider.overrideWithValue(InMemorySecretStore()),
@@ -33,10 +34,6 @@ Future<ProviderContainer> _pump(WidgetTester tester, FakeSetupServer server) asy
     ],
     retry: zhangRetryPolicy,
   );
-  addTearDown(container.dispose);
-  await tester.pumpWidget(UncontrolledProviderScope(container: container, child: const ZhangApp()));
-  await tester.pumpAndSettle();
-  return container;
 }
 
 Future<void> _tap(WidgetTester tester, String key) async {
@@ -118,7 +115,7 @@ void main() {
 
   testWidgets('open server: straight to step 3; Start saves, activates and lands on Home', (tester) async {
     final server = FakeSetupServer()..enabled = false;
-    final container = await _pump(tester, server);
+    final app = await _pump(tester, server);
     await _toServer(tester, 'http://127.0.0.1:18120/');
 
     expect(find.text('Step 3 of 3'), findsOneWidget);
@@ -137,7 +134,7 @@ void main() {
     await _tap(tester, 'colorPicker.ff2e7d32');
     await _tap(tester, 'setup.start');
 
-    final active = container.read(activeProfileProvider)!;
+    final active = app.container.read(activeProfileProvider)!;
     expect(active.name, 'Family');
     expect(active.baseUrl, 'http://127.0.0.1:18120');
     expect(active.authType, AuthType.none);
@@ -149,7 +146,7 @@ void main() {
     final server = FakeSetupServer()
       ..enabled = false
       ..fail = _error(DioExceptionType.connectionError, const SocketException('Connection refused'));
-    final container = await _pump(tester, server);
+    final app = await _pump(tester, server);
     await _toServer(tester, 'ledger.example.com:8000');
 
     expect(find.byKey(const Key('setup.probeError')), findsOneWidget);
@@ -164,7 +161,7 @@ void main() {
     expect(find.text('Step 3 of 3'), findsOneWidget);
     expect(find.text('ledger.example.com:8000'), findsOneWidget); // host line of the ledger card
     await _tap(tester, 'setup.start');
-    expect(container.read(activeProfileProvider)!.baseUrl, 'http://ledger.example.com:8000');
+    expect(app.container.read(activeProfileProvider)!.baseUrl, 'http://ledger.example.com:8000');
   });
 
   testWidgets('unreachable local address (http by default): "Use https://…"', (tester) async {
@@ -190,7 +187,7 @@ void main() {
         DioExceptionType.unknown,
         const HandshakeException('Handshake error in client (OS Error: CERTIFICATE_VERIFY_FAILED: self signed certificate)'),
       );
-    final container = await _pump(tester, server);
+    final app = await _pump(tester, server);
     await _toServer(tester, 'https://ledger.example.com');
     expect(find.textContaining('TLS certificate was rejected'), findsOneWidget);
     expect(find.byKey(const Key('setup.allowSelfSigned')), findsOneWidget);
@@ -200,7 +197,7 @@ void main() {
     server.fail = null;
     await _tap(tester, 'setup.submitUrl');
     await _tap(tester, 'setup.start');
-    expect(container.read(activeProfileProvider)!.allowSelfSigned, isTrue);
+    expect(app.container.read(activeProfileProvider)!.allowSelfSigned, isTrue);
   });
 
   testWidgets('TLS handshake with a plain-http port: no self-signed switch, "Use http://…"', (tester) async {
@@ -231,7 +228,7 @@ void main() {
     tester,
   ) async {
     final server = FakeSetupServer()..cancelNextSignIn = true;
-    final container = await _pump(tester, server);
+    final app = await _pump(tester, server);
     await _toServer(tester, 'http://127.0.0.1:18121');
 
     expect(find.text('Step 2 of 3'), findsOneWidget);
@@ -257,7 +254,7 @@ void main() {
     expect(_text(tester, 'setup.fact.accounts'), '22 open');
     await _tap(tester, 'setup.start');
 
-    final active = container.read(activeProfileProvider)!;
+    final active = app.container.read(activeProfileProvider)!;
     expect(active.authType, AuthType.session);
     expect(active.sessionUser, 'demo');
     expect(active.sessionExpiresAt, DateTime.utc(2026, 11, 9, 3, 7, 29));
@@ -266,7 +263,7 @@ void main() {
 
   testWidgets('username and password: from the browser page, wrong password inline, then right', (tester) async {
     final server = FakeSetupServer();
-    final container = await _pump(tester, server);
+    final app = await _pump(tester, server);
     await _toServer(tester, 'http://127.0.0.1:18121');
     await _tap(tester, 'setup.usePassword');
     expect(find.byKey(const Key('setup.useBrowser')), findsOneWidget);
@@ -293,7 +290,7 @@ void main() {
     await _tap(tester, 'setup.continue');
     await _tap(tester, 'setup.start');
 
-    final active = container.read(activeProfileProvider)!;
+    final active = app.container.read(activeProfileProvider)!;
     expect(active.authType, AuthType.basic);
     expect(active.basicUsername, 'demo');
     expect(active.basicPassword, 'secret');
@@ -331,7 +328,7 @@ void main() {
 
   testWidgets('gateway in front: bearer token, then custom headers', (tester) async {
     final server = FakeSetupServer()..gateway = true;
-    final container = await _pump(tester, server);
+    final app = await _pump(tester, server);
     await _toServer(tester, 'https://ledger.example.com');
     expect(find.text('Step 2 of 3'), findsOneWidget);
     expect(find.text('The server asks for credentials.'), findsOneWidget);
@@ -349,14 +346,14 @@ void main() {
     expect(find.text('Connected'), findsOneWidget);
     await _tap(tester, 'setup.continue');
     await _tap(tester, 'setup.start');
-    final active = container.read(activeProfileProvider)!;
+    final active = app.container.read(activeProfileProvider)!;
     expect(active.authType, AuthType.headers);
     expect(active.customHeaders, {'X-Gate': 'open'});
   });
 
   testWidgets('"Reverse proxy or gateway" section on a zhang sign-in page: bearer token', (tester) async {
     final server = FakeSetupServer();
-    final container = await _pump(tester, server);
+    final app = await _pump(tester, server);
     await _toServer(tester, 'http://127.0.0.1:18121');
     await _tap(tester, 'setup.advanced');
     // zhang itself accepts no proxy token: the error stays in the section.
@@ -370,14 +367,14 @@ void main() {
     expect(find.text('Connected'), findsOneWidget);
     await _tap(tester, 'setup.continue');
     await _tap(tester, 'setup.start');
-    final active = container.read(activeProfileProvider)!;
+    final active = app.container.read(activeProfileProvider)!;
     expect(active.authType, AuthType.bearer);
     expect(active.bearerToken, 'proxy-token');
   });
 
   testWidgets('"Try the demo": retries a timeout while the demo wakes up, then the summary', (tester) async {
     final server = FakeSetupServer()..enabled = false;
-    final container = await _pump(tester, server);
+    final app = await _pump(tester, server);
     final wake = Completer<void>();
     var timeouts = 0;
     server
@@ -409,7 +406,7 @@ void main() {
 
     await _tap(tester, 'welcome.demo');
     await _tap(tester, 'setup.start');
-    final active = container.read(activeProfileProvider)!;
+    final active = app.container.read(activeProfileProvider)!;
     expect(active.baseUrl, kDemoServerUrl);
     expect(active.name, 'My Accounting');
   });

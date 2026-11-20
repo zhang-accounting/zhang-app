@@ -13,8 +13,10 @@ import '../profiles/server_profile.dart';
 import 'api_exception.dart';
 import 'auth_interceptor.dart';
 import 'endpoints.dart';
+import 'server_gate.dart';
 
 export 'connection_tester.dart';
+export 'server_gate.dart' show gatedClient;
 
 /// Decodes the payload inside the `{"data": …}` envelope.
 typedef DataDecoder<T> = T Function(Object? data);
@@ -287,16 +289,19 @@ class _SafeLogInterceptor extends Interceptor {
   }
 }
 
-/// The client for the **active** profile. Rebuilt (and the old one closed)
-/// whenever the active profile changes or is edited, so everything that
-/// watches it (repositories, data providers) refreshes automatically.
+/// The client for the **active** profile, behind its version gate
+/// ([gatedClient]): until `/api/info` has shown a zhang ≥ 0.2 server only the
+/// probes (`/api/info`, `/api/auth/status`) are sent; on an older server
+/// every other request fails with [ApiServerTooOld] without being sent.
+///
+/// In the app it lives in a ledger session (`LedgerSessionHost`): one client
+/// per session, closed with it when the active profile is switched or
+/// edited, together with everything that watched it.
 ///
 /// Throws [NoActiveProfileException] when no profile is active; the router
 /// never shows feature screens in that state.
 final zhangApiClientProvider = Provider<ZhangApiClient>((ref) {
   final profile = ref.watch(activeProfileProvider);
   if (profile == null) throw const NoActiveProfileException();
-  final client = ZhangApiClient(profile);
-  ref.onDispose(client.close);
-  return client;
+  return gatedClient(ref, ZhangApiClient(profile));
 });

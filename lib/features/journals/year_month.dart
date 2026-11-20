@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/utils/device_clock.dart';
+
 /// A calendar month (ledger wall-clock), used as cache key for per-month
 /// statistics and for month headers.
 @immutable
@@ -18,7 +20,7 @@ class YearMonth implements Comparable<YearMonth> {
 
   /// The current month on this device (prefer the ledger's clock,
   /// `ledgerClockProvider`).
-  factory YearMonth.now() => YearMonth.of(DateTime.now());
+  factory YearMonth.now() => YearMonth.of(deviceNow());
 
   final int year;
 

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zhang_app/app.dart';
 import 'package:zhang_app/data/api/api_exception.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/models/info.dart';
@@ -12,6 +11,8 @@ import 'package:zhang_app/data/profiles/profile_repository.dart';
 import 'package:zhang_app/data/profiles/secret_store.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/main.dart' show zhangRetryPolicy;
+
+import 'helpers/app_host.dart';
 
 class _FakeTester extends ConnectionTester {
   _FakeTester(this.handler);
@@ -26,7 +27,8 @@ class _FakeTester extends ConnectionTester {
   }
 }
 
-Future<ProviderContainer> _pumpApp(
+/// The app as `bootstrap()` builds it (ledger sessions included).
+Future<AppHost> _pumpApp(
   WidgetTester tester, {
   ProfilesState initial = const ProfilesState(),
   _FakeTester? connectionTester,
@@ -37,23 +39,18 @@ Future<ProviderContainer> _pumpApp(
   addTearDown(tester.view.reset);
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
-  final container = ProviderContainer(
+  return pumpAppHost(
+    tester,
+    initial: initial,
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       secretStoreProvider.overrideWithValue(InMemorySecretStore()),
-      initialProfilesStateProvider.overrideWithValue(initial),
       if (connectionTester != null) connectionTesterProvider.overrideWithValue(connectionTester),
     ],
     // Same policy as bootstrap(): no Riverpod default retries (and their
     // pending timers) for failing requests.
     retry: zhangRetryPolicy,
   );
-  addTearDown(container.dispose);
-  await tester.pumpWidget(
-    UncontrolledProviderScope(container: container, child: const ZhangApp()),
-  );
-  await tester.pumpAndSettle();
-  return container;
 }
 
 const _profile = ServerProfile(
@@ -103,7 +100,7 @@ void main() {
       return const ServerInfo(title: 'My Accounting', version: '0.1.0', buildDate: '2026-10-02', format: 'zhang');
     });
     const open = ServerProfile(id: 'p1', name: 'Family', baseUrl: 'http://127.0.0.1:18011');
-    final container = await _pumpApp(
+    final app = await _pumpApp(
       tester,
       initial: const ProfilesState(profiles: [open], activeId: 'p1'),
       connectionTester: fake,
@@ -153,7 +150,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('profileForm.submit')));
     await tester.pumpAndSettle();
-    final active = container.read(activeProfileProvider)!;
+    final active = app.container.read(activeProfileProvider)!;
     expect(active.authType, AuthType.basic);
     expect(active.basicPassword, 'secret');
     expect(find.text('Servers'), findsOneWidget);
@@ -174,7 +171,7 @@ void main() {
 
   testWidgets('settings: switch profile and delete the last one → onboarding', (tester) async {
     const second = ServerProfile(id: 'p2', name: 'Work', baseUrl: 'https://work.example.com');
-    final container = await _pumpApp(
+    final app = await _pumpApp(
       tester,
       initial: const ProfilesState(profiles: [_profile, second], activeId: 'p1'),
       connectionTester: _FakeTester((_) async => throw const ApiNetworkError(NetworkErrorKind.connection, 'x')),
@@ -185,7 +182,7 @@ void main() {
 
     await tester.tap(find.text('Work'));
     await tester.pumpAndSettle();
-    expect(container.read(activeProfileProvider)?.id, 'p2');
+    expect(app.container.read(activeProfileProvider)?.id, 'p2');
 
     for (final id in ['p1', 'p2']) {
       await tester.tap(find.byKey(Key('settings.profileMenu.$id')));
@@ -195,7 +192,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
       await tester.pumpAndSettle();
     }
-    expect(container.read(profilesProvider).profiles, isEmpty);
+    expect(app.container.read(profilesProvider).profiles, isEmpty);
     expect(find.byKey(const Key('welcome.connect')), findsOneWidget);
   });
 
