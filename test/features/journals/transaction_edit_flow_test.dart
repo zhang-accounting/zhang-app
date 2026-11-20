@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../helpers/builtin_fake.dart';
 import 'fake_server.dart';
 import 'journal_test_utils.dart';
 import 'screen_test_utils.dart';
@@ -13,6 +14,7 @@ Map<String, Object?> editableJson({
   String narration = 'Shirt',
   bool dropsText = false,
   String? comment,
+  String? version,
 }) => {
   ...txnJson(
     id: id,
@@ -45,6 +47,7 @@ Map<String, Object?> editableJson({
       },
   ],
   'edit_drops_text': dropsText,
+  'version': ?version,
 };
 
 Future<void> openDetail(WidgetTester tester, String payee) async {
@@ -171,7 +174,9 @@ void main() {
   });
 
   testWidgets('copy opens the editor dated now and creates a new transaction', (tester) async {
+    // The captured ledger clock (2026-10-10 12:07), whatever the device date.
     final server = FakeZhangServer(journals: [editableJson()]);
+    server.builtins.answers['ledger.now'] = capturedLedgerNow;
     await pumpApp(tester, server);
     await openDetail(tester, 'Uniqlo');
     await tester.tap(find.byKey(const Key('trx.duplicate')));
@@ -187,8 +192,51 @@ void main() {
     final body = server.transactionRequests.last.$3;
     expect(body['payee'], 'Uniqlo');
     expect(body['metas'], isEmpty, reason: 'metadata belongs to the original');
-    expect(body['links'], ['order-7']);
-    expect(body['datetime'], isNot(startsWith('2023-09-30')));
+    expect(body['links'], isEmpty, reason: 'links tie related entries; a copy is a new one');
+    // Dated now by the ledger clock (the captured `ledger.now`: 2026-10-10 12:07).
+    expect(body['datetime'], startsWith('2026-10-10T'));
     expect(find.text('Transaction'), findsOneWidget, reason: 'back on the original');
+  });
+
+  testWidgets('a version is sent as If-Match on the edit preview and the PUT', (tester) async {
+    final server = FakeZhangServer(journals: [editableJson(version: 'v1')]);
+    await pumpApp(tester, server);
+    await openDetail(tester, 'Uniqlo');
+    await tester.tap(find.byKey(const Key('trx.edit')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('add.narration')), 'Blue shirt');
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    final ifMatch = [
+      for (final r in server.adapter.requests)
+        if (r.uri.path.contains('/transactions/')) '${r.method} ${r.uri.path} ${r.headers['If-Match']}',
+    ];
+    expect(ifMatch, [
+      'POST /api/transactions/tx-1/preview v1',
+      'POST /api/transactions/tx-1/preview v1',
+      'PUT /api/transactions/tx-1 v1',
+    ]);
+    expect(find.text('Uniqlo · Blue shirt'), findsOneWidget);
+  });
+
+  testWidgets('a write the journal never shows: refreshing, then a clear message', (tester) async {
+    final server = FakeZhangServer(journals: [editableJson()])..ignoreWrites = true;
+    await pumpApp(tester, server);
+    await openDetail(tester, 'Uniqlo');
+    await tester.tap(find.byKey(const Key('trx.edit')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('add.narration')), 'Blue shirt');
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 100)); // past the write's reload (600 ms)
+    }
+    expect(find.byKey(const Key('trx.refreshing')), findsOneWidget, reason: 'a reload alone is not the edit');
+    expect(find.text('Uniqlo · Shirt'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('trx.editedPending')), findsOneWidget);
   });
 }

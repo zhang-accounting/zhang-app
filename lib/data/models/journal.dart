@@ -168,6 +168,7 @@ class JournalTransaction extends JournalItem {
     this.isBalanced = true,
     this.metas = const [],
     this.editDropsText,
+    this.version,
   });
 
   factory JournalTransaction.fromJson(JsonMap m) => JournalTransaction(
@@ -183,6 +184,7 @@ class JournalTransaction extends JournalItem {
     isBalanced: optBool(m, 'is_balanced', fallback: true),
     metas: m['metas'] == null ? const [] : [for (final e in asList(m['metas'])) Meta.fromJson(e)],
     editDropsText: m['edit_drops_text'] is bool ? m['edit_drops_text'] as bool : null,
+    version: optString(m, 'version'),
   );
 
   /// Without `#`.
@@ -204,6 +206,11 @@ class JournalTransaction extends JournalItem {
   /// comment line between its postings, a comment on its header line or
   /// after a metadata line); `null` when the server does not say.
   final bool? editDropsText;
+
+  /// Hash of the transaction's source text (zhang PR #818); sent as
+  /// `If-Match` when editing so a changed transaction answers 412. `null`
+  /// on servers that do not report it.
+  final String? version;
 
   bool get isPending => flag == '!';
 

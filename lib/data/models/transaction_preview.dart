@@ -40,8 +40,17 @@ class TransactionPreview {
   bool get isUnbalanced => unbalanced?.isNotEmpty ?? false;
 
   /// Ledger error kinds that block the save: the entry would be written
-  /// against an account that is not open, or would not balance.
-  static const blockingErrorTypes = {'AccountDoesNotExist', 'AccountClosed', 'UnbalancedTransaction'};
+  /// against an account that is not open, would not balance, or could not
+  /// be completed (an empty amount left with several commodities, two empty
+  /// amounts, a sale whose lots cannot be booked).
+  static const blockingErrorTypes = {
+    'AccountDoesNotExist',
+    'AccountClosed',
+    'UnbalancedTransaction',
+    'TransactionCannotInferTradeAmount',
+    'TransactionExplicitPostingHaveMultipleCommodity',
+    'TransactionHasMultipleImplicitPosting',
+  };
 
   /// Nothing to complain about: safe to save.
   bool get isClean => fieldErrors.isEmpty && !isUnbalanced && errors.isEmpty;

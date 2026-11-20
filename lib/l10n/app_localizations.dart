@@ -785,8 +785,20 @@ abstract class AppLocalizations {
   /// No description provided for @editStale.
   ///
   /// In en, this message translates to:
-  /// **'this transaction changed on the server since it was opened (its id is out of date). Go back, refresh the list and open it again.'**
+  /// **'This transaction changed on the server since it was opened (its id is out of date or it was edited elsewhere). Go back, refresh the list and open it again.'**
   String get editStale;
+
+  /// No description provided for @editRequoteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata will be saved as text'**
+  String get editRequoteTitle;
+
+  /// No description provided for @editRequoteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The server keeps metadata values without quotes (numbers, dates) only on a posting whose account is unchanged. These will be saved in quotes, as text:'**
+  String get editRequoteMessage;
 
   /// No description provided for @addPreviewRejected.
   ///
@@ -1111,6 +1123,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only one amount may be left empty'**
   String get advIssueAuto;
+
+  /// No description provided for @advIssueAutoCommodities.
+  ///
+  /// In en, this message translates to:
+  /// **'An empty amount can only balance one commodity: add a price or a cost, or fill in the amounts'**
+  String get advIssueAutoCommodities;
 
   /// No description provided for @advIssueUnbalanced.
   ///
@@ -1555,6 +1573,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved. The updated transaction could not be found again – it may have moved. Open it again from the list.'**
   String get trxEditedNotFound;
+
+  /// No description provided for @trxEditedPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved, but the server does not list the change yet. Open the transaction again from the list.'**
+  String get trxEditedPending;
 
   /// No description provided for @trxNotFound.
   ///

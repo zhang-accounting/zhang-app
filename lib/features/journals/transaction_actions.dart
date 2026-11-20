@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/error_view.dart';
-import '../../data/api/api_exception.dart';
 import '../../data/models/account.dart';
 import '../../data/models/journal.dart';
 import '../../data/repositories/journal_repository.dart';
@@ -43,18 +42,17 @@ Future<EntrySaved?> editTransaction(
 }) async {
   final l10n = context.l10n;
   final messenger = ScaffoldMessenger.of(context);
-  final EditBlock? block;
+  final EditCheck check;
   try {
-    block = await checkEditable(ref.read(journalRepositoryProvider), tx);
+    check = await checkEditable(ref.read(journalRepositoryProvider), tx);
   } catch (e) {
     onChecked?.call();
-    final message = e is ApiNotFound && !e.isMissingRoute ? l10n.editStale : describeApiError(l10n, e);
-    messenger.showSnackBar(SnackBar(content: Text(message)));
+    messenger.showSnackBar(SnackBar(content: Text(isStaleEdit(e) ? l10n.editStale : describeApiError(l10n, e))));
     return null;
   }
   onChecked?.call();
   if (!context.mounted) return null;
-  if (block case final reason?) {
+  if (check.block case final reason?) {
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -69,9 +67,9 @@ Future<EntrySaved?> editTransaction(
   final fit = simpleFitFor(tx, await _accounts(ref));
   if (!context.mounted) return null;
   if (fit != null) {
-    return context.push<EntrySaved>(AppRoutes.newTransaction, extra: EntryPrefill.edit(tx, fit));
+    return context.push<EntrySaved>(AppRoutes.newTransaction, extra: EntryPrefill.edit(check.target!, fit));
   }
-  return pushAdvancedEntry(context, AdvancedEntryArgs.edit(tx));
+  return pushAdvancedEntry(context, AdvancedEntryArgs.edit(check.target!));
 }
 
 /// Opens [tx] as a new transaction dated "now" (everything but its
@@ -96,32 +94,14 @@ Future<List<Account>> _accounts(WidgetRef ref) async {
   }
 }
 
-/// The transaction [id] read again after an edit, once the ledger revision
-/// is past the write (`(id, hint, revision)`): searched on the server by
-/// `hint` (up to 5 pages of 100), then on page 1 – never in the loaded
-/// journal pages, which may still hold the old version. `null` = not found
-/// (the edit kept its place, so its id; a concurrent change elsewhere in the
-/// file may have moved it).
+/// The transaction [id] read again after an edit, at a ledger revision
+/// (`(id, hint, revision)`): [JournalRepository.findById] on the server –
+/// never the loaded journal pages, which may still hold the old version.
+/// `null` = not found.
 final editedTransactionProvider = FutureProvider.autoDispose.family<JournalItem?, (String, String?, int)>((
   ref,
   arg,
-) async {
+) {
   final (id, hint, _) = arg;
-  final repository = ref.watch(journalRepositoryProvider);
-  JournalItem? find(List<JournalItem> records) {
-    for (final item in foldBalancePads(records)) {
-      if (item.id == id) return item;
-    }
-    return null;
-  }
-
-  if (hint != null && hint.trim().isNotEmpty) {
-    for (var page = 1; page <= 5; page++) {
-      final result = await repository.list(JournalQuery(page: page, size: 100, keyword: hint.trim()));
-      final found = find(result.records);
-      if (found != null) return found;
-      if (!result.hasNextPage) break;
-    }
-  }
-  return find((await repository.list(const JournalQuery(page: 1, size: 100))).records);
+  return ref.watch(journalRepositoryProvider).findById(id, keyword: hint);
 }, retry: browseRetry);

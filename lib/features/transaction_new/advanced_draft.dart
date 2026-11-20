@@ -1,6 +1,7 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../core/utils/money.dart';
 import '../../data/models/amount.dart';
 import '../../data/models/json_utils.dart';
 import '../../data/models/transaction_request.dart';
@@ -21,9 +22,11 @@ class PostingDraft {
     this.metas = const [],
     this.originalUnit,
     this.originalScale,
+    this.origin,
   });
 
-  /// From a request posting (an edit, a copy or the simple form's postings).
+  /// From posting [key] of a request (an edit, a copy or the simple form's
+  /// postings); [origin] is that index.
   factory PostingDraft.fromRequest(int key, PostingRequest p) {
     final unit = p.unit;
     return PostingDraft(
@@ -37,6 +40,7 @@ class PostingDraft {
       metas: p.metas,
       originalUnit: unit,
       originalScale: p.scale,
+      origin: key,
     );
   }
 
@@ -68,6 +72,10 @@ class PostingDraft {
   final Amount? originalUnit;
   final int? originalScale;
 
+  /// Index of the posting of the edited transaction this row was opened
+  /// from; `null` for a row added in the editor.
+  final int? origin;
+
   /// Nothing typed or chosen: the row is ignored.
   bool get isBlank =>
       (account == null || account!.isEmpty) &&
@@ -98,6 +106,7 @@ class PostingDraft {
     metas: metas,
     originalUnit: originalUnit,
     originalScale: originalScale,
+    origin: origin,
   );
 }
 
@@ -113,6 +122,8 @@ class AdvancedDraft {
     this.links = const [],
     this.metas = const [],
     this.postings = const [],
+    this.originalPayee,
+    this.originalNarration,
   });
 
   /// Every field of [request] (an edit, a copy or the simple form's entry).
@@ -126,6 +137,8 @@ class AdvancedDraft {
     links: request.links,
     metas: request.metas,
     postings: [for (final (i, p) in request.postings.indexed) PostingDraft.fromRequest(i, p)],
+    originalPayee: request.payee,
+    originalNarration: request.narration,
   );
 
   /// `null` = the ledger's "now" when saving.
@@ -137,6 +150,11 @@ class AdvancedDraft {
   final List<String> links;
   final List<Meta> metas;
   final List<PostingDraft> postings;
+
+  /// Payee / narration as opened: kept as written (not trimmed) while
+  /// unchanged.
+  final String? originalPayee;
+  final String? originalNarration;
 
   /// Postings that are not [PostingDraft.isBlank].
   List<PostingDraft> get filled => [
@@ -162,6 +180,8 @@ class AdvancedDraft {
     links: links ?? this.links,
     metas: metas ?? this.metas,
     postings: postings ?? this.postings,
+    originalPayee: originalPayee,
+    originalNarration: originalNarration,
   );
 }
 
@@ -170,13 +190,18 @@ class AdvancedDraft {
 // ---------------------------------------------------------------------------
 
 /// Parses a typed amount: optional sign (`-`, `+` or `−` U+2212), digits
-/// with optional `,` / space grouping and one `.`. `null` when empty or not
-/// a number.
+/// and one `.` as the decimal point. `,` is only a thousands separator,
+/// before groups of exactly three digits (`1,234.50`); anything else with a
+/// comma (`12,50`) is not a number – the ledger has no decimal comma, so a
+/// guess could write a hundred times the amount. Spaces are ignored. `null`
+/// when empty or not a number.
 Decimal? parseAmountInput(String text) {
-  var t = text.trim().replaceAll('−', '-').replaceAll(RegExp(r'[\s,_]'), '');
+  var t = text.trim().replaceAll('−', '-').replaceAll(RegExp(r'\s'), '');
   if (t.isEmpty) return null;
   if (t.startsWith('+')) t = t.substring(1);
-  if (!RegExp(r'^-?(\d+\.?\d*|\.\d+)$').hasMatch(t)) return null;
+  final number = RegExp(r'^-?(\d{1,3}(,\d{3})+|\d+)?(\.\d*)?$').firstMatch(t);
+  if (number == null || (number.group(1) == null && (number.group(3) ?? '.').length < 2)) return null;
+  t = t.replaceAll(',', '');
   if (t.endsWith('.')) t = t.substring(0, t.length - 1);
   if (t.startsWith('.') || t.startsWith('-.')) t = t.replaceFirst('.', '0.');
   return Decimal.tryParse(t);
@@ -279,6 +304,10 @@ Amount? postingWeight(Decimal units, String commodity, {String? cost, String? pr
 // Balance
 // ---------------------------------------------------------------------------
 
+/// How the ledger writes a commodity: its decimals and whether ties round
+/// towards zero (`RoundDown`, zhang's default) – `null` when unknown.
+typedef CommodityRules = ({int precision, bool halfDown})? Function(String commodity);
+
 /// The live balance of the postings (the remainder bar).
 @immutable
 class PostingBalance {
@@ -310,11 +339,15 @@ class PostingBalance {
 
   /// What the auto posting will be given (one amount per commodity).
   List<Amount> get autoAmounts => [for (final a in remainder) -a];
+
+  /// The empty amount would have to take several commodities: the ledger
+  /// cannot infer it (`TransactionExplicitPostingHaveMultipleCommodity`).
+  bool get autoNeedsOneCommodity => autoCount == 1 && !indeterminate && remainder.length > 1;
 }
 
-/// Sums the weights of [postings] (blank rows ignored). [precisionOf] gives
-/// a commodity's decimals for rounding the remainder (unknown = exact).
-PostingBalance balanceOf(List<PostingDraft> postings, {int? Function(String commodity)? precisionOf}) {
+/// Sums the weights of [postings] (blank rows ignored). [rules] round the
+/// remainder like the ledger checks it (unknown commodity = exact).
+PostingBalance balanceOf(List<PostingDraft> postings, {CommodityRules? rules}) {
   final sums = <String, Decimal>{};
   var auto = 0;
   var indeterminate = false;
@@ -341,8 +374,8 @@ PostingBalance balanceOf(List<PostingDraft> postings, {int? Function(String comm
   final remainder = <Amount>[];
   for (final code in codes) {
     var value = sums[code]!;
-    final precision = precisionOf?.call(code);
-    if (precision != null) value = value.round(scale: precision);
+    final rule = rules?.call(code);
+    if (rule != null) value = roundDecimal(value, rule.precision, halfDown: rule.halfDown);
     if (value != Decimal.zero) remainder.add(Amount(value, code));
   }
   return PostingBalance(remainder: remainder, autoCount: auto, indeterminate: indeterminate);
@@ -369,12 +402,15 @@ enum AdvancedIssue {
   /// More than one posting left without an amount.
   tooManyAuto,
 
+  /// The posting left without an amount would take several commodities.
+  autoMultipleCommodities,
+
   /// Does not balance and no posting takes the remainder.
   unbalanced,
 }
 
 /// All problems of [draft] (blank rows ignored); empty = savable.
-List<AdvancedIssue> validateAdvanced(AdvancedDraft draft, {int? Function(String commodity)? precisionOf}) {
+List<AdvancedIssue> validateAdvanced(AdvancedDraft draft, {CommodityRules? rules}) {
   final postings = draft.filled;
   final issues = <AdvancedIssue>{};
   if (postings.length < 2) issues.add(AdvancedIssue.tooFewPostings);
@@ -384,8 +420,11 @@ List<AdvancedIssue> validateAdvanced(AdvancedDraft draft, {int? Function(String 
     if (parseAmountInput(p.amount) == null) issues.add(AdvancedIssue.amountInvalid);
     if (p.commodity == null || p.commodity!.trim().isEmpty) issues.add(AdvancedIssue.commodityMissing);
   }
-  final balance = balanceOf(postings, precisionOf: precisionOf);
+  final balance = balanceOf(postings, rules: rules);
   if (balance.autoCount > 1) issues.add(AdvancedIssue.tooManyAuto);
+  if (!issues.contains(AdvancedIssue.amountInvalid) && balance.autoNeedsOneCommodity) {
+    issues.add(AdvancedIssue.autoMultipleCommodities);
+  }
   if (!issues.contains(AdvancedIssue.amountInvalid) && balance.isUnbalanced) issues.add(AdvancedIssue.unbalanced);
   return [
     for (final i in AdvancedIssue.values)
@@ -399,14 +438,15 @@ List<AdvancedIssue> validateAdvanced(AdvancedDraft draft, {int? Function(String 
 ///   written decimals; others get at least the commodity's precision.
 /// * [edit]: the posting's cost, price and comment are always sent, `null`
 ///   included, so clearing one removes it (an update keeps a left-out one).
-/// * Posting metadata is sent back as read.
+/// * Posting metadata is sent back as read; payee / narration are trimmed
+///   unless unchanged.
 CreateTransactionRequest buildAdvancedRequest(
   AdvancedDraft draft, {
   required DateTime now,
   bool edit = false,
-  int? Function(String commodity)? precisionOf,
+  CommodityRules? rules,
 }) {
-  final issues = validateAdvanced(draft, precisionOf: precisionOf);
+  final issues = validateAdvanced(draft, rules: rules);
   if (issues.isNotEmpty) throw StateError('advanced entry is not valid: $issues');
   String? text(String value) => value.trim().isEmpty ? null : value.trim();
   final postings = <PostingRequest>[];
@@ -418,7 +458,7 @@ CreateTransactionRequest buildAdvancedRequest(
       if (unit == p.originalUnit && p.originalScale != null) {
         scale = p.originalScale;
       } else {
-        final precision = precisionOf?.call(unit.commodity) ?? 0;
+        final precision = rules?.call(unit.commodity)?.precision ?? 0;
         final typed = typedDecimals(p.amount);
         scale = typed > precision ? typed : precision;
       }
@@ -437,10 +477,11 @@ CreateTransactionRequest buildAdvancedRequest(
       ),
     );
   }
+  String kept(String typed, String? original) => typed == original ? typed : typed.trim();
   return CreateTransactionRequest(
     datetime: draft.datetime ?? now,
-    payee: draft.payee.trim(),
-    narration: draft.narration.trim(),
+    payee: kept(draft.payee, draft.originalPayee),
+    narration: kept(draft.narration, draft.originalNarration),
     flag: draft.flag,
     postings: postings,
     metas: [
@@ -451,3 +492,7 @@ CreateTransactionRequest buildAdvancedRequest(
     links: draft.links,
   );
 }
+
+/// Per request posting of [buildAdvancedRequest]: the index of the edited
+/// posting it was opened from ([PostingDraft.origin]).
+List<int?> requestOrigins(AdvancedDraft draft) => [for (final p in draft.filled) p.origin];

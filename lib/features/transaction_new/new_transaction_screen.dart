@@ -35,6 +35,7 @@ import 'transaction_edit.dart';
 import 'transaction_history.dart';
 import 'widgets/amount_keypad.dart';
 import 'widgets/category_grid.dart';
+import 'widgets/edit_dialogs.dart';
 import 'widgets/save_error_banner.dart';
 import 'widgets/suggestion_chips.dart';
 import 'widgets/tags_sheet.dart';
@@ -112,6 +113,9 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
   final _payeeFocus = FocusNode();
   final _narrationFocus = FocusNode();
   bool _submitting = false;
+
+  /// The requote question is open.
+  bool _asking = false;
   Object? _error;
   int _savedCount = 0;
   PayeeAutofill? _hint;
@@ -249,7 +253,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
   /// (blocking problems still stop the save).
   Future<void> _submit({required bool again, bool acceptWarnings = false}) async {
     final r = _resolved;
-    if (r == null || _submitting) return;
+    if (r == null || _submitting || _asking) return;
     final draft = EntryDraft(
       mode: r.draft.mode,
       amount: _form.amount.value,
@@ -269,7 +273,8 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     final built = buildTransactionRequest(draft);
     final base = _base;
     final request = base == null ? built : overlaySimpleEntry(base, built);
-    final editId = widget.prefill?.editId;
+    final target = widget.prefill?.target;
+    final editId = target?.id;
     // Read everything needed after the request now: `ref` must not be used
     // once the screen is gone (e.g. closed while saving).
     final repository = ref.read(journalRepositoryProvider);
@@ -279,6 +284,16 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     final pickerPrefs = ref.read(accountPickerPrefsProvider);
     final category = _form.category;
     FocusScope.of(context).unfocus();
+    if (target != null && !acceptWarnings) {
+      // The form keeps the edited postings in their order.
+      final requoted = requotedMetas(target, request, const [0, 1]);
+      if (requoted.isNotEmpty) {
+        _asking = true; // the dialog is modal; this also stops a queued second tap
+        final go = await confirmRequotedMetas(context, target, requoted);
+        _asking = false;
+        if (!go || !mounted) return;
+      }
+    }
     setState(() {
       _submitting = true;
       _error = null;
@@ -287,18 +302,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       // Validate first: an unbalanced entry or an unknown / closed account
       // would still be written (and only show up as a ledger error). Other
       // ledger errors / notices (e.g. an undeclared commodity) only warn.
-      final preview = editId == null
-          ? await repository.preview(request)
-          : await repository.previewUpdate(editId, request);
-      if (preview.isBlocked) throw TransactionRejected(preview);
-      if (!acceptWarnings && preview.warnings.isNotEmpty) {
-        throw TransactionNeedsConfirmation(preview, again: again);
-      }
-      if (editId == null) {
-        await repository.create(request);
-      } else {
-        await repository.update(editId, request);
-      }
+      await saveEntry(repository, request, target: target, acceptWarnings: acceptWarnings, again: again);
     } catch (e) {
       if (!mounted) return;
       HapticFeedback.heavyImpact();
@@ -315,7 +319,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     }
     if (!mounted) return;
     final l10n = context.l10n;
-    final saved = EntrySaved(revision: revision, hint: EntrySaved.hintFor(request));
+    final saved = EntrySaved(revision: revision, request: request, hint: EntrySaved.hintFor(request));
     final sign = switch (draft.mode) {
       EntryMode.expense => '−',
       EntryMode.income => '+',
@@ -398,7 +402,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
   /// is lost). Closes this screen too once it saved.
   Future<void> _openAdvanced(_Resolved r) async {
     FocusScope.of(context).unfocus();
-    final args = AdvancedEntryArgs(draft: _carryOver(r), editId: widget.prefill?.editId);
+    final args = AdvancedEntryArgs(draft: _carryOver(r), target: widget.prefill?.target);
     final saved = await pushAdvancedEntry(context, args);
     if (saved == null || !mounted) return;
     setState(() => _allowPop = true);
@@ -571,9 +575,10 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     final r = _resolved = _resolve();
     final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return PopScope(
-      canPop: _allowPop || !_hasInput,
+      // Never while saving: the result would be lost (and the screen gone).
+      canPop: !_submitting && (_allowPop || !_hasInput),
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _confirmDiscard();
+        if (!didPop && !_submitting) _confirmDiscard();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -581,7 +586,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
             key: const Key('add.close'),
             tooltip: l10n.addClose,
             icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: _submitting ? null : () => Navigator.of(context).maybePop(),
           ),
           title: Text(_editing ? l10n.editTransactionTitle : l10n.newTransactionTitle),
           actions: [

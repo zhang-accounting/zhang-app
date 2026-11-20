@@ -378,7 +378,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addSaveFailed => '未能保存';
 
   @override
-  String get editStale => '这笔交易打开后在服务器上已变化（id 已过期）。请返回、刷新列表后重新打开。';
+  String get editStale => '这笔交易打开后在服务器上已变化（id 已过期或在别处被修改）。请返回、刷新列表后重新打开。';
+
+  @override
+  String get editRequoteTitle => '元数据将保存为文本';
+
+  @override
+  String get editRequoteMessage =>
+      '服务器只在分录账户不变时保留不带引号的元数据值（数字、日期）。以下值将加上引号、保存为文本：';
 
   @override
   String get addPreviewRejected => '未保存——账本会报告以下问题：';
@@ -557,6 +564,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get advIssueAuto => '最多只能留空一条金额';
+
+  @override
+  String get advIssueAutoCommodities => '留空的金额只能配平一种商品：请填写价格或成本，或填上各条金额';
 
   @override
   String get advIssueUnbalanced => '分录不平衡';
@@ -805,6 +815,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get trxEditedNotFound => '已保存，但找不到更新后的交易（可能已移动）。请从列表重新打开。';
+
+  @override
+  String get trxEditedPending => '已保存，但服务器暂时还没有显示这次修改。请从列表重新打开这笔交易。';
 
   @override
   String get trxNotFound => '找不到这笔交易。账本重载后 id 会变化，请从列表重新打开。';

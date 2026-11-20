@@ -42,6 +42,10 @@ class FakeZhangServer {
   /// Transaction previews and writes: `(method, path, body)`.
   final transactionRequests = <(String, String, Map<String, Object?>)>[];
 
+  /// Answer `PUT /transactions/{id}` without changing anything (a write the
+  /// journal never shows).
+  bool ignoreWrites = false;
+
   /// Answer of `POST /api/transactions/preview` and
   /// `POST /api/transactions/{id}/preview` (clean by default).
   Map<String, Object?> previewAnswer = const {
@@ -114,8 +118,18 @@ extension on FakeZhangServer {
       final id = Uri.decodeComponent(byId.group(1)!);
       final index = journals.indexWhere((j) => j['id'] == id);
       if (index < 0) return jsonResponse({'message': 'there is no transaction $id in the ledger'}, status: 404);
+      // zhang PR #818: `If-Match` must name the current `version`.
+      final ifMatch = o.headers['If-Match'];
+      final version = journals[index]['version'];
+      if (ifMatch != null && ifMatch != version) {
+        return jsonResponse({'message': 'the transaction changed since version $ifMatch'}, status: 412);
+      }
       if (byId.group(2) != null) return jsonResponse({'data': previewAnswer});
-      journals[index] = journalFromRequest(id, journals[index]['sequence']! as int, body);
+      if (ignoreWrites) return jsonResponse({'data': null});
+      journals[index] = {
+        ...journalFromRequest(id, journals[index]['sequence']! as int, body),
+        if (version != null) 'version': '$version+',
+      };
       return jsonResponse({'data': null});
     }
     if (path.endsWith('/preview')) return jsonResponse({'data': previewAnswer});

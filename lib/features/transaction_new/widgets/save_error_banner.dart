@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/utils/money.dart';
 import '../../../core/widgets/error_view.dart';
-import '../../../data/api/api_exception.dart';
 import '../../../data/models/transaction_preview.dart';
 import '../../../l10n/l10n.dart';
+import '../transaction_edit.dart';
 
 /// Save failure, blocking preview problems, or preview warnings with a
 /// "Save anyway" action ([onSaveAnyway]).
@@ -51,7 +51,7 @@ class SaveErrorBanner extends StatelessWidget {
                       '${l10n.addPreviewRejected}\n${previewProblems(l10n, r.preview).join('\n')}',
                     final TransactionNeedsConfirmation c =>
                       '${l10n.addPreviewWarning}\n${[for (final e in c.preview.warnings) previewErrorText(l10n, e)].join('\n')}',
-                    ApiNotFound(isMissingRoute: false) when editing => '${l10n.addSaveFailed}: ${l10n.editStale}',
+                    _ when editing && isStaleEdit(error) => '${l10n.addSaveFailed}\n${l10n.editStale}',
                     _ => '${l10n.addSaveFailed}: ${describeApiError(l10n, error)}',
                   },
                   style: TextStyle(color: foreground),

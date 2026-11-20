@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -61,15 +63,30 @@ class _Repo extends JournalRepository {
   TransactionPreview previewResult = const TransactionPreview(text: 'ok', unbalanced: []);
   Object? previewError;
 
+  /// Completes the previews (held open to test a save in flight).
+  Completer<void>? previewGate;
+
+  /// What the server lists under an id now (`findById`); an edit checks it
+  /// is still the transaction it started from.
+  JournalItem? listed;
+
+  /// `If-Match` of the last update preview / update.
+  final versions = <String?>[];
+
+  @override
+  Future<JournalItem?> findById(String id, {String? keyword}) async => listed;
+
   @override
   Future<TransactionPreview> preview(CreateTransactionRequest request) async {
     previews.add((null, request));
+    await previewGate?.future;
     return previewResult;
   }
 
   @override
-  Future<TransactionPreview> previewUpdate(String id, CreateTransactionRequest request) async {
+  Future<TransactionPreview> previewUpdate(String id, CreateTransactionRequest request, {String? version}) async {
     previews.add((id, request));
+    versions.add(version);
     if (previewError != null) throw previewError!;
     return previewResult;
   }
@@ -78,8 +95,14 @@ class _Repo extends JournalRepository {
   Future<void> create(CreateTransactionRequest request) async => writes.add((null, request));
 
   @override
-  Future<void> update(String id, CreateTransactionRequest request) async => writes.add((id, request));
+  Future<void> update(String id, CreateTransactionRequest request, {String? version}) async {
+    versions.add(version);
+    writes.add((id, request));
+  }
 }
+
+/// The ledger's "now" in these tests (a fixed ledger clock, not the device's).
+final _ledgerNow = DateTime(2026, 11, 20, 9, 30);
 
 /// Pumps a home page whose "open" button pushes [screen]; the popped value
 /// is stored in the returned list.
@@ -98,6 +121,7 @@ Future<(_Repo, List<Object?>)> _pump(WidgetTester tester, Widget Function() scre
         activeProfileProvider.overrideWithValue(_profile),
         journalRepositoryProvider.overrideWithValue(repo),
         ledgerClockOffsetProvider.overrideWith((ref) async => Duration.zero),
+        ledgerClockProvider.overrideWithValue(() => _ledgerNow),
         pickerAccountsProvider.overrideWith((ref) async => _accounts),
         ledgerOptionsProvider.overrideWith((ref) async => const LedgerOptions({'operating_currency': 'CNY'})),
         commoditiesProvider.overrideWith(
@@ -168,6 +192,7 @@ JournalTransaction _journal({
   List<Map<String, String>> metas = const [],
   List<String> links = const [],
   String flag = '*',
+  String? version,
 }) =>
     JournalItem.fromJson({
           'type': 'Transaction',
@@ -195,6 +220,7 @@ JournalTransaction _journal({
           ],
           'metas': metas,
           'edit_drops_text': false,
+          'version': ?version,
         })
         as JournalTransaction;
 
@@ -329,7 +355,11 @@ void main() {
       links: ['receipt-001'],
       flag: '!',
     );
-    final (repo, results) = await _pump(tester, () => AdvancedEntryScreen(args: AdvancedEntryArgs.edit(tx)));
+    final (repo, results) = await _pump(
+      tester,
+      () => AdvancedEntryScreen(args: AdvancedEntryArgs.edit(EditTarget(tx))),
+    );
+    repo.listed = tx;
     expect(find.text('Edit transaction'), findsOneWidget);
     expect(tester.widget<TextField>(find.byKey(const Key('adv.amount.0'))).controller!.text, '0.0100');
     expect(tester.widget<TextField>(find.byKey(const Key('adv.cost.0'))).controller!.text, '{ 26000 USD }');
@@ -365,7 +395,11 @@ void main() {
       flag: '!',
     );
     final fit = simpleFitFor(tx, _accounts)!;
-    final (repo, results) = await _pump(tester, () => NewTransactionScreen(prefill: EntryPrefill.edit(tx, fit)));
+    final (repo, results) = await _pump(
+      tester,
+      () => NewTransactionScreen(prefill: EntryPrefill.edit(EditTarget(tx), fit)),
+    );
+    repo.listed = tx;
     expect(find.text('Edit transaction'), findsOneWidget);
     expect(find.text('Paid from: Bank'), findsOneWidget);
     expect(tester.widget<Text>(find.byKey(const Key('add.amount'))).data, '¥88.5');
@@ -396,8 +430,9 @@ void main() {
     );
     final (repo, _) = await _pump(
       tester,
-      () => NewTransactionScreen(prefill: EntryPrefill.edit(tx, simpleFitFor(tx, _accounts)!)),
+      () => NewTransactionScreen(prefill: EntryPrefill.edit(EditTarget(tx), simpleFitFor(tx, _accounts)!)),
     );
+    repo.listed = tx;
     await tester.tap(find.byKey(const Key('add.key.backspace')));
     await tester.pump();
     await tester.tap(find.byKey(const Key('add.key.backspace')));
@@ -444,6 +479,7 @@ void main() {
       metas: [
         {'key': 'document', 'value': 'r.pdf'},
       ],
+      links: ['order-1'],
     );
     final (repo, _) = await _pump(tester, () => NewTransactionScreen(prefill: EntryPrefill.copy(tx, simpleFitFor(tx, _accounts)!)));
     expect(find.text('New transaction'), findsOneWidget);
@@ -456,7 +492,8 @@ void main() {
     expect(json['metas'], isEmpty);
     expect(json['payee'], 'Supermarket');
     expect(json['tags'], ['weekly']);
-    expect(request.datetime.year, DateTime.now().year);
+    expect(request.datetime, _ledgerNow, reason: 'dated now by the ledger clock');
+    expect(json['links'], isEmpty);
     expect(request.postings.map((p) => (p.account, '${p.unit!.number}')), [
       ('Expenses:Clothing', '88.5'),
       ('Assets:Bank', '-88.5'),
@@ -465,12 +502,152 @@ void main() {
 
   testWidgets('edit with a stale id: the preview 404 explains and nothing is written', (tester) async {
     final tx = _journal(postings: [('Expenses:Clothing', '1', 'CNY'), ('Assets:Bank', null, 'CNY')]);
-    final (repo, _) = await _pump(tester, () => AdvancedEntryScreen(args: AdvancedEntryArgs.edit(tx)));
+    final (repo, _) = await _pump(tester, () => AdvancedEntryScreen(args: AdvancedEntryArgs.edit(EditTarget(tx))));
+    repo.listed = tx;
     repo.previewError = const ApiNotFound('there is no transaction tx-7 in the ledger');
     await _enter(tester, 'adv.payee', 'Other');
     await tester.tap(find.byKey(const Key('adv.save')));
     await tester.pumpAndSettle();
     expect(repo.writes, isEmpty);
     expect(find.textContaining('its id is out of date'), findsOneWidget);
+  });
+
+  testWidgets('edit of a transaction that changed meanwhile: nothing previewed or written', (tester) async {
+    final tx = _journal(postings: [('Expenses:Clothing', '1', 'CNY'), ('Assets:Bank', null, 'CNY')]);
+    final (repo, _) = await _pump(tester, () => AdvancedEntryScreen(args: AdvancedEntryArgs.edit(EditTarget(tx))));
+    // Another transaction has the id now (ids are places in a file).
+    repo.listed = _journal(postings: [('Expenses:Fees', '5', 'CNY'), ('Assets:Bank', null, 'CNY')]);
+    await _enter(tester, 'adv.payee', 'Other');
+    await tester.tap(find.byKey(const Key('adv.save')));
+    await tester.pumpAndSettle();
+    expect(repo.previews, isEmpty);
+    expect(repo.writes, isEmpty);
+    expect(find.textContaining('its id is out of date'), findsOneWidget);
+  });
+
+  testWidgets('edit with a version: If-Match on the preview and the PUT', (tester) async {
+    final tx = _journal(postings: [('Expenses:Clothing', '1', 'CNY'), ('Assets:Bank', null, 'CNY')], version: 'v-9');
+    final (repo, _) = await _pump(tester, () => AdvancedEntryScreen(args: AdvancedEntryArgs.edit(EditTarget(tx))));
+    repo.listed = tx;
+    await _enter(tester, 'adv.payee', 'Other');
+    await tester.tap(find.byKey(const Key('adv.save')));
+    await tester.pumpAndSettle();
+    expect(repo.versions, ['v-9', 'v-9']);
+    expect(repo.writes.single.$1, 'tx-7');
+  });
+
+  testWidgets('a new account for a posting with unquoted metadata asks first', (tester) async {
+    final tx = _journal(
+      postings: [('Expenses:Clothing', '8', 'CNY'), ('Assets:Bank', '-8', 'CNY')],
+      postingMetas: {
+        0: [
+          {'key': 'lot', 'value': '8'},
+        ],
+      },
+    );
+    final target = EditTarget(tx, bareMetas: const {
+      0: ['lot: 8'],
+    });
+    final (repo, _) = await _pump(tester, () => AdvancedEntryScreen(args: AdvancedEntryArgs.edit(target)));
+    repo.listed = tx;
+    await _pickAccount(tester, 0, 'Expenses:Fees');
+    await tester.tap(find.byKey(const Key('adv.save')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('edit.requote')), findsOneWidget);
+    expect(find.textContaining('Expenses:Clothing: lot: 8'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(repo.previews, isEmpty, reason: 'nothing sent before the user agrees');
+
+    await tester.tap(find.byKey(const Key('adv.save')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('edit.requote.save')));
+    await tester.pumpAndSettle();
+    expect(repo.writes.single.$2.postings.first.account, 'Expenses:Fees');
+  });
+
+  testWidgets('an empty amount cannot balance two commodities', (tester) async {
+    await _pump(tester, () => const AdvancedEntryScreen());
+    await _pickAccount(tester, 0, 'Assets:Bank');
+    await _enter(tester, 'adv.amount.0', '10');
+    await tester.tap(find.byKey(const Key('adv.addPosting')));
+    await tester.pumpAndSettle();
+    await _pickAccount(tester, 2, 'Expenses:Fees');
+    await _enter(tester, 'adv.amount.2', '1');
+    await tester.tap(find.byKey(const Key('adv.commodity.2')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('adv.commodity.2.USD')).last);
+    await tester.pumpAndSettle();
+    await _pickAccount(tester, 1, 'Assets:WeChat'); // its amount stays empty
+    expect(_saveEnabled(tester), isFalse);
+    expect(find.text('An empty amount can only balance one commodity: add a price or a cost, or fill in the amounts'),
+        findsOneWidget);
+  });
+
+  testWidgets('no way out while saving', (tester) async {
+    final (repo, _) = await _pump(tester, () => const AdvancedEntryScreen());
+    repo.previewGate = Completer<void>();
+    await _pickAccount(tester, 0, 'Assets:Bank');
+    await _enter(tester, 'adv.amount.0', '-3');
+    await _pickAccount(tester, 1, 'Expenses:Fees');
+    await tester.tap(find.byKey(const Key('adv.save')));
+    await tester.pump();
+    expect(tester.widget<IconButton>(find.byKey(const Key('adv.close'))).onPressed, isNull);
+    await tester.binding.handlePopRoute(); // system back
+    await tester.pump();
+    expect(find.byType(AdvancedEntryScreen), findsOneWidget);
+    expect(find.text('Discard this entry?'), findsNothing);
+    repo.previewGate!.complete();
+    await tester.pumpAndSettle();
+    expect(repo.writes, hasLength(1));
+    expect(find.byType(AdvancedEntryScreen), findsNothing);
+  });
+
+  testWidgets('simple form: a new category for a posting with unquoted metadata asks first', (tester) async {
+    final tx = _journal(
+      postings: [('Expenses:Clothing', '8', 'CNY'), ('Assets:Bank', '-8', 'CNY')],
+      postingMetas: {
+        0: [
+          {'key': 'lot', 'value': '8'},
+        ],
+      },
+    );
+    final target = EditTarget(tx, bareMetas: const {
+      0: ['lot: 8'],
+    });
+    final (repo, _) = await _pump(
+      tester,
+      () => NewTransactionScreen(prefill: EntryPrefill.edit(target, simpleFitFor(tx, _accounts)!)),
+    );
+    repo.listed = tx;
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Fees')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('edit.requote')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('edit.requote.save')));
+    await tester.pumpAndSettle();
+    expect(repo.writes.single.$2.postings.first.account, 'Expenses:Fees');
+    expect(repo.writes.single.$2.postings.first.metas, [const Meta('lot', '8')]);
+  });
+
+  testWidgets('simple form: no way out while saving', (tester) async {
+    final (repo, _) = await _pump(tester, () => const NewTransactionScreen());
+    repo.previewGate = Completer<void>();
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Clothing')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.key.5')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pump();
+    expect(tester.widget<IconButton>(find.byKey(const Key('add.close'))).onPressed, isNull);
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+    expect(find.byType(NewTransactionScreen), findsOneWidget);
+    expect(find.text('Discard this entry?'), findsNothing);
+    repo.previewGate!.complete();
+    await tester.pumpAndSettle();
+    expect(repo.writes, hasLength(1));
+    expect(find.byType(NewTransactionScreen), findsNothing);
   });
 }

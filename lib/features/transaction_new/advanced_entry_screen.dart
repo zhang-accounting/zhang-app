@@ -21,6 +21,7 @@ import '../journals/widgets/amount_format.dart';
 import 'advanced_draft.dart';
 import 'transaction_edit.dart';
 import 'transaction_history.dart';
+import 'widgets/edit_dialogs.dart';
 import 'widgets/save_error_banner.dart';
 import 'widgets/tags_sheet.dart';
 
@@ -63,6 +64,7 @@ class _PostingRow {
       metas = d.metas,
       originalUnit = d.originalUnit,
       originalScale = d.originalScale,
+      origin = d.origin,
       expanded = d.cost.isNotEmpty || d.price.isNotEmpty || d.comment.isNotEmpty;
 
   final int key;
@@ -75,6 +77,9 @@ class _PostingRow {
   final List<Meta> metas;
   final Amount? originalUnit;
   final int? originalScale;
+
+  /// See [PostingDraft.origin].
+  final int? origin;
 
   /// Cost / price / comment fields shown.
   bool expanded;
@@ -90,6 +95,7 @@ class _PostingRow {
     metas: metas,
     originalUnit: originalUnit,
     originalScale: originalScale,
+    origin: origin,
   );
 
   void dispose() {
@@ -132,6 +138,9 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
   late int _nextKey = 2000;
 
   bool _submitting = false;
+
+  /// The requote question is open.
+  bool _asking = false;
   Object? _error;
   bool _touched = false;
   bool _allowPop = false;
@@ -167,7 +176,11 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     return options.hasError ? null : options.value?.operatingCurrency;
   }
 
-  int? _precisionOf(String commodity) => ref.read(commoditiesProvider).value?[commodity]?.precision;
+  /// Decimals and rounding of a commodity, as the ledger writes it.
+  ({int precision, bool halfDown})? _rules(String commodity) {
+    final c = ref.read(commoditiesProvider).value?[commodity];
+    return c == null ? null : (precision: c.precision, halfDown: c.rounding != 'RoundUp');
+  }
 
   AdvancedDraft _snapshot() {
     final fallback = _defaultCommodity();
@@ -259,32 +272,31 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
 
   /// [acceptWarnings]: the user chose "Save anyway" for preview warnings.
   Future<void> _submit({bool acceptWarnings = false}) async {
-    if (_submitting) return;
+    if (_submitting || _asking) return;
     final draft = _snapshot();
-    if (validateAdvanced(draft, precisionOf: _precisionOf).isNotEmpty) return;
-    final request = buildAdvancedRequest(draft, now: _now(), edit: _editing, precisionOf: _precisionOf);
-    final editId = widget.args?.editId;
+    if (validateAdvanced(draft, rules: _rules).isNotEmpty) return;
+    final request = buildAdvancedRequest(draft, now: _now(), edit: _editing, rules: _rules);
+    final target = widget.args?.target;
+    final editId = target?.id;
     final repository = ref.read(journalRepositoryProvider);
     final history = ref.read(transactionHistoryProvider.notifier);
     final revision = ref.read(ledgerRevisionProvider);
     FocusScope.of(context).unfocus();
+    if (target != null && !acceptWarnings) {
+      final requoted = requotedMetas(target, request, requestOrigins(draft));
+      if (requoted.isNotEmpty) {
+        _asking = true; // the dialog is modal; this also stops a queued second tap
+        final go = await confirmRequotedMetas(context, target, requoted);
+        _asking = false;
+        if (!go || !mounted) return;
+      }
+    }
     setState(() {
       _submitting = true;
       _error = null;
     });
     try {
-      final preview = editId == null
-          ? await repository.preview(request)
-          : await repository.previewUpdate(editId, request);
-      if (preview.isBlocked) throw TransactionRejected(preview);
-      if (!acceptWarnings && preview.warnings.isNotEmpty) {
-        throw TransactionNeedsConfirmation(preview, again: false);
-      }
-      if (editId == null) {
-        await repository.create(request);
-      } else {
-        await repository.update(editId, request);
-      }
+      await saveEntry(repository, request, target: target, acceptWarnings: acceptWarnings);
     } catch (e) {
       if (!mounted) return;
       HapticFeedback.heavyImpact();
@@ -301,7 +313,7 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(editId == null ? l10n.saved : l10n.editSavedSnack)));
-    final saved = EntrySaved(revision: revision, hint: EntrySaved.hintFor(request));
+    final saved = EntrySaved(revision: revision, request: request, hint: EntrySaved.hintFor(request));
     setState(() {
       _submitting = false;
       _allowPop = true;
@@ -344,12 +356,13 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     ref.watch(ledgerOptionsProvider);
     final commodities = ref.watch(commoditiesProvider).value ?? const <String, Commodity>{};
     final draft = _snapshot();
-    final issues = validateAdvanced(draft, precisionOf: _precisionOf);
-    final balance = balanceOf(draft.postings, precisionOf: _precisionOf);
+    final issues = validateAdvanced(draft, rules: _rules);
+    final balance = balanceOf(draft.postings, rules: _rules);
     return PopScope(
-      canPop: _allowPop || !_touched,
+      // Never while saving: the result would be lost (and the screen gone).
+      canPop: !_submitting && (_allowPop || !_touched),
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _confirmDiscard();
+        if (!didPop && !_submitting) _confirmDiscard();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -357,7 +370,7 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
             key: const Key('adv.close'),
             tooltip: l10n.addClose,
             icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: _submitting ? null : () => Navigator.of(context).maybePop(),
           ),
           title: Text(_editing ? l10n.editTransactionTitle : l10n.advTitle),
           actions: [
@@ -528,7 +541,7 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     final hasAmount = row.amount.text.trim().isNotEmpty;
     final invalid = hasAmount && parseAmountInput(row.amount.text) == null;
     final commodity = row.commodity ?? _defaultCommodity();
-    final autoHint = !hasAmount && balance.hasAuto && !balance.indeterminate && balance.remainder.isNotEmpty
+    final autoHint = !hasAmount && balance.hasAuto && !balance.indeterminate && balance.remainder.length == 1
         ? l10n.advAutoTakes(balance.autoAmounts.map((a) => formatAmount(a, commodities, signed: true)).join(', '))
         : l10n.advAuto;
     final codes = {?commodity, ...commodities.keys}.toList();
@@ -786,6 +799,7 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
       AdvancedIssue.amountInvalid => l10n.advIssueAmount,
       AdvancedIssue.commodityMissing => l10n.addHintCommodity,
       AdvancedIssue.tooManyAuto => l10n.advIssueAuto,
+      AdvancedIssue.autoMultipleCommodities => l10n.advIssueAutoCommodities,
       AdvancedIssue.unbalanced => l10n.advIssueUnbalanced,
     };
   }
@@ -797,12 +811,18 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     String amounts(List<Amount> list) => list.map((a) => formatAmount(a, commodities, signed: true)).join(', ');
     final (IconData icon, Color color, String text) = switch (balance) {
       _ when balance.autoCount > 1 => (Icons.error_outline, scheme.error, l10n.advIssueAuto),
+      PostingBalance(autoNeedsOneCommodity: true) => (
+        Icons.error_outline,
+        scheme.error,
+        l10n.advUnbalancedBy(amounts(balance.remainder)),
+      ),
       PostingBalance(indeterminate: true) => (Icons.info_outline, scheme.onSurfaceVariant, l10n.advBalanceUnknown),
       PostingBalance(isBalanced: true) => (Icons.check_circle_outline, scheme.primary, l10n.advBalanced),
       PostingBalance(hasAuto: true) => (Icons.auto_fix_high, scheme.onSurfaceVariant, l10n.advAutoTakes(amounts(balance.autoAmounts))),
       _ => (Icons.cancel_outlined, scheme.error, l10n.advUnbalancedBy(amounts(balance.remainder))),
     };
     final hint = issues.where((i) => i != AdvancedIssue.unbalanced && i != AdvancedIssue.tooManyAuto).firstOrNull;
+    final needsPrice = (balance.isUnbalanced || balance.autoNeedsOneCommodity) && balance.remainder.length > 1;
     final error = _error;
     return Material(
       color: scheme.surfaceContainerLow,
@@ -836,7 +856,7 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
                 ],
               ),
             ),
-            if (balance.isUnbalanced && balance.remainder.length > 1)
+            if (needsPrice)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
                 child: Text(

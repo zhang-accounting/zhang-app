@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,31 +47,73 @@ class TransactionDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _TransactionDetailScreenState extends ConsumerState<TransactionDetailScreen> {
+  /// How long to wait for the server to list a saved edit.
+  static const landTimeout = Duration(seconds: 15);
+
   /// Set once an edit was saved: what it saved (with the ledger revision
-  /// before the write) and the item shown until it is read again.
+  /// before the write) and the item shown until the server lists it.
   ({EntrySaved saved, JournalItem shown})? _edited;
+
+  /// The server listed what was saved ([entryMatches]); from then on the
+  /// screen shows whatever it lists under the id.
+  bool _landed = false;
+
+  /// The saved version did not show up within [landTimeout].
+  bool _timedOut = false;
+  Timer? _timeout;
 
   /// The last version read after the edit (shown while reading again).
   JournalItem? _lastRead;
 
-  /// Checking whether the transaction can be edited.
+  /// Checking whether the transaction can be edited (spinner on the button).
   bool _checking = false;
 
+  /// An edit or a copy is under way: a second tap opens nothing.
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _timeout?.cancel();
+    super.dispose();
+  }
+
   Future<void> _edit(JournalTransaction tx) async {
+    if (_busy) return;
+    _busy = true;
     setState(() => _checking = true);
-    final saved = await editTransaction(
-      context,
-      ref,
-      tx,
-      onChecked: () {
-        if (mounted) setState(() => _checking = false);
-      },
-    );
-    if (!mounted || saved == null) return;
-    setState(() {
-      _edited = (saved: saved, shown: tx);
-      _lastRead = null;
-    });
+    try {
+      final saved = await editTransaction(
+        context,
+        ref,
+        tx,
+        onChecked: () {
+          if (mounted) setState(() => _checking = false);
+        },
+      );
+      if (!mounted || saved == null) return;
+      _timeout?.cancel();
+      _timeout = Timer(landTimeout, () {
+        if (mounted && !_landed) setState(() => _timedOut = true);
+      });
+      setState(() {
+        _edited = (saved: saved, shown: tx);
+        _lastRead = null;
+        _landed = false;
+        _timedOut = false;
+      });
+    } finally {
+      _busy = false;
+    }
+  }
+
+  Future<void> _copy(JournalTransaction tx) async {
+    if (_busy) return;
+    _busy = true;
+    try {
+      await copyTransaction(context, ref, tx);
+    } finally {
+      _busy = false;
+    }
   }
 
   Widget _scaffold(JournalItem item, {bool refreshing = false}) => _DetailScaffold(
@@ -77,7 +121,7 @@ class _TransactionDetailScreenState extends ConsumerState<TransactionDetailScree
     refreshing: refreshing,
     checking: _checking,
     onEdit: item is JournalTransaction && !refreshing ? () => _edit(item) : null,
-    onCopy: item is JournalTransaction ? () => copyTransaction(context, ref, item) : null,
+    onCopy: item is JournalTransaction ? () => _copy(item) : null,
   );
 
   @override
@@ -87,16 +131,26 @@ class _TransactionDetailScreenState extends ConsumerState<TransactionDetailScree
     if (edited != null) {
       final revision = ref.watch(ledgerRevisionProvider);
       final shown = _lastRead ?? edited.shown;
+      // Until the server lists what was saved: the previous version, then
+      // after [landTimeout] an explanation.
+      Widget waiting() => _timedOut
+          ? _MessageScaffold(l10n.trxEditedPending, key: const Key('trx.editedPending'))
+          : _scaffold(shown, refreshing: true);
       // Not reloaded since the write yet: the server still has the old text.
-      if (revision <= edited.saved.revision) return _scaffold(shown, refreshing: true);
+      if (!_landed && revision <= edited.saved.revision) return waiting();
       final fresh = ref.watch(editedTransactionProvider((widget.id, edited.saved.hint, revision)));
       return fresh.when(
         data: (found) {
+          if (!_landed) {
+            // Any reload is not necessarily the one of this write.
+            if (found is! JournalTransaction || !entryMatches(found, edited.saved.request)) return waiting();
+            _landed = true;
+          }
           if (found == null) return _MessageScaffold(l10n.trxEditedNotFound, key: const Key('trx.editedNotFound'));
           _lastRead = found;
           return _scaffold(found);
         },
-        loading: () => _scaffold(shown, refreshing: true),
+        loading: () => _landed ? _scaffold(shown, refreshing: true) : waiting(),
         error: (e, _) => Scaffold(
           appBar: AppBar(title: Text(l10n.trxTitle)),
           body: ErrorView(

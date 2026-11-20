@@ -1,8 +1,14 @@
+import 'dart:convert';
+
 import 'package:decimal/decimal.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../core/utils/dates.dart';
+import '../../data/api/api_exception.dart';
 import '../../data/models/account.dart';
+import '../../data/models/amount.dart';
 import '../../data/models/journal.dart';
+import '../../data/models/transaction_preview.dart';
 import '../../data/models/transaction_request.dart';
 import '../../data/repositories/journal_repository.dart';
 import 'advanced_draft.dart';
@@ -49,34 +55,163 @@ EditBlock? editBlockFor(JournalItem item) {
   return null;
 }
 
-/// [editBlockFor], then what only the server can tell: the update preview
-/// of the transaction unchanged (`POST /api/transactions/{id}/preview`)
-/// must have a text, without posting flags. Throws the API error (a 404 =
-/// the id is out of date).
-Future<EditBlock?> checkEditable(JournalRepository repository, JournalTransaction tx) async {
-  final block = editBlockFor(tx);
-  if (block != null) return block;
-  final preview = await repository.previewUpdate(tx.id, CreateTransactionRequest.fromJournal(tx));
-  final text = preview.text;
-  if (text == null) return EditBlock.unverified;
-  if (hasPostingFlags(text)) return EditBlock.postingFlag;
-  return null;
+/// The transaction an edit starts from, as checked by [checkEditable].
+@immutable
+class EditTarget {
+  const EditTarget(this.tx, {this.bareMetas = const {}});
+
+  /// The transaction as read (the snapshot the edit is made against).
+  final JournalTransaction tx;
+
+  /// Postings (by index) whose metadata has unquoted values (`lot: 8`),
+  /// with those lines as the server writes them.
+  final Map<int, List<String>> bareMetas;
+
+  String get id => tx.id;
+
+  /// Sent as `If-Match` (servers with `version`, zhang PR #818).
+  String? get version => tx.version;
 }
 
+/// Thrown when the transaction being edited is no longer the one the edit
+/// started from (another one has its id now, it was changed or removed).
+class TransactionChanged implements Exception {
+  const TransactionChanged();
+
+  @override
+  String toString() => 'TransactionChanged';
+}
+
+/// Whether [error] means the transaction changed on the server since it was
+/// read: [TransactionChanged], a 404 for its id or a 412 for its `version`.
+bool isStaleEdit(Object error) =>
+    error is TransactionChanged ||
+    (error is ApiNotFound && !error.isMissingRoute) ||
+    (error is ZhangApiException && error.statusCode == 412);
+
+/// A keyword to find [tx] again: its payee, else its narration, else its
+/// first account.
+String? lookupHint(JournalTransaction tx) {
+  if (tx.payee.trim().isNotEmpty) return tx.payee.trim();
+  final narration = tx.narration?.trim() ?? '';
+  if (narration.isNotEmpty) return narration;
+  return tx.postings.isEmpty ? null : tx.postings.first.account;
+}
+
+/// Whether [a] and [b] read the same: everything an edit sends back, and the
+/// `version` when both have one.
+bool sameTransaction(JournalTransaction a, JournalTransaction b) {
+  if (a.version != null && b.version != null && a.version != b.version) return false;
+  if (a.editDropsText != b.editDropsText) return false;
+  return jsonEncode(CreateTransactionRequest.fromJournal(a).toJson()) ==
+      jsonEncode(CreateTransactionRequest.fromJournal(b).toJson());
+}
+
+/// Reads [target] again by id and throws [TransactionChanged] unless the
+/// server still lists the same transaction under it (ids are places in a
+/// file: after another write the id may name another transaction).
+Future<void> verifyUnchanged(JournalRepository repository, JournalTransaction snapshot) async {
+  final fresh = await repository.findById(snapshot.id, keyword: lookupHint(snapshot));
+  if (fresh is! JournalTransaction || !sameTransaction(fresh, snapshot)) throw const TransactionChanged();
+}
+
+/// What [checkEditable] found.
+typedef EditCheck = ({EditBlock? block, EditTarget? target});
+
+/// [editBlockFor], then what only the server can tell: the transaction must
+/// still be listed unchanged under its id ([verifyUnchanged]), and the update
+/// preview of it unchanged (`POST /api/transactions/{id}/preview`, with
+/// `If-Match` when it has a `version`) must have a text, without posting
+/// flags. Throws [TransactionChanged] or the API error (404 / 412 = changed,
+/// see [isStaleEdit]).
+Future<EditCheck> checkEditable(JournalRepository repository, JournalTransaction tx) async {
+  final block = editBlockFor(tx);
+  if (block != null) return (block: block, target: null);
+  await verifyUnchanged(repository, tx);
+  final preview = await repository.previewUpdate(tx.id, CreateTransactionRequest.fromJournal(tx), version: tx.version);
+  final text = preview.text;
+  if (text == null) return (block: EditBlock.unverified, target: null);
+  if (hasPostingFlags(text)) return (block: EditBlock.postingFlag, target: null);
+  return (block: null, target: EditTarget(tx, bareMetas: bareMetaLines(text)));
+}
+
+/// A posting line of a transaction text: optional flag (`*`, `!`, `&`, `?`,
+/// `%`, `#` or `A`–`Z`, zhang's parser) and an account, which starts with a
+/// capital letter (metadata keys start with a lower-case letter or `"`).
+final _postingLine = RegExp(r'^[ \t]+(?:([*!&?%#A-Z])[ \t]+)?[A-Z][^\s:]*:');
+
 /// Whether a transaction [text] (as the server writes it) has a posting
-/// line with its own flag, such as `  ! Assets:Cash -1 CNY`.
-bool hasPostingFlags(String text) {
-  final posting = RegExp(r'^[ \t]+([^\s\w;])[ \t]+[^\s;]*:');
-  return text.split('\n').skip(1).any(posting.hasMatch);
+/// line with its own flag, such as `  ! Assets:Cash -1 CNY` or
+/// `  C Expenses:Food 1 USD`.
+bool hasPostingFlags(String text) =>
+    text.split('\n').skip(1).any((line) => _postingLine.firstMatch(line)?.group(1) != null);
+
+/// The metadata lines with an unquoted value (`lot: 8`, `when: 2026-11-02`)
+/// of each posting (by index) of a transaction [text].
+Map<int, List<String>> bareMetaLines(String text) {
+  final meta = RegExp(r'^[ \t]+(?:"(?:[^"\\]|\\.)*"|[^\s:"]+):[ \t]*(.*)$');
+  final out = <int, List<String>>{};
+  var posting = -1;
+  for (final line in text.split('\n').skip(1)) {
+    if (_postingLine.hasMatch(line)) {
+      posting++;
+      continue;
+    }
+    final value = meta.firstMatch(line)?.group(1)?.trim();
+    if (posting < 0 || value == null || value.isEmpty || value.startsWith('"')) continue;
+    out.putIfAbsent(posting, () => []).add(line.trim());
+  }
+  return out;
+}
+
+/// The posting of [original] the server edits with request posting [index]
+/// of [request] (`original_posting` in zhang's transaction route): the only
+/// one to its account when [request] has only it for that account, else the
+/// only one with its account and units when [request] has only it with
+/// those; `null` when there is no such single pair.
+int? serverMatch(List<JournalPosting> original, List<PostingRequest> request, int index) {
+  final r = request[index];
+  final sameAccount = [
+    for (final (i, p) in original.indexed)
+      if (p.account == r.account) i,
+  ];
+  if (sameAccount.length == 1 && request.where((p) => p.account == r.account).length == 1) return sameAccount.single;
+  final sameUnits = [
+    for (final i in sameAccount)
+      if (original[i].unit == r.unit) i,
+  ];
+  final requestSameUnits = request.where((p) => p.account == r.account && p.unit == r.unit).length;
+  return sameUnits.length == 1 && requestSameUnits == 1 ? sameUnits.single : null;
+}
+
+/// Postings of [target] with unquoted metadata values that [request] does
+/// not give back to them: the server keeps a value unquoted only for the
+/// posting it matches ([serverMatch]), so after an account change `lot: 8`
+/// is written `lot: "8"`. [origins] gives, per request posting, the index of
+/// the posting of [target] it was opened from (`null` = a new one).
+/// Returns the affected postings' metadata lines, by original index.
+Map<int, List<String>> requotedMetas(EditTarget target, CreateTransactionRequest request, List<int?> origins) {
+  final out = <int, List<String>>{};
+  for (final (i, origin) in origins.indexed) {
+    final lines = origin == null ? null : target.bareMetas[origin];
+    if (lines == null || i >= request.postings.length) continue;
+    if (request.postings[i].metas.isEmpty) continue;
+    if (serverMatch(target.tx.postings, request.postings, i) != origin) out[origin!] = lines;
+  }
+  return out;
 }
 
 /// What an editor pops with after saving.
 @immutable
 class EntrySaved {
-  const EntrySaved({required this.revision, this.hint});
+  const EntrySaved({required this.revision, required this.request, this.hint});
 
-  /// `ledgerRevisionProvider` before the write: a later revision includes it.
+  /// `ledgerRevisionProvider` before the write: a later revision may include
+  /// it ([entryMatches] tells).
   final int revision;
+
+  /// What was saved.
+  final CreateTransactionRequest request;
 
   /// A keyword to find the saved transaction again (payee, narration or an
   /// account).
@@ -88,6 +223,33 @@ class EntrySaved {
     if (request.narration.trim().isNotEmpty) return request.narration.trim();
     return request.postings.isEmpty ? null : request.postings.first.account;
   }
+}
+
+/// Whether [read] (as listed after a reload) is what [request] saved:
+/// compared value by value, as the server rewrites the text (metadata
+/// sorted by key, `{150 USD}` → `{ 150 USD }`, `88.50` vs `88.5`). Cost /
+/// price / comment left out of [request] are not compared (the server kept
+/// them).
+bool entryMatches(JournalTransaction read, CreateTransactionRequest request) {
+  List<String> metas(List<Meta> list) => [for (final m in list) '${m.key}\u0000${m.value}']..sort();
+  String? squash(String? text) => text?.replaceAll(RegExp(r'\s+'), '');
+  if (ZhangDates.toNaiveIso(read.datetime) != ZhangDates.toNaiveIso(request.datetime)) return false;
+  if (read.payee != request.payee || (read.narration ?? '') != request.narration) return false;
+  if (read.flag != (request.flag ?? TransactionFlag.complete)) return false;
+  if (!listEquals(read.tags, request.tags) || !listEquals(read.links, request.links)) return false;
+  if (!listEquals(metas(read.metas), metas(request.metas))) return false;
+  if (read.postings.length != request.postings.length) return false;
+  for (final (i, r) in request.postings.indexed) {
+    final p = read.postings[i];
+    if (p.account != r.account || p.unit != r.unit) return false;
+    if (!listEquals(metas(p.metas), metas(r.metas))) return false;
+    final w = p.written;
+    if (w == null) continue;
+    if ((r.sendWritten || r.cost != null) && squash(w.cost) != squash(r.cost)) return false;
+    if ((r.sendWritten || r.price != null) && squash(w.price) != squash(r.price)) return false;
+    if ((r.sendWritten || r.comment != null) && w.comment?.trim() != r.comment?.trim()) return false;
+  }
+  return true;
 }
 
 /// How a two-posting transaction maps onto the simple form (decisions.md
@@ -183,13 +345,15 @@ SimpleFit? simpleFitFor(JournalTransaction tx, List<Account> accounts) {
 }
 
 /// The base of a copy: [tx] as a new transaction – everything but its
-/// metadata (transaction and posting metas such as `document` attachments
-/// or receipt numbers belong to that one entry). The date is set by the
-/// editor (the ledger's "now").
+/// metadata and links (transaction and posting metas such as `document`
+/// attachments or receipt numbers belong to that one entry; links tie
+/// related entries, and a copy is a new one). The date is set by the editor
+/// (the ledger's "now").
 CreateTransactionRequest copyBaseOf(JournalTransaction tx) {
   final full = CreateTransactionRequest.fromJournal(tx);
   return full.copyWith(
     metas: const [],
+    links: const [],
     postings: [
       for (final p in full.postings)
         PostingRequest(
@@ -209,7 +373,9 @@ CreateTransactionRequest copyBaseOf(JournalTransaction tx) {
 /// transaction being edited or copied: each posting of [base] takes the
 /// account and amount of the [built] posting with the same sign and keeps
 /// its own metadata, comment and order; flag, links and transaction metas
-/// stay [base]'s. An amount left as it was keeps its written decimals.
+/// stay [base]'s. An amount left as it was keeps its written decimals; a
+/// payee / narration that only lost surrounding spaces to the form's
+/// trimming is kept as written.
 CreateTransactionRequest overlaySimpleEntry(CreateTransactionRequest base, CreateTransactionRequest built) {
   assert(base.postings.length == 2 && built.postings.length == 2);
   PostingRequest builtFor(PostingRequest original) {
@@ -220,10 +386,11 @@ CreateTransactionRequest overlaySimpleEntry(CreateTransactionRequest base, Creat
     );
   }
 
+  String kept(String written, String typed) => written.trim() == typed ? written : typed;
   return base.copyWith(
     datetime: built.datetime,
-    payee: built.payee,
-    narration: built.narration,
+    payee: kept(base.payee, built.payee),
+    narration: kept(base.narration, built.narration),
     tags: built.tags,
     postings: [
       for (final original in base.postings)
@@ -246,22 +413,22 @@ class EntryPrefill {
   const EntryPrefill({
     required this.fit,
     required this.base,
-    this.editId,
+    this.target,
     this.datetime,
     this.payee = '',
     this.narration = '',
     this.tags = const [],
   });
 
-  /// Edit of [tx] (`PUT` to its id).
-  factory EntryPrefill.edit(JournalTransaction tx, SimpleFit fit) => EntryPrefill(
+  /// Edit of [target] (`PUT` to its id).
+  factory EntryPrefill.edit(EditTarget target, SimpleFit fit) => EntryPrefill(
     fit: fit,
-    base: CreateTransactionRequest.fromJournal(tx),
-    editId: tx.id,
-    datetime: tx.datetime,
-    payee: tx.payee,
-    narration: tx.narration ?? '',
-    tags: tx.tags,
+    base: CreateTransactionRequest.fromJournal(target.tx),
+    target: target,
+    datetime: target.tx.datetime,
+    payee: target.tx.payee,
+    narration: target.tx.narration ?? '',
+    tags: target.tx.tags,
   );
 
   /// Copy of [tx] as a new transaction dated "now".
@@ -279,7 +446,9 @@ class EntryPrefill {
   final CreateTransactionRequest base;
 
   /// Transaction replaced on save; `null` = create.
-  final String? editId;
+  final EditTarget? target;
+
+  String? get editId => target?.id;
 
   /// `null` = the ledger's "now".
   final DateTime? datetime;
@@ -287,17 +456,19 @@ class EntryPrefill {
   final String narration;
   final List<String> tags;
 
-  bool get isEdit => editId != null;
+  bool get isEdit => target != null;
 }
 
 /// What the advanced editor is opened with.
 @immutable
 class AdvancedEntryArgs {
-  const AdvancedEntryArgs({required this.draft, this.editId});
+  const AdvancedEntryArgs({required this.draft, this.target});
 
-  /// Edit of [tx] (`PUT` to its id).
-  factory AdvancedEntryArgs.edit(JournalTransaction tx) =>
-      AdvancedEntryArgs(draft: AdvancedDraft.fromRequest(CreateTransactionRequest.fromJournal(tx)), editId: tx.id);
+  /// Edit of [target] (`PUT` to its id).
+  factory AdvancedEntryArgs.edit(EditTarget target) => AdvancedEntryArgs(
+    draft: AdvancedDraft.fromRequest(CreateTransactionRequest.fromJournal(target.tx)),
+    target: target,
+  );
 
   /// Copy of [tx] as a new transaction dated "now".
   factory AdvancedEntryArgs.copy(JournalTransaction tx) =>
@@ -306,7 +477,38 @@ class AdvancedEntryArgs {
   final AdvancedDraft draft;
 
   /// Transaction replaced on save; `null` = create.
-  final String? editId;
+  final EditTarget? target;
 
-  bool get isEdit => editId != null;
+  String? get editId => target?.id;
+
+  bool get isEdit => target != null;
+}
+
+/// Saves [request] like both editors do: an edit of [target] is first
+/// checked to still be the transaction the edit started from
+/// ([verifyUnchanged]), then previewed and replaced on its id (with
+/// `If-Match` when it has a `version`); anything else is previewed and
+/// created. Throws [TransactionRejected] / [TransactionNeedsConfirmation]
+/// (nothing written), [TransactionChanged] or the API error.
+Future<void> saveEntry(
+  JournalRepository repository,
+  CreateTransactionRequest request, {
+  EditTarget? target,
+  bool acceptWarnings = false,
+  bool again = false,
+}) async {
+  final TransactionPreview preview;
+  if (target == null) {
+    preview = await repository.preview(request);
+  } else {
+    await verifyUnchanged(repository, target.tx);
+    preview = await repository.previewUpdate(target.id, request, version: target.version);
+  }
+  if (preview.isBlocked) throw TransactionRejected(preview);
+  if (!acceptWarnings && preview.warnings.isNotEmpty) throw TransactionNeedsConfirmation(preview, again: again);
+  if (target == null) {
+    await repository.create(request);
+  } else {
+    await repository.update(target.id, request, version: target.version);
+  }
 }

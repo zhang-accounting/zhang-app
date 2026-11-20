@@ -390,7 +390,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get editStale =>
-      'this transaction changed on the server since it was opened (its id is out of date). Go back, refresh the list and open it again.';
+      'This transaction changed on the server since it was opened (its id is out of date or it was edited elsewhere). Go back, refresh the list and open it again.';
+
+  @override
+  String get editRequoteTitle => 'Metadata will be saved as text';
+
+  @override
+  String get editRequoteMessage =>
+      'The server keeps metadata values without quotes (numbers, dates) only on a posting whose account is unchanged. These will be saved in quotes, as text:';
 
   @override
   String get addPreviewRejected => 'Not saved – the ledger would report:';
@@ -572,6 +579,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get advIssueAuto => 'Only one amount may be left empty';
+
+  @override
+  String get advIssueAutoCommodities =>
+      'An empty amount can only balance one commodity: add a price or a cost, or fill in the amounts';
 
   @override
   String get advIssueUnbalanced => 'The postings do not balance';
@@ -831,6 +842,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get trxEditedNotFound =>
       'Saved. The updated transaction could not be found again – it may have moved. Open it again from the list.';
+
+  @override
+  String get trxEditedPending =>
+      'Saved, but the server does not list the change yet. Open the transaction again from the list.';
 
   @override
   String get trxNotFound =>
