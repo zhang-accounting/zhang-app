@@ -11,11 +11,14 @@ import '../../data/models/amount.dart';
 import '../../data/models/commodity.dart';
 import '../../data/models/journal.dart';
 import '../../data/repositories/ledger_data_providers.dart';
+import '../../data/repositories/ledger_revision.dart';
 import '../../l10n/l10n.dart';
 import '../../router.dart';
 import '../documents/widgets/document_sections.dart';
+import '../transaction_new/transaction_edit.dart';
 import 'classify.dart';
 import 'journal_providers.dart';
+import 'transaction_actions.dart';
 import 'transaction_text.dart';
 import 'widgets/amount_format.dart';
 import 'widgets/journal_tile.dart';
@@ -23,10 +26,12 @@ import 'widgets/journal_tile.dart';
 /// Monospace style for full account paths (design §3.2).
 const _mono = TextStyle(fontFamily: 'monospace', fontFamilyFallback: ['Menlo', 'Courier']);
 
-/// S08 (read-only): header, postings with running balances, details and a
-/// "copy as text" action. The item comes from the route `extra`; deep links
-/// fall back to [journalItemByIdProvider].
-class TransactionDetailScreen extends ConsumerWidget {
+/// S08: header, postings with running balances, details, and the actions
+/// edit, copy as a new transaction and copy as text. The item comes from the
+/// route `extra`; deep links fall back to [journalItemByIdProvider]. After
+/// an edit the transaction is read again once the ledger has reloaded (ids
+/// stay with the edited transaction, see docs/zhang-api.md §1.6).
+class TransactionDetailScreen extends ConsumerStatefulWidget {
   const TransactionDetailScreen({super.key, required this.id, this.initial, this.searchHint});
 
   final String id;
@@ -36,39 +41,131 @@ class TransactionDetailScreen extends ConsumerWidget {
   final String? searchHint;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TransactionDetailScreen> createState() => _TransactionDetailScreenState();
+}
+
+class _TransactionDetailScreenState extends ConsumerState<TransactionDetailScreen> {
+  /// Set once an edit was saved: what it saved (with the ledger revision
+  /// before the write) and the item shown until it is read again.
+  ({EntrySaved saved, JournalItem shown})? _edited;
+
+  /// The last version read after the edit (shown while reading again).
+  JournalItem? _lastRead;
+
+  /// Checking whether the transaction can be edited.
+  bool _checking = false;
+
+  Future<void> _edit(JournalTransaction tx) async {
+    setState(() => _checking = true);
+    final saved = await editTransaction(
+      context,
+      ref,
+      tx,
+      onChecked: () {
+        if (mounted) setState(() => _checking = false);
+      },
+    );
+    if (!mounted || saved == null) return;
+    setState(() {
+      _edited = (saved: saved, shown: tx);
+      _lastRead = null;
+    });
+  }
+
+  Widget _scaffold(JournalItem item, {bool refreshing = false}) => _DetailScaffold(
+    item: item,
+    refreshing: refreshing,
+    checking: _checking,
+    onEdit: item is JournalTransaction && !refreshing ? () => _edit(item) : null,
+    onCopy: item is JournalTransaction ? () => copyTransaction(context, ref, item) : null,
+  );
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final item = initial;
-    if (item != null) return _DetailScaffold(item: item);
-    final lookup = ref.watch(journalItemByIdProvider((id, searchHint)));
+    final edited = _edited;
+    if (edited != null) {
+      final revision = ref.watch(ledgerRevisionProvider);
+      final shown = _lastRead ?? edited.shown;
+      // Not reloaded since the write yet: the server still has the old text.
+      if (revision <= edited.saved.revision) return _scaffold(shown, refreshing: true);
+      final fresh = ref.watch(editedTransactionProvider((widget.id, edited.saved.hint, revision)));
+      return fresh.when(
+        data: (found) {
+          if (found == null) return _MessageScaffold(l10n.trxEditedNotFound, key: const Key('trx.editedNotFound'));
+          _lastRead = found;
+          return _scaffold(found);
+        },
+        loading: () => _scaffold(shown, refreshing: true),
+        error: (e, _) => Scaffold(
+          appBar: AppBar(title: Text(l10n.trxTitle)),
+          body: ErrorView(
+            error: e,
+            onRetry: () => ref.invalidate(editedTransactionProvider((widget.id, edited.saved.hint, revision))),
+          ),
+        ),
+      );
+    }
+    final item = widget.initial;
+    if (item != null) return _scaffold(item);
+    final lookup = ref.watch(journalItemByIdProvider((widget.id, widget.searchHint)));
     return lookup.when(
       data: (found) => found == null
-          ? Scaffold(
-              appBar: AppBar(title: Text(l10n.trxTitle)),
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(l10n.trxNotFound, key: const Key('trx.notFound'), textAlign: TextAlign.center),
-                ),
-              ),
-            )
-          : _DetailScaffold(item: found),
+          ? _MessageScaffold(l10n.trxNotFound, key: const Key('trx.notFound'))
+          : _scaffold(found),
       loading: () => Scaffold(
         appBar: AppBar(title: Text(l10n.trxTitle)),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
         appBar: AppBar(title: Text(l10n.trxTitle)),
-        body: ErrorView(error: e, onRetry: () => ref.invalidate(journalItemByIdProvider((id, searchHint)))),
+        body: ErrorView(
+          error: e,
+          onRetry: () => ref.invalidate(journalItemByIdProvider((widget.id, widget.searchHint))),
+        ),
       ),
     );
   }
 }
 
+/// A detail screen that only shows [text] (not found, …).
+class _MessageScaffold extends StatelessWidget {
+  const _MessageScaffold(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(context.l10n.trxTitle)),
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(text, key: const Key('trx.message'), textAlign: TextAlign.center),
+      ),
+    ),
+  );
+}
+
 class _DetailScaffold extends ConsumerWidget {
-  const _DetailScaffold({required this.item});
+  const _DetailScaffold({
+    required this.item,
+    this.onEdit,
+    this.onCopy,
+    this.checking = false,
+    this.refreshing = false,
+  });
 
   final JournalItem item;
+
+  /// Edit / copy as a new transaction (transactions only).
+  final VoidCallback? onEdit;
+  final VoidCallback? onCopy;
+
+  /// The edit check is running.
+  final bool checking;
+
+  /// Shown while the transaction is read again after an edit.
+  final bool refreshing;
 
   Future<void> _copy(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -87,6 +184,22 @@ class _DetailScaffold extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.trxTitle),
         actions: [
+          if (item is JournalTransaction) ...[
+            IconButton(
+              key: const Key('trx.edit'),
+              tooltip: l10n.trxEdit,
+              icon: checking
+                  ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.edit_outlined),
+              onPressed: checking ? null : onEdit,
+            ),
+            IconButton(
+              key: const Key('trx.duplicate'),
+              tooltip: l10n.trxDuplicate,
+              icon: const Icon(Icons.control_point_duplicate),
+              onPressed: onCopy,
+            ),
+          ],
           IconButton(
             key: const Key('trx.copy'),
             tooltip: l10n.trxCopyText,
@@ -94,6 +207,15 @@ class _DetailScaffold extends ConsumerWidget {
             onPressed: () => _copy(context),
           ),
         ],
+        bottom: refreshing
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(4),
+                child: Semantics(
+                  label: l10n.trxRefreshing,
+                  child: const LinearProgressIndicator(key: Key('trx.refreshing')),
+                ),
+              )
+            : null,
       ),
       body: ListView(
         key: const Key('trx.body'),
