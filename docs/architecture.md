@@ -34,6 +34,7 @@ ServerProfile {
 - `bootstrap()` 把 app 放进 `LedgerSessionHost`（`lib/ledger_session.dart`）：每个 active profile 一个独立的 `ProviderContainer`（账本会话）。切换、编辑、删除 active profile 或添加第一个 profile 时新建一个空会话，旧会话在这一帧结束后 dispose：所有 provider——现有的和以后新增的，不论 Future / Notifier / family / autoDispose——都从零开始，加载期间不可能显示或保存上一个账本的账户、payee、金额；旧会话的 API client 被关闭（进行中的请求取消），SSE 断开且不会重连旧服务器。
 - 会话内 `activeProfileProvider` 固定（override 成该会话的 profile），切换只能通过换会话生效，旧会话的 provider 不会转去请求新服务器。
 - 版本门禁在 client 层：`zhangApiClientProvider` 经 `gatedClient`（`lib/data/api/server_gate.dart`）包装，`serverGateProvider`（`/api/info`）证明是 zhang ≥ 0.2 之前只放行 `/api/info`、`/api/auth/status`，其它请求等门禁；旧服务器上一律不发出、直接抛 `ApiServerTooOld`；门禁失败（离线、401）时下一个请求会重新探测。`AppShell` 照旧据此显示「服务器版本过旧」。
+- 门禁是 fail-closed（有意如此）：`/api/info` 一直失败（返回的不是 zhang 的 JSON、反向代理挡了这个路径、5xx、401…）时，除探测外的请求一个都不发，整个 App 读不到也写不了账本。表现：标签页照常显示，每个数据区显示探测的那个错误（`ErrorView`，如「Unexpected response. Is this the address of a zhang server?」、`Server error 502: …`、「Authentication failed (401)…」）并带重试，重试会重新探测；SSE 连不上；设置页（改地址、切换 profile、连接测试）照常可用。
 - 跨会话保留：widget 树（GlobalKey 整体挂到新会话的 scope 下：路由栈、Settings 页面、snackbar 都在，不闪屏）、`GoRouter`、profile 列表（所有会话共用一个 `profilesStoreProvider`，会话结束后才完成的 profile 修改也不会丢）、`bootstrap()` 传入的 overrides（SharedPreferences、secret store…）。
 
 **新 provider 的规则**（照现有写法即可，不需要为切换做任何事）：
