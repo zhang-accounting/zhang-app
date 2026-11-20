@@ -10,7 +10,6 @@ import '../../router.dart';
 import '../accounts/account_detail_screen.dart';
 import '../budgets/budgets_view.dart';
 import 'report_aggregation.dart';
-import 'report_period.dart';
 import 'reports_providers.dart';
 import 'widgets/cashflow_chart.dart';
 import 'widgets/category_breakdown.dart';
@@ -24,7 +23,8 @@ enum ReportsSegment { flows, budgets }
 
 /// Reports tab (S10): period selector, KPI row, income/expense bars with a
 /// net line, and the category breakdown (donut + ranked bars, drill-down);
-/// the Budgets segment (S11) shows [BudgetsView] for the same month.
+/// the Budgets segment (S11) shows [BudgetsView] for the month of the same
+/// period (see `budgetMonthProvider`).
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -47,15 +47,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     await ref.read(reportSummaryProvider(period).future);
   }
 
-  /// Budgets are monthly: entering their segment turns the shared period
-  /// into the month containing it.
-  void _setSegment(ReportsSegment segment) {
-    if (segment == ReportsSegment.budgets) {
-      ref.read(reportPeriodProvider.notifier).setKind(PeriodKind.month);
-    }
-    setState(() => _segment = segment);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -76,7 +67,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   ButtonSegment(value: ReportsSegment.budgets, label: Text(l10n.reportsSegmentBudgets)),
                 ],
                 selected: {_segment},
-                onSelectionChanged: (s) => _setSegment(s.first),
+                onSelectionChanged: (s) => setState(() => _segment = s.first),
               ),
             ),
           ),

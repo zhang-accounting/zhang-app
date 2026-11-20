@@ -25,14 +25,15 @@ import 'widgets/budget_widgets.dart';
 /// and the month's history – assignments and the postings counted toward
 /// the budget (open their transaction).
 class BudgetDetailScreen extends ConsumerWidget {
-  const BudgetDetailScreen({super.key, required this.name, required this.month});
+  const BudgetDetailScreen({super.key, required this.name, this.month});
 
   final String name;
 
-  /// Local midnight of the month's first day.
-  final DateTime month;
+  /// Local midnight of the month's first day; `null` (a malformed link) is
+  /// the ledger's current month.
+  final DateTime? month;
 
-  Future<void> _refresh(WidgetRef ref) async {
+  Future<void> _refresh(WidgetRef ref, DateTime month) async {
     ref.invalidate(budgetDetailProvider((name, month)));
     ref.invalidate(budgetIntervalProvider((name, month)));
     await ref.read(budgetDetailProvider((name, month)).future);
@@ -42,6 +43,8 @@ class BudgetDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final now = ref.watch(ledgerClockProvider)();
+    final month = this.month ?? DateTime(now.year, now.month);
     final detail = ref.watch(budgetDetailProvider((name, month)));
     final history = ref.watch(budgetIntervalProvider((name, month)));
     final commodities = ref.watch(commoditiesProvider).value ?? const <String, Commodity>{};
@@ -65,7 +68,7 @@ class BudgetDetailScreen extends ConsumerWidget {
         ),
       ),
       body: RefreshIndicator(
-        onRefresh: () => _refresh(ref),
+        onRefresh: () => _refresh(ref, month),
         child: ListView(
           key: const Key('budgetDetail.list'),
           physics: const AlwaysScrollableScrollPhysics(),
@@ -81,14 +84,14 @@ class BudgetDetailScreen extends ConsumerWidget {
                 ErrorView(error: e, onRetry: () => ref.invalidate(budgetDetailProvider((name, month)))),
               ],
             ),
-            _SectionTitle(l10n.budgetsHistory),
+            _SectionTitle(l10n.budgetsHistory(monthLabel)),
             ...history.when(
               data: (items) => items.isEmpty
                   ? [
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                         child: Text(
-                          l10n.budgetsNoHistory,
+                          l10n.budgetsNoHistory(monthLabel),
                           key: const Key('budgetDetail.noHistory'),
                           style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),

@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/budget.dart';
@@ -66,7 +67,8 @@ class BudgetProgressBar extends StatelessWidget {
       color: muted ? Theme.of(context).colorScheme.outline : color,
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       semanticsLabel: context.l10n.budgetsProgressLabel,
-      semanticsValue: '${(budget.progress * 100).round()} %',
+      semanticsValue: NumberFormat.percentPattern(Localizations.localeOf(context).toLanguageTag())
+          .format(budget.progress),
     );
   }
 }
@@ -114,8 +116,12 @@ class BudgetTile extends StatelessWidget {
     final available = b.availableAmount.number;
     final muted = theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant);
     final days = daysLeft;
+    // Rounded to the commodity's precision (2 when unknown): the generic
+    // formatter would otherwise print every digit of the division.
     final perDay = !b.closed && days != null && days > 0 && available > Decimal.zero
-        ? (available / Decimal.fromInt(days)).toDecimal(scaleOnInfinitePrecision: 10)
+        ? (available / Decimal.fromInt(days))
+              .toDecimal(scaleOnInfinitePrecision: 10)
+              .round(scale: commodities[currency]?.precision ?? 2)
         : null;
     final status = health == BudgetHealth.over
         ? l10n.budgetsOverBy(fmt(-available))

@@ -44,17 +44,29 @@ class BudgetRepository {
     return detail;
   }
 
-  /// Events (`budgets.events`, type `assign`) and postings on linked
-  /// accounts (`budgets.postings`) of the month, newest first.
+  /// Events (`budgets.events`: `assign` for a `budget-add`, `transfer_out`
+  /// with a negative amount / `transfer_in` for the two sides of a
+  /// `budget-transfer`) and postings on linked accounts (`budgets.postings`)
+  /// of the month, newest first; at the same instant events stay before
+  /// postings, each in query order.
   Future<List<BudgetIntervalItem>> interval(String name, int year, int month) {
     final first = BuiltinQuery.date(DateTime(year, month));
     final params = {'name': name, 'month': first};
     return _client.builtins.batch(
       [BuiltinQuery('budgets.events', params), BuiltinQuery('budgets.postings', params)],
-      (r) => <BudgetIntervalItem>[
-        for (final row in r[0].rows) BudgetEvent.fromQueryRow(row),
-        for (final row in r[1].rows) BudgetPosting(AccountJournalEntry.fromBudgetPosting(row)),
-      ]..sort((a, b) => b.timestamp.compareTo(a.timestamp)),
+      (r) {
+        final items = <BudgetIntervalItem>[
+          for (final row in r[0].rows) BudgetEvent.fromQueryRow(row),
+          for (final row in r[1].rows) BudgetPosting(AccountJournalEntry.fromBudgetPosting(row)),
+        ];
+        // List.sort is not stable: break ties on the original position.
+        final order = List.generate(items.length, (i) => i)
+          ..sort((a, b) {
+            final byTime = items[b].timestamp.compareTo(items[a].timestamp);
+            return byTime != 0 ? byTime : a.compareTo(b);
+          });
+        return [for (final i in order) items[i]];
+      },
     );
   }
 

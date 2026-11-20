@@ -199,7 +199,7 @@ Retired on v0.2 and no longer called: `GET /api/statistic/summary`, `/api/statis
 | `budgets.month` | `month:date` (`YYYY-MM-01`) | `name, alias, category, currency, last_month:date, assigned:amount, activity:decimal, available:amount, closed:bool` | `BudgetRepository.list` |
 | `budgets.budget` | `name` | `name, alias, category, currency, accounts:set, close:date, close_time` (no row = unknown) | `BudgetRepository.get` |
 | `budgets.budget_month` | `name, month` | as `budgets.month` | `BudgetRepository.get` |
-| `budgets.events` | `name, month` | `date, time, timestamp:int, type:str` (`assign`), `amount:amount` | `BudgetRepository.interval` |
+| `budgets.events` | `name, month` | `date, time, timestamp:int, type:str` (`assign` = `budget-add`; `transfer_out` with a negative amount and `transfer_in` = the two sides of a `budget-transfer`), `amount:amount` | `BudgetRepository.interval` |
 | `budgets.postings` | `name, month` | `date, time, timestamp, account, id, payee, narration, units:amount, balance:amount` | `BudgetRepository.interval` |
 
 How the app maps them:

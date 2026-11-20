@@ -533,6 +533,14 @@
   "documentsShare": "Share",
   "documentsOpenOrShare": "Open or share",
   "documentsOpenHint": "Downloads the file and opens the share sheet, where you can open it in another app or save it.",
+  "documentsTooLarge": "This file is larger than {size} MB, too large to download on the phone.",
+  "@documentsTooLarge": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
   "documentsNoPreview": "No preview for this file type",
   "documentsType": "Type",
   "documentsUnknownType": "Unknown",
@@ -564,6 +572,8 @@
   "reportsOpenAccount": "Open account",
   "reportsSegmentFlows": "Income & expense",
   "reportsSegmentBudgets": "Budgets",
+  "budgetsPreviousMonth": "Previous month",
+  "budgetsNextMonth": "Next month",
   "budgetsAssigned": "Assigned",
   "budgetsActivity": "Activity",
   "budgetsAvailable": "Available",
@@ -614,14 +624,35 @@
     }
   },
   "budgetsProgressLabel": "Share of the assigned money spent",
-  "budgetsEmptyTitle": "No budgets this month",
+  "budgetsEmptyTitle": "No budgets in {month}",
+  "@budgetsEmptyTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
   "budgetsEmptyBody": "Budgets are written in the ledger: a budget directive creates one, budget-add assigns money to it for a month, and a budget metadata on an open links an expense account to it.",
   "budgetsReadOnly": "The app shows budgets; change them in the ledger file.",
   "budgetsAssignedHint": "Assigned includes what was left (or overspent) last month.",
   "budgetsLinkedAccounts": "Linked accounts",
   "budgetsNoLinkedAccounts": "No account is linked: add a budget metadata to an open directive.",
-  "budgetsHistory": "This month",
-  "budgetsNoHistory": "Nothing assigned or spent this month",
+  "budgetsHistory": "Assigned and spent in {month}",
+  "@budgetsHistory": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetsNoHistory": "Nothing assigned or spent in {month}",
+  "@budgetsNoHistory": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
   "budgetsEventAssigned": "Assigned",
   "budgetsEventMovedOut": "Moved to another budget",
   "budgetsEventMovedIn": "Moved from another budget",

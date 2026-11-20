@@ -818,6 +818,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get documentsOpenHint => '下载文件后打开系统分享面板，可以用其他 App 打开或保存。';
 
   @override
+  String documentsTooLarge(int size) {
+    return '文件超过 $size MB，太大，不在手机上下载。';
+  }
+
+  @override
   String get documentsNoPreview => '此类文件无法预览';
 
   @override
@@ -911,6 +916,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reportsSegmentBudgets => '预算';
 
   @override
+  String get budgetsPreviousMonth => '上个月';
+
+  @override
+  String get budgetsNextMonth => '下个月';
+
+  @override
   String get budgetsAssigned => '已分配';
 
   @override
@@ -968,7 +979,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get budgetsProgressLabel => '已花费占分配金额的比例';
 
   @override
-  String get budgetsEmptyTitle => '本月没有预算';
+  String budgetsEmptyTitle(String month) {
+    return '$month没有预算';
+  }
 
   @override
   String get budgetsEmptyBody =>
@@ -987,10 +1000,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get budgetsNoLinkedAccounts => '没有关联账户：在 open 指令上加 budget 元数据即可关联。';
 
   @override
-  String get budgetsHistory => '本月明细';
+  String budgetsHistory(String month) {
+    return '$month的分配与花费';
+  }
 
   @override
-  String get budgetsNoHistory => '本月没有分配，也没有花费';
+  String budgetsNoHistory(String month) {
+    return '$month没有分配，也没有花费';
+  }
 
   @override
   String get budgetsEventAssigned => '分配';

@@ -33,6 +33,8 @@ void main() {
     expect(_budget('a', assigned: '100', activity: '80').health, BudgetHealth.ok);
     expect(_budget('a', assigned: '0', activity: '0').health, BudgetHealth.ok);
     expect(_budget('a', assigned: '0', activity: '5').health, BudgetHealth.over);
+    // Overspending carried over from last month.
+    expect(_budget('a', assigned: '-120', activity: '0').health, BudgetHealth.over);
   });
 
   test('progress is activity / assigned, clamped', () {
@@ -41,6 +43,9 @@ void main() {
     expect(_budget('a', assigned: '0', activity: '5').progress, 1);
     expect(_budget('a', assigned: '100', activity: '-5').progress, 0);
     expect(_budget('a', assigned: '0', activity: '0').progress, 0);
+    // Over budget is a full bar, also when only last month was overspent.
+    expect(_budget('a', assigned: '-120', activity: '0').progress, 1);
+    expect(_budget('a', assigned: '100', activity: '-5', available: '-20').progress, 1);
   });
 
   test('groups by category, uncategorized last; over first, then low, then by name; closed last', () {

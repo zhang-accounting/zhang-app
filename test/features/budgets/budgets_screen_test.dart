@@ -75,10 +75,11 @@ void main() {
     final (_, adapter) = await pumpLedgerApp(tester, _route, now: DateTime(2023, 9, 15, 10), builtins: builtins);
     await _openBudgets(tester);
 
-    // The month of the shared period, month stepper only.
+    // The month of the Reports period, month stepper only.
     expect(builtins.callsTo('budgets.month').last.params, {'month': '2023-09-01'});
-    expect(_text(tester, 'reports.periodLabel'), 'September 2023');
+    expect(_text(tester, 'budgets.monthLabel'), 'September 2023');
     expect(_key('reports.periodKind'), findsNothing);
+    expect(tester.widget<IconButton>(_key('budgets.nextMonth')).onPressed, isNull);
 
     // Totals of the month and the days left (15 → 30 September).
     final totals = _key('budgets.totals');
@@ -111,6 +112,7 @@ void main() {
     expect(find.descendant(of: _key('budgetDetail.activity'), matching: find.text('¥88.50')), findsOneWidget);
     expect(_key('budgetDetail.over'), findsNothing);
     expect(find.text('Living'), findsOneWidget); // category chip
+    expect(find.text('Assigned and spent in September 2023'), findsOneWidget);
 
     // History, newest first: the posting (spending, an outflow), then the assignment.
     final posting = _key('budgetDetail.posting.0');
@@ -139,7 +141,7 @@ void main() {
     expect(adapter.requests.any((r) => r.path == '/accounts/Expenses%3AGroceries/journals'), isTrue);
   });
 
-  testWidgets('budgets: over budget, running low, empty month, month shared with income/expense', (tester) async {
+  testWidgets('budgets: over budget, running low, empty month, month of the reports period', (tester) async {
     final builtins = FakeBuiltins({
       'budgets.month': (p) => p['month'] == '2023-09-01'
           ? _month([
@@ -153,13 +155,13 @@ void main() {
     await tester.tap(find.text('Reports'));
     await tester.pumpAndSettle();
 
-    // A year in the income / expense segment becomes its month for budgets.
+    // A year in the income / expense segment shows its current month in budgets.
     await tester.tap(find.descendant(of: _key('reports.periodKind'), matching: find.text('Year')));
     await tester.pumpAndSettle();
     expect(_text(tester, 'reports.periodLabel'), '2023');
     await tester.tap(find.descendant(of: _key('reports.segment'), matching: find.text('Budgets')));
     await tester.pumpAndSettle();
-    expect(_text(tester, 'reports.periodLabel'), 'September 2023');
+    expect(_text(tester, 'budgets.monthLabel'), 'September 2023');
 
     final context = tester.element(_key('budgets.list'));
     final scheme = Theme.of(context).colorScheme;
@@ -184,19 +186,33 @@ void main() {
     expect(tester.getTopLeft(_key('budgets.row.food')).dy, lessThan(tester.getTopLeft(_key('budgets.row.fun')).dy));
 
     // A month without budgets explains the directives.
-    await tester.tap(_key('reports.prevPeriod'));
+    await tester.tap(_key('budgets.prevMonth'));
     await tester.pumpAndSettle();
     expect(builtins.callsTo('budgets.month').last.params, {'month': '2023-08-01'});
     expect(_key('budgets.empty'), findsOneWidget);
-    expect(find.text('No budgets this month'), findsOneWidget);
+    expect(find.text('No budgets in August 2023'), findsOneWidget);
     expect(find.textContaining('budget-add Food 2000 CNY'), findsOneWidget);
     expect(_key('budgets.totals'), findsNothing);
 
-    // The month is shared with the income / expense segment.
-    await tester.tap(find.descendant(of: _key('reports.segment'), matching: find.text('Income & expense')));
+    // The year of the income / expense segment is left as it was.
+    final flows = find.descendant(of: _key('reports.segment'), matching: find.text('Income & expense'));
+    await tester.tap(flows);
+    await tester.pumpAndSettle();
+    expect(_text(tester, 'reports.periodLabel'), '2023');
+
+    // With a month period both segments step together.
+    await tester.tap(find.descendant(of: _key('reports.periodKind'), matching: find.text('Month')));
+    await tester.pumpAndSettle();
+    expect(_text(tester, 'reports.periodLabel'), 'September 2023');
+    await tester.tap(find.descendant(of: _key('reports.segment'), matching: find.text('Budgets')));
+    await tester.pumpAndSettle();
+    expect(_text(tester, 'budgets.monthLabel'), 'September 2023');
+    await tester.tap(_key('budgets.prevMonth'));
+    await tester.pumpAndSettle();
+    expect(_text(tester, 'budgets.monthLabel'), 'August 2023');
+    await tester.tap(flows);
     await tester.pumpAndSettle();
     expect(_text(tester, 'reports.periodLabel'), 'August 2023');
-    expect(_key('reports.periodKind'), findsOneWidget);
     expect(builtins.callsTo('report.flows').last.params['from'], '2023-08-01');
   });
 

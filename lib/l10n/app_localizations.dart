@@ -1538,6 +1538,12 @@ abstract class AppLocalizations {
   /// **'Downloads the file and opens the share sheet, where you can open it in another app or save it.'**
   String get documentsOpenHint;
 
+  /// No description provided for @documentsTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is larger than {size} MB, too large to download on the phone.'**
+  String documentsTooLarge(int size);
+
   /// No description provided for @documentsNoPreview.
   ///
   /// In en, this message translates to:
@@ -1724,6 +1730,18 @@ abstract class AppLocalizations {
   /// **'Budgets'**
   String get reportsSegmentBudgets;
 
+  /// No description provided for @budgetsPreviousMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get budgetsPreviousMonth;
+
+  /// No description provided for @budgetsNextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get budgetsNextMonth;
+
   /// No description provided for @budgetsAssigned.
   ///
   /// In en, this message translates to:
@@ -1799,8 +1817,8 @@ abstract class AppLocalizations {
   /// No description provided for @budgetsEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No budgets this month'**
-  String get budgetsEmptyTitle;
+  /// **'No budgets in {month}'**
+  String budgetsEmptyTitle(String month);
 
   /// No description provided for @budgetsEmptyBody.
   ///
@@ -1835,14 +1853,14 @@ abstract class AppLocalizations {
   /// No description provided for @budgetsHistory.
   ///
   /// In en, this message translates to:
-  /// **'This month'**
-  String get budgetsHistory;
+  /// **'Assigned and spent in {month}'**
+  String budgetsHistory(String month);
 
   /// No description provided for @budgetsNoHistory.
   ///
   /// In en, this message translates to:
-  /// **'Nothing assigned or spent this month'**
-  String get budgetsNoHistory;
+  /// **'Nothing assigned or spent in {month}'**
+  String budgetsNoHistory(String month);
 
   /// No description provided for @budgetsEventAssigned.
   ///

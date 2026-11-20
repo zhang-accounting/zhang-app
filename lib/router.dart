@@ -117,10 +117,10 @@ GoRouter createAppRouter(ValueListenable<bool> hasProfile) {
                   // `/reports/budgets/<YYYY-MM>/<name>`, see budgetDetailLocation().
                   GoRoute(
                     path: 'budgets/:month/:name',
+                    // A malformed month is the ledger's current month.
                     builder: (context, state) => BudgetDetailScreen(
                       name: state.pathParameters['name']!,
-                      month: parseBudgetMonth(state.pathParameters['month']!) ??
-                          DateTime(DateTime.now().year, DateTime.now().month),
+                      month: parseBudgetMonth(state.pathParameters['month']!),
                     ),
                     routes: [JournalRoutes.accountDetailRoute()],
                   ),

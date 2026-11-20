@@ -28,9 +28,11 @@ extension BudgetFigures on Budget {
     return available < assigned * budgetLowShare ? BudgetHealth.low : BudgetHealth.ok;
   }
 
-  /// Activity / assigned, clamped to 0…1 (1 when money was spent without
-  /// any assigned; 0 for refunds).
+  /// Activity / assigned, clamped to 0…1: full whenever the budget is over
+  /// (also when the overspending was carried over from last month), 0 for
+  /// refunds.
   double get progress {
+    if (availableAmount.number < Decimal.zero) return 1;
     final assigned = assignedAmount.number;
     final activity = activityAmount.number;
     if (activity <= Decimal.zero) return 0;

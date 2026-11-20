@@ -844,6 +844,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Downloads the file and opens the share sheet, where you can open it in another app or save it.';
 
   @override
+  String documentsTooLarge(int size) {
+    return 'This file is larger than $size MB, too large to download on the phone.';
+  }
+
+  @override
   String get documentsNoPreview => 'No preview for this file type';
 
   @override
@@ -937,6 +942,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsSegmentBudgets => 'Budgets';
 
   @override
+  String get budgetsPreviousMonth => 'Previous month';
+
+  @override
+  String get budgetsNextMonth => 'Next month';
+
+  @override
   String get budgetsAssigned => 'Assigned';
 
   @override
@@ -995,7 +1006,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get budgetsProgressLabel => 'Share of the assigned money spent';
 
   @override
-  String get budgetsEmptyTitle => 'No budgets this month';
+  String budgetsEmptyTitle(String month) {
+    return 'No budgets in $month';
+  }
 
   @override
   String get budgetsEmptyBody =>
@@ -1017,10 +1030,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'No account is linked: add a budget metadata to an open directive.';
 
   @override
-  String get budgetsHistory => 'This month';
+  String budgetsHistory(String month) {
+    return 'Assigned and spent in $month';
+  }
 
   @override
-  String get budgetsNoHistory => 'Nothing assigned or spent this month';
+  String budgetsNoHistory(String month) {
+    return 'Nothing assigned or spent in $month';
+  }
 
   @override
   String get budgetsEventAssigned => 'Assigned';

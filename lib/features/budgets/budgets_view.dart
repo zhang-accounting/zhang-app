@@ -2,6 +2,7 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../data/models/commodity.dart';
 import '../../data/repositories/ledger_data_providers.dart';
@@ -9,23 +10,24 @@ import '../../l10n/l10n.dart';
 import '../accounts/widgets/amount_format.dart';
 import '../stats/report_period.dart';
 import '../stats/reports_providers.dart';
-import '../stats/widgets/period_selector.dart';
 import '../stats/widgets/report_cards.dart';
 import 'budget_figures.dart';
+import 'budget_month.dart';
 import 'budget_providers.dart';
 import 'budget_routes.dart';
+import 'widgets/budget_month_selector.dart';
 import 'widgets/budget_widgets.dart';
 
-/// Reports › Budgets segment (S11, read-only): month stepper shared with the
-/// income / expense segment, month totals, and the budgets grouped by their
-/// `category` meta with assigned / activity / available and a progress bar.
+/// Reports › Budgets segment (S11, read-only): month stepper (the month of
+/// the Reports period, [budgetMonthProvider]), month totals, and the budgets
+/// grouped by their `category` meta with assigned / activity / available
+/// and a progress bar.
 class BudgetsView extends ConsumerWidget {
   const BudgetsView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final period = ref.watch(reportPeriodProvider);
-    final month = DateTime(period.start.year, period.start.month);
+    final month = ref.watch(budgetMonthProvider);
     final budgets = ref.watch(budgetsProvider(month));
     final commodities = ref.watch(commoditiesProvider).value ?? const <String, Commodity>{};
     final now = ref.watch(reportsClockProvider)();
@@ -39,10 +41,10 @@ class BudgetsView extends ConsumerWidget {
         key: const Key('budgets.list'),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          const PeriodSelector(monthOnly: true),
+          const BudgetMonthSelector(),
           ...budgets.when(
             data: (list) => list.isEmpty
-                ? [const _BudgetsEmpty()]
+                ? [_BudgetsEmpty(month: month)]
                 : [
                     BudgetTotalsCard(totals: budgetTotals(list), commodities: commodities, daysLeft: daysLeft),
                     for (final group in groupBudgets(list)) ...[
@@ -171,7 +173,9 @@ class BudgetTotalsCard extends StatelessWidget {
 /// No budget in the month: what a budget is in the ledger, with an example
 /// in the ledger's syntax (zhang or beancount `custom`).
 class _BudgetsEmpty extends ConsumerWidget {
-  const _BudgetsEmpty();
+  const _BudgetsEmpty({required this.month});
+
+  final DateTime month;
 
   static const _zhangExample = '''2024-01-01 open Expenses:Groceries CNY
   budget: Food
@@ -198,7 +202,11 @@ class _BudgetsEmpty extends ConsumerWidget {
         children: [
           Icon(Icons.savings_outlined, size: 48, color: scheme.primary),
           const SizedBox(height: 12),
-          Text(l10n.budgetsEmptyTitle, style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
+          Text(
+            l10n.budgetsEmptyTitle(DateFormat.yMMMM(Localizations.localeOf(context).toLanguageTag()).format(month)),
+            style: theme.textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 8),
           Text(
             l10n.budgetsEmptyBody,
