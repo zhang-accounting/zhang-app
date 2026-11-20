@@ -45,6 +45,10 @@
 	<!-- Only OS-provided crypto (HTTPS, Keychain); exempt from export compliance. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- The share sheet of a document offers "Save Image" (e.g. a receipt); localised in
+	     en.lproj / zh-Hans.lproj/InfoPlist.strings. -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Zhang saves the documents you choose, such as receipts, to your photo library.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Self-hosted zhang servers are often plain http (LAN / reverse proxy).

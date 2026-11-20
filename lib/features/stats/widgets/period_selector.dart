@@ -5,13 +5,9 @@ import '../../../l10n/l10n.dart';
 import '../report_period.dart';
 import '../reports_providers.dart';
 
-/// Week / month / year / custom selector with ← → stepping. With
-/// [monthOnly] (the budgets segment) only the month stepper is shown; the
-/// period itself is shared with the income / expense segment.
+/// Week / month / year / custom selector with ← → stepping.
 class PeriodSelector extends ConsumerWidget {
-  const PeriodSelector({super.key, this.monthOnly = false});
-
-  final bool monthOnly;
+  const PeriodSelector({super.key});
 
   Future<void> _pickCustom(BuildContext context, WidgetRef ref) async {
     final period = ref.read(reportPeriodProvider);
@@ -42,32 +38,30 @@ class PeriodSelector extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Column(
         children: [
-          if (!monthOnly) ...[
-            SizedBox(
-              width: double.infinity,
-              child: SegmentedButton<PeriodKind>(
-                key: const Key('reports.periodKind'),
-                showSelectedIcon: false,
-                style: const ButtonStyle(visualDensity: VisualDensity.compact),
-                segments: [
-                  ButtonSegment(value: PeriodKind.week, label: Text(l10n.reportsPeriodWeek)),
-                  ButtonSegment(value: PeriodKind.month, label: Text(l10n.reportsPeriodMonth)),
-                  ButtonSegment(value: PeriodKind.year, label: Text(l10n.reportsPeriodYear)),
-                  ButtonSegment(value: PeriodKind.custom, label: Text(l10n.reportsPeriodCustom)),
-                ],
-                selected: {period.kind},
-                onSelectionChanged: (s) {
-                  final kind = s.first;
-                  if (kind == PeriodKind.custom) {
-                    _pickCustom(context, ref);
-                  } else {
-                    notifier.setKind(kind);
-                  }
-                },
-              ),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<PeriodKind>(
+              key: const Key('reports.periodKind'),
+              showSelectedIcon: false,
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
+              segments: [
+                ButtonSegment(value: PeriodKind.week, label: Text(l10n.reportsPeriodWeek)),
+                ButtonSegment(value: PeriodKind.month, label: Text(l10n.reportsPeriodMonth)),
+                ButtonSegment(value: PeriodKind.year, label: Text(l10n.reportsPeriodYear)),
+                ButtonSegment(value: PeriodKind.custom, label: Text(l10n.reportsPeriodCustom)),
+              ],
+              selected: {period.kind},
+              onSelectionChanged: (s) {
+                final kind = s.first;
+                if (kind == PeriodKind.custom) {
+                  _pickCustom(context, ref);
+                } else {
+                  notifier.setKind(kind);
+                }
+              },
             ),
-            const SizedBox(height: 4),
-          ],
+          ),
+          const SizedBox(height: 4),
           Row(
             children: [
               IconButton(
