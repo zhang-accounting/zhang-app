@@ -24,7 +24,7 @@
 ## 上游 zhang API 缺口（需要在 zhang 仓库解决，记录给作者）
 - 缺 `DELETE /api/transactions/:id`（无法做滑动删除 / 撤销）。
 - `POST /api/transactions` 不返回新交易 id（附件上传要绕路）。
-- ~~posting 不支持 cost / price~~：v0.2 已支持写 cost / price / comment / metas（App 尚未使用）。
+- ~~posting 不支持 cost / price~~：v0.2 已支持写 cost / price / comment / metas（高级编辑器与编辑交易已使用；分录 flag 仍读不到、写不了，见 known-issues）。
 - 无幂等键（离线重试可能重复记账）。
 - `/api/journals` 仍不支持按日期 / 账户 / 金额过滤；v0.2 可用 BQL（`POST /api/query`、`postings.between` 等内置查询）代替。
 - 无预算写接口（budget-add / budget-transfer）。
