@@ -1490,6 +1490,96 @@ abstract class AppLocalizations {
   /// **'Account name copied'**
   String get accountsNameCopied;
 
+  /// No description provided for @documentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get documentsTitle;
+
+  /// No description provided for @documentsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 document} other{{count} documents}}'**
+  String documentsCount(int count);
+
+  /// No description provided for @documentsShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all {count}'**
+  String documentsShowAll(int count);
+
+  /// No description provided for @documentsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No documents in this ledger. They come from document directives and from document metadata on transactions.'**
+  String get documentsEmpty;
+
+  /// No description provided for @documentsOfTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction attachment'**
+  String get documentsOfTransaction;
+
+  /// No description provided for @documentsShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get documentsShare;
+
+  /// No description provided for @documentsOpenOrShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Open or share'**
+  String get documentsOpenOrShare;
+
+  /// No description provided for @documentsOpenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads the file and opens the share sheet, where you can open it in another app or save it.'**
+  String get documentsOpenHint;
+
+  /// No description provided for @documentsNoPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'No preview for this file type'**
+  String get documentsNoPreview;
+
+  /// No description provided for @documentsType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get documentsType;
+
+  /// No description provided for @documentsUnknownType.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get documentsUnknownType;
+
+  /// No description provided for @documentsDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get documentsDate;
+
+  /// No description provided for @documentsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get documentsAccount;
+
+  /// No description provided for @documentsAttachedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Belongs to'**
+  String get documentsAttachedTo;
+
+  /// No description provided for @documentsPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Path'**
+  String get documentsPath;
+
   /// No description provided for @reportsPeriodWeek.
   ///
   /// In en, this message translates to:

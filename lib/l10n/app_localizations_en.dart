@@ -808,6 +808,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountsNameCopied => 'Account name copied';
 
   @override
+  String get documentsTitle => 'Documents';
+
+  @override
+  String documentsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count documents',
+      one: '1 document',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String documentsShowAll(int count) {
+    return 'Show all $count';
+  }
+
+  @override
+  String get documentsEmpty =>
+      'No documents in this ledger. They come from document directives and from document metadata on transactions.';
+
+  @override
+  String get documentsOfTransaction => 'Transaction attachment';
+
+  @override
+  String get documentsShare => 'Share';
+
+  @override
+  String get documentsOpenOrShare => 'Open or share';
+
+  @override
+  String get documentsOpenHint =>
+      'Downloads the file and opens the share sheet, where you can open it in another app or save it.';
+
+  @override
+  String get documentsNoPreview => 'No preview for this file type';
+
+  @override
+  String get documentsType => 'Type';
+
+  @override
+  String get documentsUnknownType => 'Unknown';
+
+  @override
+  String get documentsDate => 'Date';
+
+  @override
+  String get documentsAccount => 'Account';
+
+  @override
+  String get documentsAttachedTo => 'Belongs to';
+
+  @override
+  String get documentsPath => 'Path';
+
+  @override
   String get reportsPeriodWeek => 'Week';
 
   @override

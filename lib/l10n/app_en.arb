@@ -511,6 +511,35 @@
   "accountsBalancePad": "Balance pad",
   "accountsCopyName": "Copy account name",
   "accountsNameCopied": "Account name copied",
+  "documentsTitle": "Documents",
+  "documentsCount": "{count, plural, =1{1 document} other{{count} documents}}",
+  "@documentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "documentsShowAll": "Show all {count}",
+  "@documentsShowAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "documentsEmpty": "No documents in this ledger. They come from document directives and from document metadata on transactions.",
+  "documentsOfTransaction": "Transaction attachment",
+  "documentsShare": "Share",
+  "documentsOpenOrShare": "Open or share",
+  "documentsOpenHint": "Downloads the file and opens the share sheet, where you can open it in another app or save it.",
+  "documentsNoPreview": "No preview for this file type",
+  "documentsType": "Type",
+  "documentsUnknownType": "Unknown",
+  "documentsDate": "Date",
+  "documentsAccount": "Account",
+  "documentsAttachedTo": "Belongs to",
+  "documentsPath": "Path",
   "reportsPeriodWeek": "Week",
   "reportsPeriodMonth": "Month",
   "reportsPeriodYear": "Year",

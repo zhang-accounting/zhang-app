@@ -785,6 +785,60 @@ class AppLocalizationsZh extends AppLocalizations {
   String get accountsNameCopied => '已复制账户名';
 
   @override
+  String get documentsTitle => '文档';
+
+  @override
+  String documentsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个文档',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String documentsShowAll(int count) {
+    return '显示全部 $count 个';
+  }
+
+  @override
+  String get documentsEmpty => '账本里还没有文档。文档来自 document 指令，以及交易上的 document 元数据。';
+
+  @override
+  String get documentsOfTransaction => '交易附件';
+
+  @override
+  String get documentsShare => '分享';
+
+  @override
+  String get documentsOpenOrShare => '打开或分享';
+
+  @override
+  String get documentsOpenHint => '下载文件后打开系统分享面板，可以用其他 App 打开或保存。';
+
+  @override
+  String get documentsNoPreview => '此类文件无法预览';
+
+  @override
+  String get documentsType => '类型';
+
+  @override
+  String get documentsUnknownType => '未知';
+
+  @override
+  String get documentsDate => '日期';
+
+  @override
+  String get documentsAccount => '账户';
+
+  @override
+  String get documentsAttachedTo => '所属';
+
+  @override
+  String get documentsPath => '路径';
+
+  @override
   String get reportsPeriodWeek => '周';
 
   @override
