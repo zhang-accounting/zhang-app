@@ -28,8 +28,9 @@ import 'router.dart';
 ///
 /// What outlives a session: the widget tree (the [child] is moved into the
 /// new session's scope, so routes, scroll positions and snackbars stay), the
-/// [GoRouter] (navigation stack), the profile list (the new session is
-/// seeded with the latest [ProfilesState]) and everything the [overrides]
+/// [GoRouter] (navigation stack), the profile list ([profilesStoreProvider]:
+/// one store shared by all sessions, so a profile change that completes
+/// after its session ended still lands) and everything the [overrides]
 /// provide (shared preferences, secret store…). Other app-wide state that
 /// must survive a switch belongs in shared preferences, not in a provider.
 class LedgerSessionHost extends StatefulWidget {
@@ -44,9 +45,8 @@ class LedgerSessionHost extends StatefulWidget {
   /// Profiles loaded before the first frame ([ProfileRepository.load]).
   final ProfilesState initialProfiles;
 
-  /// Applied to every session. Must not override
-  /// [initialProfilesStateProvider], [activeProfileProvider] or
-  /// [routerProvider] (the host does).
+  /// Applied to every session. Must not override [profilesStoreProvider],
+  /// [activeProfileProvider] or [routerProvider] (the host does).
   final List<Override> overrides;
 
   /// Retry policy of every session's container.
@@ -60,6 +60,7 @@ class LedgerSessionHost extends StatefulWidget {
 }
 
 class _LedgerSessionHostState extends State<LedgerSessionHost> {
+  late final _profiles = ValueNotifier<ProfilesState>(widget.initialProfiles)..addListener(_onProfiles);
   late final _hasProfile = ValueNotifier<bool>(widget.initialProfiles.active != null);
   late final GoRouter _router = createAppRouter(_hasProfile);
 
@@ -67,40 +68,45 @@ class _LedgerSessionHostState extends State<LedgerSessionHost> {
   /// instead of rebuilding it.
   final _appKey = GlobalKey(debugLabel: 'ledgerSession.app');
 
-  late _Session _session = _open(widget.initialProfiles);
+  late _Session _session = _open(_profiles.value.active);
 
-  _Session _open(ProfilesState profiles) {
-    final profile = profiles.active;
+  _Session _open(ServerProfile? profile) {
     final container = ProviderContainer(
       overrides: [
         ...widget.overrides,
-        initialProfilesStateProvider.overrideWithValue(profiles),
+        profilesStoreProvider.overrideWithValue(_profiles),
         activeProfileProvider.overrideWithValue(profile),
         routerProvider.overrideWithValue(_router),
       ],
       retry: widget.retry,
     );
-    final session = _Session(container, profile);
-    session.subscription = container.listen<ProfilesState>(profilesProvider, (_, next) {
-      if (identical(_session, session) && next.active != session.profile) _switchTo(next);
-    });
-    return session;
+    return _Session(container, profile);
   }
 
-  void _switchTo(ProfilesState profiles) {
-    final old = _session;
-    old.subscription?.close();
-    setState(() => _session = _open(profiles));
-    _hasProfile.value = profiles.active != null;
+  /// Ended sessions not disposed yet.
+  final _ended = <ProviderContainer>{};
+
+  void _onProfiles() {
+    final active = _profiles.value.active;
+    if (active == _session.profile) return;
+    final old = _session.container;
+    _ended.add(old);
+    setState(() => _session = _open(active));
+    _hasProfile.value = active != null;
     // The widgets move to the new session while this frame builds; the old
     // one goes once nothing listens to it any more.
-    WidgetsBinding.instance.addPostFrameCallback((_) => old.container.dispose());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_ended.remove(old)) old.dispose();
+    });
   }
 
   @override
   void dispose() {
-    _session.subscription?.close();
-    _session.container.dispose();
+    for (final container in [..._ended, _session.container]) {
+      container.dispose();
+    }
+    _ended.clear();
+    _profiles.dispose();
     _router.dispose();
     _hasProfile.dispose();
     super.dispose();
@@ -123,6 +129,4 @@ class _Session {
 
   /// The active profile of this session (`null`: onboarding).
   final ServerProfile? profile;
-
-  ProviderSubscription<ProfilesState>? subscription;
 }

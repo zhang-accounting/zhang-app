@@ -89,7 +89,12 @@ late Map<String, _Server> _servers;
 /// The app as `bootstrap()` builds it – in a `LedgerSessionHost` – with
 /// [active] active and each profile's real, gated client answered by its
 /// fake server.
-Future<AppHost> _pumpHost(WidgetTester tester, {String active = 'p1', bool events = false}) async {
+Future<AppHost> _pumpHost(
+  WidgetTester tester, {
+  String active = 'p1',
+  bool events = false,
+  SecretStore? secrets,
+}) async {
   tester.view.physicalSize = const Size(1170, 2532);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -105,7 +110,7 @@ Future<AppHost> _pumpHost(WidgetTester tester, {String active = 'p1', bool event
     initial: ProfilesState(profiles: const [_family, _work, _old], activeId: active),
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
-      secretStoreProvider.overrideWithValue(InMemorySecretStore()),
+      secretStoreProvider.overrideWithValue(secrets ?? InMemorySecretStore()),
       if (events) ledgerEventsEnabledProvider.overrideWithValue(true),
       zhangApiClientProvider.overrideWith((ref) {
         final profile = ref.watch(activeProfileProvider)!;
@@ -157,6 +162,17 @@ Future<Object?> _errorOf(WidgetTester tester, Future<Object?> future) async {
   }
   expect(done, isTrue);
   return error;
+}
+
+/// Holds `delete` until [hold] completes.
+class _SlowSecrets extends InMemorySecretStore {
+  Completer<void>? hold;
+
+  @override
+  Future<void> delete(String key) async {
+    await hold?.future;
+    return super.delete(key);
+  }
 }
 
 bool _enabled(WidgetTester tester, String key) =>
@@ -270,5 +286,25 @@ void main() {
     await second.read(profilesProvider.notifier).save(_work.copyWith(name: 'Office'));
     await tester.pumpAndSettle();
     expect(identical(app.container, second), isTrue);
+  });
+
+  testWidgets('a profile change still running when its session ends lands in the next one', (tester) async {
+    final secrets = _SlowSecrets();
+    final app = await _pumpHost(tester, secrets: secrets);
+    final first = app.container;
+    secrets.hold = Completer<void>();
+    final deleting = first.read(profilesProvider.notifier).delete('p3');
+    await tester.pump();
+    await first.read(profilesProvider.notifier).activate('p2');
+    await tester.pumpAndSettle();
+    expect(app.container.read(activeProfileProvider), _work);
+    expect(identical(app.container, first), isFalse, reason: 'the first session has ended');
+
+    secrets.hold!.complete();
+    await tester.pumpAndSettle();
+    await deleting;
+    expect(app.container.read(profilesProvider).profiles, [_family, _work]);
+    expect(app.container.read(profilesProvider).activeId, 'p2');
+    expect(app.container.read(activeProfileProvider), _work);
   });
 }

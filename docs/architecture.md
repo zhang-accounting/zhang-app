@@ -34,7 +34,7 @@ ServerProfile {
 - `bootstrap()` 把 app 放进 `LedgerSessionHost`（`lib/ledger_session.dart`）：每个 active profile 一个独立的 `ProviderContainer`（账本会话）。切换、编辑、删除 active profile 或添加第一个 profile 时新建一个空会话，旧会话在这一帧结束后 dispose：所有 provider——现有的和以后新增的，不论 Future / Notifier / family / autoDispose——都从零开始，加载期间不可能显示或保存上一个账本的账户、payee、金额；旧会话的 API client 被关闭（进行中的请求取消），SSE 断开且不会重连旧服务器。
 - 会话内 `activeProfileProvider` 固定（override 成该会话的 profile），切换只能通过换会话生效，旧会话的 provider 不会转去请求新服务器。
 - 版本门禁在 client 层：`zhangApiClientProvider` 经 `gatedClient`（`lib/data/api/server_gate.dart`）包装，`serverGateProvider`（`/api/info`）证明是 zhang ≥ 0.2 之前只放行 `/api/info`、`/api/auth/status`，其它请求等门禁；旧服务器上一律不发出、直接抛 `ApiServerTooOld`；门禁失败（离线、401）时下一个请求会重新探测。`AppShell` 照旧据此显示「服务器版本过旧」。
-- 跨会话保留：widget 树（GlobalKey 整体挂到新会话的 scope 下：路由栈、Settings 页面、snackbar 都在，不闪屏）、`GoRouter`、profile 列表（新会话用最新的 `ProfilesState` 初始化）、`bootstrap()` 传入的 overrides（SharedPreferences、secret store…）。
+- 跨会话保留：widget 树（GlobalKey 整体挂到新会话的 scope 下：路由栈、Settings 页面、snackbar 都在，不闪屏）、`GoRouter`、profile 列表（所有会话共用一个 `profilesStoreProvider`，会话结束后才完成的 profile 修改也不会丢）、`bootstrap()` 传入的 overrides（SharedPreferences、secret store…）。
 
 **新 provider 的规则**（照现有写法即可，不需要为切换做任何事）：
 - 数据 provider 照旧 `ref.watch(ledgerRevisionProvider)` + `ref.watch(<x>RepositoryProvider)`（或 `zhangApiClientProvider`）。它们都属于当前会话，切换后自然是新的，门禁也自动生效。
