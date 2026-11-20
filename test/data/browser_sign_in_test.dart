@@ -4,9 +4,11 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zhang_app/data/api/api_exception.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/auth/browser_sign_in.dart';
+import 'package:zhang_app/data/auth/pkce_servers.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 
 import '../helpers/fake_adapter.dart';
@@ -45,9 +47,15 @@ const _exchangeOk = {
 
 /// A [BrowserSignIn] whose server answers with [handler] and whose "browser"
 /// is [launch]; [requests] collects every request.
-BrowserSignIn _signIn(FakeHandler handler, {WebAuthLauncher? launch, List<RequestOptions>? requests}) => BrowserSignIn(
+BrowserSignIn _signIn(
+  FakeHandler handler, {
+  WebAuthLauncher? launch,
+  List<RequestOptions>? requests,
+  PkceServers? pkceServers,
+}) => BrowserSignIn(
   launch: launch ?? (url, scheme) async => throw StateError('no browser in this test'),
   newSecrets: () => _secrets,
+  pkceServers: pkceServers,
   createClient: (profile) {
     final client = ZhangApiClient(profile);
     client.dio.httpClientAdapter = FakeAdapter((o) {
@@ -371,6 +379,61 @@ void main() {
         );
         await expectLater(signIn.signIn(_base), _failure(kind));
       }
+    });
+  });
+
+  group('app_login_pkce, once seen, is required from then on', () {
+    test('a later status without the flag still needs the state', () async {
+      final servers = PkceServers();
+      var pkce = true;
+      final requests = <RequestOptions>[];
+      final callbacks = [_callback, 'zhang-app://auth/callback?code=$_code'];
+      final signIn = _signIn(
+        (o) => o.uri.path.endsWith('/auth/status') ? jsonResponse(_status(pkce: pkce)) : jsonResponse(_exchangeOk),
+        requests: requests,
+        pkceServers: servers,
+        launch: (url, scheme) async => callbacks.removeAt(0),
+      );
+      expect((await signIn.signIn(_base)).user, 'demo');
+      expect(servers.contains(_base), isTrue);
+
+      pkce = false;
+      requests.clear();
+      await expectLater(signIn.signIn(_base), _failure(BrowserSignInFailure.stateMismatch));
+      expect(requests.map((r) => r.uri.path), ['/api/auth/status'], reason: 'never exchanged');
+    });
+
+    test('also for a sign-in started without a status check (setup wizard)', () async {
+      final servers = PkceServers();
+      await servers.remember('$_base/');
+      final signIn = _signIn(
+        (_) => jsonResponse(_exchangeOk),
+        pkceServers: servers,
+        launch: (url, scheme) async => 'zhang-app://auth/callback?code=$_code',
+      );
+      await expectLater(signIn.startBrowserSignIn(_base, pkce: false), _failure(BrowserSignInFailure.stateMismatch));
+      // Another server is not affected.
+      expect((await signIn.startBrowserSignIn('http://127.0.0.1:18101', pkce: false)).user, 'demo');
+      expect(servers.contains('http://127.0.0.1:18101'), isFalse);
+      // A sign-in told about the flag remembers it.
+      await expectLater(
+        signIn.startBrowserSignIn('http://127.0.0.1:18102', pkce: true),
+        _failure(BrowserSignInFailure.stateMismatch),
+      );
+      expect(servers.contains('http://127.0.0.1:18102'), isTrue);
+    });
+
+    test('kept in SharedPreferences, by base URL', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      await PkceServers(prefs).remember('https://x.com/zhang/');
+      await PkceServers(prefs).remember('https://x.com/zhang');
+      final reloaded = PkceServers(prefs);
+      expect(reloaded.contains('https://x.com/zhang'), isTrue);
+      expect(reloaded.contains('https://x.com/zhang/'), isTrue);
+      expect(reloaded.contains('https://x.com'), isFalse);
+      expect(prefs.getStringList(PkceServers.key), ['https://x.com/zhang']);
     });
   });
 

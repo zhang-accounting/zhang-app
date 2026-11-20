@@ -62,14 +62,18 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
      the user signs in with a passkey or password on zhang's own login page, which then calls
      `POST /api/auth/app/code {"return_to","code_challenge","code_challenge_method","state"}` and navigates to
      `zhang-app://auth/callback?code=<base64url>&state=<state>` (60 s, single use). Only `S256` is accepted; `plain`
-     or another method gets no code (the page shows the server's `400`).
+     or another method gets no code (the page shows the server's `400`). A browser that was signed in already first
+     asks "Sign in to the app as <user>?" with the scheme and host of `return_to` and creates the code only after
+     "Continue" (RFC 8252 §8.6, client impersonation); the app's ephemeral session normally shows the login form.
   3. The app accepts exactly that URL: one well-formed `code`, at most one `state`, nothing else
      (`BrowserSignIn.codeFromCallback`). The `state` must be the one it sent; a missing `state` is accepted only when
-     the server lacks `app_login_pkce` (older servers ignore the extra parameters and echo none). A missing or other
-     `state` → "the browser returned a sign-in this app did not start" (`stateMismatch`), and the code is never
-     exchanged.
+     the server lacks `app_login_pkce` (older servers ignore the extra parameters and echo none) and never reported it
+     before: once a status says `app_login_pkce: true`, the base URL is remembered in shared_preferences
+     (`PkceServers`, `zhang.auth.pkceServers.v1`, not per profile) and a later status without the flag does not relax
+     the check. A missing or other `state` → "the browser returned a sign-in this app did not start"
+     (`stateMismatch`), and the code is never exchanged.
   4. `POST /api/auth/app/exchange {"code","code_verifier"}` (no credentials) → `{"data":{"token","expires_at","user"}}`
-     (servers without `app_login_pkce` ignore `code_verifier`). A code issued with a challenge needs its verifier,
+     (servers without `app_login_pkce` ignore `code_verifier`; empty counts as absent). A code issued with a challenge needs its verifier,
      one issued without refuses a verifier; a missing or wrong verifier is the same `401` as an unknown code and uses
      the code up. `401 {"message":"invalid or expired code"}` → "expired or already used"; `429` + `Retry-After` (5
      failed attempts / 15 min / client, shared with the password login) → "try again in N s" (`ApiRateLimited`).

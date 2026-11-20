@@ -13,7 +13,9 @@ import '../api/endpoints.dart';
 import '../api/zhang_api_client.dart';
 import '../models/auth_status.dart';
 import '../models/json_utils.dart';
+import '../profiles/profile_providers.dart';
 import '../profiles/server_profile.dart';
+import 'pkce_servers.dart';
 
 /// What a successful browser sign-in yields: zhang's session token (sent as
 /// `Authorization: Bearer`), when it stops working and who signed in.
@@ -145,6 +147,7 @@ Future<String> systemBrowserLauncher(String url, String callbackScheme) => Flutt
 ///
 /// 1. `GET /api/auth/status` – sign-in enabled and `app_login` supported?
 ///    `app_login_pkce` – does the server echo `state` and check the verifier?
+///    (remembered per server in [pkceServers]: once seen, always required)
 /// 2. fresh [SignInSecrets]; open
 ///    `<base>/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback&code_challenge=…&code_challenge_method=S256&state=…`
 ///    in the system browser; the user signs in with a passkey or password,
@@ -153,14 +156,17 @@ Future<String> systemBrowserLauncher(String url, String callbackScheme) => Flutt
 ///    without `app_login_pkce` ignores the extra parameters and echoes none),
 /// 4. `POST /api/auth/app/exchange {"code","code_verifier"}` → [SessionGrant].
 ///
-/// Tests inject [launch] (no browser), [createClient] (fake adapter) and
-/// [newSecrets]. Never logs codes, verifiers, states or tokens.
+/// Tests inject [launch] (no browser), [createClient] (fake adapter),
+/// [newSecrets] and [pkceServers]. Never logs codes, verifiers, states or
+/// tokens.
 class BrowserSignIn {
   BrowserSignIn({
     WebAuthLauncher? launch,
     this.createClient = ZhangApiClient.new,
     this.newSecrets = SignInSecrets.generate,
-  }) : launch = launch ?? systemBrowserLauncher;
+    PkceServers? pkceServers,
+  }) : launch = launch ?? systemBrowserLauncher,
+       pkceServers = pkceServers ?? PkceServers();
 
   final WebAuthLauncher launch;
 
@@ -169,6 +175,9 @@ class BrowserSignIn {
 
   /// The secrets of each new sign-in.
   final SignInSecrets Function() newSecrets;
+
+  /// The servers that reported `app_login_pkce: true` before.
+  final PkceServers pkceServers;
 
   static const callbackScheme = 'zhang-app';
   static const callbackUrl = '$callbackScheme://auth/callback';
@@ -238,9 +247,13 @@ class BrowserSignIn {
     return diff == 0;
   }
 
-  /// `GET /api/auth/status` of [baseUrl] (no credentials).
-  Future<AuthStatus> status(String baseUrl, {bool allowSelfSigned = false}) =>
-      _withClient(baseUrl, allowSelfSigned, (client) => client.authStatus());
+  /// `GET /api/auth/status` of [baseUrl] (no credentials); remembers
+  /// `app_login_pkce: true` in [pkceServers].
+  Future<AuthStatus> status(String baseUrl, {bool allowSelfSigned = false}) async {
+    final status = await _withClient(baseUrl, allowSelfSigned, (client) => client.authStatus());
+    if (status.appLoginPkce) await pkceServers.remember(baseUrl);
+    return status;
+  }
 
   /// The whole flow: checks `/api/auth/status` first (throws
   /// [BrowserSignInFailure.notNeeded] / [BrowserSignInFailure.notSupported]),
@@ -254,9 +267,12 @@ class BrowserSignIn {
 
   /// Opens the login page in the system browser and exchanges the returned
   /// code (steps 2–4, no status check). [pkce] is the server's
-  /// `app_login_pkce` (`AuthStatus.appLoginPkce`): then the callback must
-  /// echo the state.
+  /// `app_login_pkce` (`AuthStatus.appLoginPkce`): then, and whenever
+  /// [pkceServers] saw it before for [baseUrl], the callback must echo the
+  /// state.
   Future<SessionGrant> startBrowserSignIn(String baseUrl, {required bool pkce, bool allowSelfSigned = false}) async {
+    if (pkce) await pkceServers.remember(baseUrl);
+    final stateRequired = pkce || pkceServers.contains(baseUrl);
     final secrets = newSecrets();
     final String callback;
     try {
@@ -269,7 +285,7 @@ class BrowserSignIn {
     } catch (e) {
       throw BrowserSignInException(BrowserSignInFailure.browserFailed, detail: '${e.runtimeType}');
     }
-    return completeSignIn(baseUrl, callback, secrets, pkce: pkce, allowSelfSigned: allowSelfSigned);
+    return completeSignIn(baseUrl, callback, secrets, pkce: stateRequired, allowSelfSigned: allowSelfSigned);
   }
 
   /// Steps 3–4 for a callback URL the browser returned to the sign-in of
@@ -355,6 +371,9 @@ class BrowserSignIn {
 /// it to hand back a callback obtained over HTTP instead of a browser.
 final webAuthLauncherProvider = Provider<WebAuthLauncher>((ref) => systemBrowserLauncher);
 
+/// [PkceServers] in the app's [SharedPreferences].
+final pkceServersProvider = Provider<PkceServers>((ref) => PkceServers(ref.watch(sharedPreferencesProvider)));
+
 final browserSignInProvider = Provider<BrowserSignIn>(
-  (ref) => BrowserSignIn(launch: ref.watch(webAuthLauncherProvider)),
+  (ref) => BrowserSignIn(launch: ref.watch(webAuthLauncherProvider), pkceServers: ref.watch(pkceServersProvider)),
 );
