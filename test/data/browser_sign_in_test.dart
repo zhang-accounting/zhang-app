@@ -435,6 +435,28 @@ void main() {
       expect(reloaded.contains('https://x.com'), isFalse);
       expect(prefs.getStringList(PkceServers.key), ['https://x.com/zhang']);
     });
+
+    test('one server, however its base URL is spelled', () async {
+      for (final (spelled, id) in [
+        ('HTTPS://Example.COM:443/zhang/', 'https://example.com/zhang'),
+        ('https://example.com', 'https://example.com'),
+        ('http://Example.com:80//', 'http://example.com'),
+        ('http://example.com:8080/', 'http://example.com:8080'),
+        ('https://example.com:80', 'https://example.com:80'),
+        ('http://example.com:443', 'http://example.com:443'),
+        ('https://example.com/Zhang', 'https://example.com/Zhang'),
+        ('http://[::1]:18580/', 'http://[::1]:18580'),
+        ('  http://127.0.0.1:18100  ', 'http://127.0.0.1:18100'),
+      ]) {
+        expect(PkceServers.serverId(spelled), id, reason: spelled);
+      }
+      final servers = PkceServers();
+      await servers.remember('HTTPS://Example.COM:443/zhang/');
+      expect(servers.contains('https://example.com/zhang'), isTrue);
+      expect(servers.contains('https://example.com:8443/zhang'), isFalse);
+      expect(servers.contains('http://example.com/zhang'), isFalse);
+      expect(servers.contains('https://example.com/Zhang'), isFalse, reason: 'the path keeps its case');
+    });
   });
 
   test('logout posts with the Bearer session; failures are swallowed', () async {

@@ -68,7 +68,8 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
   3. The app accepts exactly that URL: one well-formed `code`, at most one `state`, nothing else
      (`BrowserSignIn.codeFromCallback`). The `state` must be the one it sent; a missing `state` is accepted only when
      the server lacks `app_login_pkce` (older servers ignore the extra parameters and echo none) and never reported it
-     before: once a status says `app_login_pkce: true`, the base URL is remembered in shared_preferences
+     before: once a status says `app_login_pkce: true`, the base URL (scheme and host lower-cased, default port and
+     trailing `/` dropped) is remembered in shared_preferences
      (`PkceServers`, `zhang.auth.pkceServers.v1`, not per profile) and a later status without the flag does not relax
      the check. A missing or other `state` → "the browser returned a sign-in this app did not start"
      (`stateMismatch`), and the code is never exchanged.
