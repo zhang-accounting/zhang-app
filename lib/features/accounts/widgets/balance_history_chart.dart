@@ -5,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/utils/device_clock.dart';
 import '../../../data/models/account.dart';
 import '../../../data/models/commodity.dart';
 import '../../../l10n/l10n.dart';
@@ -74,7 +75,7 @@ class _BalanceHistoryCardState extends State<BalanceHistoryCard> {
               : (codes.isEmpty ? null : codes.first));
     final steps = selected == null
         ? const <BalanceStep>[]
-        : balanceSteps(widget.history, selected, DateTime.now());
+        : balanceSteps(widget.history, selected, deviceNow());
 
     return Card.outlined(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),

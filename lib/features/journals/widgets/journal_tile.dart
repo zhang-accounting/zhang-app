@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/device_clock.dart';
 import '../../../core/utils/money.dart';
 import '../../../data/models/account.dart';
 import '../../../data/models/amount.dart';
@@ -306,7 +307,7 @@ class DayHeader extends ConsumerWidget {
 String dayLabel(BuildContext context, DateTime day, {DateTime? now}) {
   final l10n = context.l10n;
   final locale = Localizations.localeOf(context).toLanguageTag();
-  final today = now ?? DateTime.now();
+  final today = now ?? deviceNow();
   final date = day.year == today.year
       ? DateFormat.MMMEd(locale).format(day)
       : DateFormat.yMMMEd(locale).format(day);

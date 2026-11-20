@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/device_clock.dart';
 import '../api/zhang_api_client.dart';
 import '../models/commodity.dart';
 import '../models/info.dart';
@@ -37,7 +38,7 @@ final ledgerOptionsProvider = FutureProvider<LedgerOptions>((ref) {
 /// per profile. Zero while unknown or when the request fails.
 final ledgerClockOffsetProvider = FutureProvider<Duration>((ref) async {
   final ledgerNow = await ref.watch(ledgerRepositoryProvider).now();
-  return roundClockOffset(ledgerNow.difference(DateTime.now()));
+  return roundClockOffset(ledgerNow.difference(deviceNow()));
 }, retry: (_, _) => null);
 
 /// Rounds a clock offset to the nearest 15 minutes (timezone offsets are
@@ -54,8 +55,8 @@ Duration roundClockOffset(Duration offset) {
 /// is known.
 final ledgerClockProvider = Provider<DateTime Function()>((ref) {
   final offset = ref.watch(ledgerClockOffsetProvider).value ?? Duration.zero;
-  if (offset == Duration.zero) return DateTime.now;
-  return () => DateTime.now().add(offset);
+  if (offset == Duration.zero) return deviceNow;
+  return () => deviceNow().add(offset);
 });
 
 /// Commodities by name – use `commodities[code]?.format(amount)` to format
