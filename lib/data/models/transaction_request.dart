@@ -11,8 +11,25 @@ abstract final class TransactionFlag {
 
 /// A posting in a create/update request. `unit == null` lets the server infer
 /// the balancing amount (at most one such posting per transaction).
+///
+/// [cost], [price] and [comment] are in the ledger's own syntax (as
+/// `written` of a journal posting reads them). In an update the server keeps
+/// a field that is **left out** from the posting it edits (matched by
+/// account), removes it on `null` and writes a value as given; [sendWritten]
+/// sends the three keys even when `null`, so an edit states every one of
+/// them. [metas] are always the posting's whole metadata: posting metadata
+/// left out of an update is dropped.
 class PostingRequest {
-  const PostingRequest({required this.account, this.unit, this.scale});
+  const PostingRequest({
+    required this.account,
+    this.unit,
+    this.scale,
+    this.cost,
+    this.price,
+    this.comment,
+    this.metas = const [],
+    this.sendWritten = false,
+  });
 
   final String account;
   final Amount? unit;
@@ -21,7 +38,38 @@ class PostingRequest {
   /// ledger gets `15.50 CNY` rather than `15.5 CNY`.
   final int? scale;
 
-  Map<String, Object?> toJson() => {'account': account, 'unit': unit?.toJson(minScale: scale)};
+  /// `{150 USD}`, `{{1500 USD}}`, `{}` or `{150 USD, 2024-01-15, "lot"}`.
+  final String? cost;
+
+  /// `@ 6 USD` or `@@ 60 USD`.
+  final String? price;
+
+  /// Comment at the end of the posting line, without the `;`.
+  final String? comment;
+  final List<Meta> metas;
+
+  /// Send [cost], [price] and [comment] even when `null` (see the class doc).
+  final bool sendWritten;
+
+  PostingRequest copyWith({String? account, Amount? unit, int? scale, bool clearUnit = false}) => PostingRequest(
+    account: account ?? this.account,
+    unit: clearUnit ? null : (unit ?? this.unit),
+    scale: clearUnit ? null : (scale ?? this.scale),
+    cost: cost,
+    price: price,
+    comment: comment,
+    metas: metas,
+    sendWritten: sendWritten,
+  );
+
+  Map<String, Object?> toJson() => {
+    'account': account,
+    'unit': unit?.toJson(minScale: scale),
+    if (sendWritten || cost != null) 'cost': cost,
+    if (sendWritten || price != null) 'price': price,
+    if (sendWritten || comment != null) 'comment': comment,
+    if (metas.isNotEmpty) 'metas': [for (final m in metas) m.toJson()],
+  };
 }
 
 /// Body of `POST /api/transactions` and `PUT /api/transactions/{id}`.
@@ -48,10 +96,11 @@ class CreateTransactionRequest {
   });
 
   /// Starting point for a safe edit (`PUT`): copies payee, narration, flag,
-  /// tags, links, metas (incl. `document` entries) and the *written* posting
-  /// units of [tx], so nothing is lost when only some fields change. Posting
-  /// cost / price / comment are not sent; the server keeps them when the keys
-  /// are omitted.
+  /// tags, links, metas (incl. `document` entries) and, per posting, the
+  /// *written* unit (with its decimals), metadata and the cost / price /
+  /// comment as written, so nothing is lost when only some fields change.
+  /// Only valid for a transaction whose postings report `written` and
+  /// `metas` (see `editBlockFor` in the edit feature).
   factory CreateTransactionRequest.fromJournal(JournalTransaction tx) =>
       CreateTransactionRequest(
         datetime: tx.datetime,
@@ -59,7 +108,17 @@ class CreateTransactionRequest {
         narration: tx.narration ?? '',
         flag: tx.flag,
         postings: [
-          for (final p in tx.postings) PostingRequest(account: p.account, unit: p.unit),
+          for (final p in tx.postings)
+            PostingRequest(
+              account: p.account,
+              unit: p.unit,
+              scale: p.unitScale,
+              cost: p.written?.cost,
+              price: p.written?.price,
+              comment: p.written?.comment,
+              metas: p.metas,
+              sendWritten: p.written != null,
+            ),
         ],
         metas: tx.metas,
         tags: tx.tags,

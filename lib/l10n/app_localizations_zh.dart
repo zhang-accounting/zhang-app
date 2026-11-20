@@ -31,6 +31,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get newTransactionTitle => '记一笔';
 
   @override
+  String get editTransactionTitle => '编辑交易';
+
+  @override
+  String get advTitle => '记一笔（高级）';
+
+  @override
   String get settingsTitle => '设置';
 
   @override
@@ -249,6 +255,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addModeTransfer => '转账';
 
   @override
+  String get addModeAdvanced => '高级';
+
+  @override
   String get addClose => '关闭';
 
   @override
@@ -363,7 +372,20 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get editSavedSnack => '已保存修改';
+
+  @override
   String get addSaveFailed => '未能保存';
+
+  @override
+  String get editStale => '这笔交易打开后在服务器上已变化（id 已过期或在别处被修改）。请返回、刷新列表后重新打开。';
+
+  @override
+  String get editRequoteTitle => '元数据将保存为文本';
+
+  @override
+  String get editRequoteMessage =>
+      '服务器只在分录账户不变时保留不带引号的元数据值（数字、日期）。以下值将加上引号、保存为文本：';
 
   @override
   String get addPreviewRejected => '未保存——账本会报告以下问题：';
@@ -454,6 +476,100 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get addTypeExpenses => '支出';
+
+  @override
+  String get advAccount => '分录账户';
+
+  @override
+  String get advAuto => '留空 = 自动配平';
+
+  @override
+  String advAutoTakes(String amounts) {
+    return '留空的金额自动配平为 $amounts';
+  }
+
+  @override
+  String get advToggleSign => '切换正负';
+
+  @override
+  String get advCost => '成本';
+
+  @override
+  String get advCostHint => '如 26000 USD';
+
+  @override
+  String get advPrice => '价格';
+
+  @override
+  String get advPriceHint => '如 7.2 CNY';
+
+  @override
+  String get advComment => '注释';
+
+  @override
+  String get advMoreFields => '成本、价格、注释';
+
+  @override
+  String get advMoveUp => '上移';
+
+  @override
+  String get advMoveDown => '下移';
+
+  @override
+  String get advRemovePosting => '删除分录';
+
+  @override
+  String get advAddPosting => '添加分录';
+
+  @override
+  String get advAddMeta => '添加元数据';
+
+  @override
+  String get advMetaKey => '键';
+
+  @override
+  String get advMetaValue => '值';
+
+  @override
+  String get advLinksHint => '^trip-2026，多个用空格分隔';
+
+  @override
+  String get advFlagComplete => '已确认';
+
+  @override
+  String get advRemainder => '余差';
+
+  @override
+  String get advBalanced => '已平衡';
+
+  @override
+  String advUnbalancedBy(String amounts) {
+    return '相差 $amounts';
+  }
+
+  @override
+  String get advBalanceUnknown => '保存时由服务器检查（成本按持仓批次计算）';
+
+  @override
+  String get advNeedsPrice => '涉及多种商品：请填写价格或成本进行换算，或留空一条金额自动配平。';
+
+  @override
+  String get advIssuePostings => '至少需要两条分录';
+
+  @override
+  String get advIssueAccount => '每条分录都要选择账户';
+
+  @override
+  String get advIssueAmount => '不是有效的数字';
+
+  @override
+  String get advIssueAuto => '最多只能留空一条金额';
+
+  @override
+  String get advIssueAutoCommodities => '留空的金额只能配平一种商品：请填写价格或成本，或填上各条金额';
+
+  @override
+  String get advIssueUnbalanced => '分录不平衡';
 
   @override
   String get homeExpense => '支出';
@@ -661,7 +777,53 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trxCopied => '已复制到剪贴板';
 
   @override
+  String get trxEdit => '编辑';
+
+  @override
+  String get trxDuplicate => '复制为新交易';
+
+  @override
+  String get trxEditBlockedTitle => '无法在 App 里编辑这笔交易';
+
+  @override
+  String get trxEditBlockedNotTransaction => '余额断言和 pad 不能在 App 里编辑。';
+
+  @override
+  String get trxEditBlockedUnknownShape =>
+      '服务器没有返回编辑时必须保留的全部信息（分录元数据、注释）。请升级 zhang 后再在 App 里编辑。';
+
+  @override
+  String get trxEditBlockedNotWritten => '这笔交易由插件生成，或无法读取分录在账本里的原文，不能通过服务器编辑。';
+
+  @override
+  String get trxEditBlockedDropsText =>
+      '这笔交易在账本文件里带有注释（分录之间、首行或元数据之后），通过服务器保存会删除这些注释。请直接在账本文件里修改。';
+
+  @override
+  String get trxEditBlockedPostingFlag =>
+      '这笔交易的某条分录带有自己的标记（如 !）。服务器不返回分录标记，编辑可能把它丢掉。请直接在账本文件里修改。';
+
+  @override
+  String get trxEditBlockedUnverified =>
+      '服务器报告这笔交易本身有问题，App 无法确认编辑会完整保留它。请先在账本文件里修正。';
+
+  @override
+  String get trxEditCopyHint => '仍可以把它复制为新交易。';
+
+  @override
+  String get trxRefreshing => '正在更新…';
+
+  @override
+  String get trxEditedNotFound => '已保存，但找不到更新后的交易（可能已移动）。请从列表重新打开。';
+
+  @override
+  String get trxEditedPending => '已保存，但服务器暂时还没有显示这次修改。请从列表重新打开这笔交易。';
+
+  @override
   String get trxNotFound => '找不到这笔交易。账本重载后 id 会变化，请从列表重新打开。';
+
+  @override
+  String get trxChanged => '这笔交易在列表加载后已变化，请从列表重新打开。';
 
   @override
   String get trxUnbalanced => '这笔交易不平衡。';

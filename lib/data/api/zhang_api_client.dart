@@ -96,8 +96,9 @@ class ZhangApiClient {
   Future<T> get<T>(String path, {Map<String, Object?>? query, required DataDecoder<T> decode}) =>
       _json('GET', path, query: query, decode: decode);
 
-  Future<T> post<T>(String path, {Object? body, required DataDecoder<T> decode}) =>
-      _json('POST', path, body: body, decode: decode);
+  /// [headers] are added to this request (e.g. `If-Match`).
+  Future<T> post<T>(String path, {Object? body, Map<String, String>? headers, required DataDecoder<T> decode}) =>
+      _json('POST', path, body: body, headers: headers, decode: decode);
 
   Future<T> put<T>(String path, {Object? body, required DataDecoder<T> decode}) =>
       _json('PUT', path, body: body, decode: decode);
@@ -105,8 +106,14 @@ class ZhangApiClient {
   /// For endpoints whose result is irrelevant: `201` with empty body, or
   /// `200 {"data":"Ok"}` / `{"data":null}`. A non-JSON `200` (the server's
   /// text fallback for unknown paths) is still an [ApiParseError].
-  Future<void> send(String method, String path, {Object? body, Map<String, Object?>? query}) async {
-    final res = await _send(method, path, body: body, query: query);
+  Future<void> send(
+    String method,
+    String path, {
+    Object? body,
+    Map<String, Object?>? query,
+    Map<String, String>? headers,
+  }) async {
+    final res = await _send(method, path, body: body, query: query, headers: headers);
     final data = res.data;
     if (data == null || (data is String && data.isEmpty) || data is Map) return;
     if (res.statusCode == 201 || res.statusCode == 204) return;
@@ -161,9 +168,10 @@ class ZhangApiClient {
     String path, {
     Object? body,
     Map<String, Object?>? query,
+    Map<String, String>? headers,
     required DataDecoder<T> decode,
   }) async {
-    final res = await _send(method, path, body: body, query: query);
+    final res = await _send(method, path, body: body, query: query, headers: headers);
     final inner = unwrapEnvelope(res);
     try {
       return decode(inner);
@@ -182,6 +190,7 @@ class ZhangApiClient {
     ResponseType? responseType,
     CancelToken? cancelToken,
     ProgressCallback? onReceiveProgress,
+    Map<String, String>? headers,
   }) async {
     try {
       return await dio.request<Object?>(
@@ -195,6 +204,7 @@ class ZhangApiClient {
               },
         options: Options(
           method: method,
+          headers: headers,
           responseType: responseType,
           contentType: body == null ? null : Headers.jsonContentType,
         ),

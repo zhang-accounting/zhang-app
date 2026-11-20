@@ -22,6 +22,7 @@ abstract final class ZhangEndpoints {
 
   static String builtinQuery(String name) => '$builtinQueries/${_s(name)}';
   static String transaction(String id) => '/transactions/${_s(id)}';
+  static String transactionUpdatePreview(String id) => '${transaction(id)}/preview';
   static String account(String name) => '/accounts/${_s(name)}';
   static String accountJournals(String name) => '${account(name)}/journals';
 

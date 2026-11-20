@@ -13,6 +13,8 @@
     "description": "Label of the centre FAB that records a new transaction"
   },
   "newTransactionTitle": "New transaction",
+  "editTransactionTitle": "Edit transaction",
+  "advTitle": "New transaction (advanced)",
   "settingsTitle": "Settings",
   "comingSoon": "Coming soon",
   "activeLedger": "Ledger: {name}",
@@ -148,6 +150,7 @@
   "addModeExpense": "Expense",
   "addModeIncome": "Income",
   "addModeTransfer": "Transfer",
+  "addModeAdvanced": "Advanced",
   "addClose": "Close",
   "addSubcategory": "Sub-category",
   "addSubcategoryRequired": "required",
@@ -211,7 +214,11 @@
       }
     }
   },
+  "editSavedSnack": "Changes saved",
   "addSaveFailed": "Could not save",
+  "editStale": "This transaction changed on the server since it was opened (its id is out of date or it was edited elsewhere). Go back, refresh the list and open it again.",
+  "editRequoteTitle": "Metadata will be saved as text",
+  "editRequoteMessage": "The server keeps metadata values without quotes (numbers, dates) only on a posting whose account is unchanged. These will be saved in quotes, as text:",
   "addPreviewRejected": "Not saved – the ledger would report:",
   "addPreviewUnbalanced": "The postings do not balance (off by {amounts}).",
   "@addPreviewUnbalanced": {
@@ -283,6 +290,50 @@
   "addTypeEquity": "Equity",
   "addTypeIncome": "Income",
   "addTypeExpenses": "Expenses",
+  "advAccount": "Posting account",
+  "advAuto": "empty = auto-balance",
+  "advAutoTakes": "Empty amount takes {amounts}",
+  "@advAutoTakes": {
+    "placeholders": {
+      "amounts": {
+        "type": "String"
+      }
+    }
+  },
+  "advToggleSign": "Toggle sign",
+  "advCost": "Cost",
+  "advCostHint": "e.g. 26000 USD",
+  "advPrice": "Price",
+  "advPriceHint": "e.g. 7.2 CNY",
+  "advComment": "Comment",
+  "advMoreFields": "Cost, price, comment",
+  "advMoveUp": "Move up",
+  "advMoveDown": "Move down",
+  "advRemovePosting": "Remove posting",
+  "advAddPosting": "Add posting",
+  "advAddMeta": "Add metadata",
+  "advMetaKey": "Key",
+  "advMetaValue": "Value",
+  "advLinksHint": "^trip-2026, separated by spaces",
+  "advFlagComplete": "Complete",
+  "advRemainder": "Remainder",
+  "advBalanced": "Balanced",
+  "advUnbalancedBy": "Off by {amounts}",
+  "@advUnbalancedBy": {
+    "placeholders": {
+      "amounts": {
+        "type": "String"
+      }
+    }
+  },
+  "advBalanceUnknown": "Checked by the server when saving (cost booked against lots)",
+  "advNeedsPrice": "Several commodities: add a price or a cost to convert them, or leave one amount empty.",
+  "advIssuePostings": "Add at least two postings",
+  "advIssueAccount": "Choose an account for every posting",
+  "advIssueAmount": "Not a number",
+  "advIssueAuto": "Only one amount may be left empty",
+  "advIssueAutoCommodities": "An empty amount can only balance one commodity: add a price or a cost, or fill in the amounts",
+  "advIssueUnbalanced": "The postings do not balance",
   "homeExpense": "Expenses",
   "homeIncome": "Income",
   "homeNet": "Net",
@@ -427,7 +478,21 @@
   },
   "trxCopyText": "Copy as text",
   "trxCopied": "Copied to clipboard",
+  "trxEdit": "Edit",
+  "trxDuplicate": "Copy as new transaction",
+  "trxEditBlockedTitle": "This transaction can't be edited here",
+  "trxEditBlockedNotTransaction": "Balance checks and pads can't be edited in the app.",
+  "trxEditBlockedUnknownShape": "This server does not report everything an edit has to keep (posting metadata, comments). Update zhang to edit transactions in the app.",
+  "trxEditBlockedNotWritten": "This transaction was made by a plugin, or its postings can't be read as they are written, so it can't be edited through the server.",
+  "trxEditBlockedDropsText": "This transaction has comments in the ledger file (between its postings, on its first line or after metadata) that saving through the server would delete. Edit it in the ledger file instead.",
+  "trxEditBlockedPostingFlag": "A posting of this transaction has its own flag (such as !). The server does not report posting flags, so an edit could drop it. Edit it in the ledger file instead.",
+  "trxEditBlockedUnverified": "The server reports problems with this transaction as it is written, so the app can't check that an edit would keep everything. Fix it in the ledger file first.",
+  "trxEditCopyHint": "You can still copy it as a new transaction.",
+  "trxRefreshing": "Updating…",
+  "trxEditedNotFound": "Saved. The updated transaction could not be found again – it may have moved. Open it again from the list.",
+  "trxEditedPending": "Saved, but the server does not list the change yet. Open the transaction again from the list.",
   "trxNotFound": "Transaction not found. Ids change when the ledger reloads – open it again from the list.",
+  "trxChanged": "This transaction changed since the list was loaded – open it again from the list.",
   "trxUnbalanced": "This transaction does not balance.",
   "trxFilterByTag": "Show transactions tagged #{tag}",
   "@trxFilterByTag": {

@@ -27,7 +27,7 @@ String formatDecimal(
   bool halfDown = false,
 }) {
   final digits = precision ?? (value.scale > 2 ? value.scale : 2);
-  final rounded = halfDown ? _roundHalfDown(value, digits) : value.round(scale: digits);
+  final rounded = roundDecimal(value, digits, halfDown: halfDown);
   var text = rounded.abs().toStringAsFixed(digits);
   if (grouping) {
     final dot = text.indexOf('.');
@@ -40,6 +40,12 @@ String formatDecimal(
   if (signed && value > Decimal.zero && !isZero) return '+$text';
   return text;
 }
+
+/// Rounds [value] to [scale] decimals like zhang: ties away from zero
+/// (`RoundUp` = bigdecimal `HalfUp`), or towards zero with [halfDown]
+/// (`RoundDown` = `HalfDown`, zhang's default).
+Decimal roundDecimal(Decimal value, int scale, {bool halfDown = false}) =>
+    halfDown ? _roundHalfDown(value, scale) : value.round(scale: scale);
 
 Decimal _roundHalfDown(Decimal value, int scale) {
   final truncated = value.truncate(scale: scale);

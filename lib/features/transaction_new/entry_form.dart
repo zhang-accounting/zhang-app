@@ -5,6 +5,7 @@ import 'amount_expression.dart';
 import 'category_tree.dart';
 import 'entry_mode.dart';
 import 'payee_autofill.dart';
+import 'transaction_edit.dart';
 import 'transaction_history.dart';
 
 const _unset = Object();
@@ -53,6 +54,28 @@ class EntryForm {
   /// Chosen date-time; `null` = "now" at save time.
   final DateTime? date;
   final List<String> tags;
+
+  /// The form for an edit or a copy of a transaction that fits the simple
+  /// modes ([fit]): its mode, accounts and amount, [date] (`null` = now) and
+  /// [tags]. The category tile is derived from the account name until
+  /// [withCategoryAccount] places it in the loaded grid.
+  factory EntryForm.prefilled(SimpleFit fit, {DateTime? date, List<String> tags = const []}) {
+    final category = fit.category;
+    final segments = category?.split(':');
+    return EntryForm(
+      mode: fit.mode,
+      amount: AmountExpression.number(fit.amount),
+      commodity: fit.commodity,
+      category: segments?.take(2).join(':'),
+      subcategory: segments != null && segments.length > 2 ? category : null,
+      funding: fit.funding,
+      fundingExplicit: fit.funding != null,
+      from: fit.from,
+      to: fit.to,
+      date: date,
+      tags: List.unmodifiable(tags),
+    );
+  }
 
   /// The category posting account: the sub-category, else the tile itself
   /// unless it requires a sub-category.
@@ -111,6 +134,18 @@ class EntryForm {
     if (node.name == category) return this;
     final onlyChild = node.requiresSubcategory && node.children.length == 1 ? node.children.single.name : null;
     return _copy(category: node.name, categoryRequiresSub: node.requiresSubcategory, subcategory: onlyChild);
+  }
+
+  /// Selects the tile (and chip) of the category posting [account] in
+  /// [tree]; unchanged when the grid does not show it.
+  EntryForm withCategoryAccount(String account, CategoryTree tree) {
+    final location = tree.locate(account);
+    if (location == null) return this;
+    return _copy(
+      category: location.category.name,
+      categoryRequiresSub: location.category.requiresSubcategory,
+      subcategory: location.subcategory?.name,
+    );
   }
 
   /// Selects / toggles a sub-category chip (cannot be cleared when required).

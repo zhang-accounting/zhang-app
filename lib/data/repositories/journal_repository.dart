@@ -136,12 +136,52 @@ class JournalRepository {
   Future<TransactionPreview> preview(CreateTransactionRequest request) =>
       _client.post(ZhangEndpoints.transactionPreview, body: request.toJson(), decode: TransactionPreview.fromJson);
 
-  /// `PUT /api/transactions/{id}` – replaces the whole transaction. Build
-  /// [request] with `CreateTransactionRequest.fromJournal` so tags, links,
-  /// metas and written units are preserved.
-  Future<void> update(String id, CreateTransactionRequest request) async {
-    await _client.send('PUT', ZhangEndpoints.transaction(id), body: request.toJson());
+  /// `POST /api/transactions/{id}/preview` – [preview] for an edit: checks
+  /// [request] in place of the transaction [id] it would replace (404 when
+  /// the id is stale, 400 for a transaction a plugin made, 412 when
+  /// [version] no longer matches).
+  Future<TransactionPreview> previewUpdate(String id, CreateTransactionRequest request, {String? version}) =>
+      _client.post(
+        ZhangEndpoints.transactionUpdatePreview(id),
+        body: request.toJson(),
+        headers: _ifMatch(version),
+        decode: TransactionPreview.fromJson,
+      );
+
+  /// `PUT /api/transactions/{id}` – replaces the whole transaction (404 when
+  /// the id is stale: ids change when the file changes; 412 when [version],
+  /// the `version` it was read with, no longer matches). Build [request]
+  /// with `CreateTransactionRequest.fromJournal` so tags, links, metas,
+  /// posting metadata and the written cost / price / comment are preserved.
+  Future<void> update(String id, CreateTransactionRequest request, {String? version}) async {
+    await _client.send('PUT', ZhangEndpoints.transaction(id), body: request.toJson(), headers: _ifMatch(version));
     _onMutated?.call();
+  }
+
+  static Map<String, String>? _ifMatch(String? version) => version == null ? null : {'If-Match': version};
+
+  /// The journal item [id] as the server lists it now: searched by
+  /// [keyword] (payee, narration, …; up to 5 pages of 100), then on page 1.
+  /// `null` = not found (ids change when the file changes). Pads come with
+  /// their balance check folded in.
+  Future<JournalItem?> findById(String id, {String? keyword}) async {
+    JournalItem? find(List<JournalItem> records) {
+      for (final item in foldBalancePads(records)) {
+        if (item.id == id) return item;
+      }
+      return null;
+    }
+
+    final k = keyword?.trim();
+    if (k != null && k.isNotEmpty) {
+      for (var page = 1; page <= 5; page++) {
+        final result = await list(JournalQuery(page: page, size: 100, keyword: k));
+        final found = find(result.records);
+        if (found != null) return found;
+        if (!result.hasNextPage) break;
+      }
+    }
+    return find((await list(const JournalQuery(page: 1, size: 100))).records);
   }
 }
 

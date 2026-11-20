@@ -1,7 +1,8 @@
 import '../../data/models/account.dart';
 
 /// The three simple entry modes of the "记一笔" screen (decisions.md §5).
-/// The multi-posting "advanced" mode is P1 and intentionally absent.
+/// The multi-posting "advanced" editor is a screen of its own
+/// (`AdvancedEntryScreen`), opened from the form's "Advanced" segment.
 enum EntryMode {
   expense,
   income,

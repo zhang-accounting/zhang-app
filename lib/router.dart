@@ -17,8 +17,10 @@ import 'features/onboarding/server_setup_screen.dart';
 import 'features/settings/profile_edit_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/stats/reports_screen.dart';
+import 'features/transaction_new/advanced_entry_screen.dart';
 import 'features/transaction_new/entry_mode.dart';
 import 'features/transaction_new/new_transaction_screen.dart';
+import 'features/transaction_new/transaction_edit.dart';
 
 /// Every route path in one place. Use with `context.go` / `context.push`.
 abstract final class AppRoutes {
@@ -35,6 +37,10 @@ abstract final class AppRoutes {
 
   // Full-screen routes on the root navigator (cover the bottom nav).
   static const newTransaction = '/transactions/new';
+
+  /// Multi-posting editor; `extra` = `AdvancedEntryArgs` (edit, copy or what
+  /// the simple form carried over).
+  static const advancedTransaction = '/transactions/advanced';
   static const settings = '/settings';
   static const addProfile = '/settings/profiles/new';
   static String editProfile(String id) => '/settings/profiles/$id/edit';
@@ -151,9 +157,17 @@ GoRouter createAppRouter(ValueListenable<bool> hasProfile) {
       ),
       GoRoute(
         path: AppRoutes.newTransaction,
-        // `?mode=expense|income|transfer` preselects the entry mode.
+        // `?mode=expense|income|transfer` preselects the entry mode; `extra`
+        // = `EntryPrefill` edits or copies a transaction.
         builder: (context, state) => NewTransactionScreen(
           initialMode: EntryMode.fromQuery(state.uri.queryParameters['mode']),
+          prefill: state.extra is EntryPrefill ? state.extra! as EntryPrefill : null,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.advancedTransaction,
+        builder: (context, state) => AdvancedEntryScreen(
+          args: state.extra is AdvancedEntryArgs ? state.extra! as AdvancedEntryArgs : null,
         ),
       ),
       GoRoute(

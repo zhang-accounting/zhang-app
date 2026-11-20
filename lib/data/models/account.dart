@@ -105,6 +105,7 @@ class AccountJournalEntry {
     required this.timestamp,
     required this.account,
     required this.trxId,
+    this.trxVersion,
     this.payee,
     this.narration,
     required this.inferredUnit,
@@ -120,6 +121,7 @@ class AccountJournalEntry {
     timestamp: reqInt(m, 'timestamp'),
     account: reqString(m, 'account'),
     trxId: optString(m, 'trx_id') ?? '',
+    trxVersion: optString(m, 'trx_version'),
     payee: optString(m, 'payee'),
     narration: optString(m, 'narration'),
     inferredUnit: Amount.fromJson(m['inferred_unit']),
@@ -166,6 +168,10 @@ class AccountJournalEntry {
   /// sub-accounts.
   final String account;
   final String trxId;
+
+  /// `version` of the transaction when the row was listed (zhang PR #818);
+  /// `null` on servers that do not report it.
+  final String? trxVersion;
   final String? payee;
   final String? narration;
 

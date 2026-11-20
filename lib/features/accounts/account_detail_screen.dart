@@ -141,6 +141,7 @@ class AccountDetailScreen extends ConsumerWidget {
                                   GoRouterState.of(context).uri.path,
                                   list[i].trxId,
                                   (list[i].payee?.isNotEmpty ?? false) ? list[i].payee : list[i].narration,
+                                  version: list[i].trxVersion,
                                 ),
                         ),
                       ),

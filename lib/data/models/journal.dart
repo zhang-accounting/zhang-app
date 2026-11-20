@@ -1,28 +1,66 @@
 import 'package:decimal/decimal.dart';
+import 'package:flutter/foundation.dart';
 
 import 'amount.dart';
 import 'json_utils.dart';
+
+/// What a posting line has besides its account and units, in the ledger's
+/// own syntax (`written` of a journal posting): the forms the `cost`,
+/// `price` and `comment` of an update request take, so they can be sent
+/// back as read.
+@immutable
+class WrittenPosting {
+  const WrittenPosting({this.cost, this.price, this.comment});
+
+  factory WrittenPosting.fromJson(JsonMap m) => WrittenPosting(
+    cost: optString(m, 'cost'),
+    price: optString(m, 'price'),
+    comment: optString(m, 'comment'),
+  );
+
+  /// `{150 USD}`, `{{1500 USD}}`, `{}` or `{150 USD, 2024-01-15, "lot"}`.
+  final String? cost;
+
+  /// `@ 6 USD` or `@@ 60 USD`.
+  final String? price;
+
+  /// The comment at the end of the line, without the `;`.
+  final String? comment;
+
+  @override
+  bool operator ==(Object other) =>
+      other is WrittenPosting && other.cost == cost && other.price == price && other.comment == comment;
+
+  @override
+  int get hashCode => Object.hash(cost, price, comment);
+}
 
 /// A posting inside a `/api/journals` item.
 class JournalPosting {
   const JournalPosting({
     required this.account,
     this.unit,
+    this.unitScale,
     this.cost,
     required this.inferredUnit,
     required this.accountBefore,
     required this.accountAfter,
     this.metas = const [],
+    this.metasReported = true,
+    this.written,
   });
 
   factory JournalPosting.fromJson(JsonMap m) => JournalPosting(
     account: reqString(m, 'account'),
     unit: Amount.fromJsonOrNull(m['unit']),
+    unitScale: _writtenScale(m['unit']),
     cost: Amount.fromJsonOrNull(m['cost']),
     inferredUnit: Amount.fromJson(m['inferred_unit']),
     accountBefore: Amount.fromJson(m['account_before']),
     accountAfter: Amount.fromJson(m['account_after']),
-    metas: m['metas'] == null ? const [] : [for (final e in asList(m['metas'])) Meta.fromJson(e)],
+    metas: m['metas'] == null ? const [] : [for (final e in asList(m['metas'], 'posting metas')) Meta.fromJson(e)],
+    metasReported: m['metas'] != null,
+    written: m['written'] == null ? null : WrittenPosting.fromJson(asMap(m['written'], 'written')),
   );
 
   final String account;
@@ -31,7 +69,12 @@ class JournalPosting {
   /// Send this (not [inferredUnit]) back when editing a transaction.
   final Amount? unit;
 
-  /// Per-unit cost (`{26000 USD}`), if any. Read-only through the API.
+  /// Decimals [unit] is written with (`88.50` → 2), which [Amount] does not
+  /// keep; `null` when unknown.
+  final int? unitScale;
+
+  /// Per-unit cost of the booked lots (`{26000 USD}`), if they all have the
+  /// same. Display only: edits send [WrittenPosting.cost].
   final Amount? cost;
 
   /// Effective amount of the posting – use this for display.
@@ -41,8 +84,28 @@ class JournalPosting {
   final Amount accountBefore;
   final Amount accountAfter;
 
-  /// Posting metadata (a `document` meta attaches a document here too).
+  /// Posting metadata, sorted by key (a `document` meta attaches a document
+  /// here too).
   final List<Meta> metas;
+
+  /// The server reported [metas] (`false`: an older one that does not – an
+  /// edit could not keep them).
+  final bool metasReported;
+
+  /// Cost, price and comment as written; `null` for a transaction a plugin
+  /// made (not editable) or a server that does not report them.
+  final WrittenPosting? written;
+
+  /// Decimals of a `{"number": "88.50"}` amount as sent by the server.
+  static int? _writtenScale(Object? unit) {
+    if (unit is! Map) return null;
+    final number = unit['number'];
+    if (number is! String) return null;
+    final text = number.trim();
+    if (text.contains(RegExp('[eE]'))) return null;
+    final dot = text.indexOf('.');
+    return dot < 0 ? 0 : text.length - dot - 1;
+  }
 }
 
 /// An item of `GET /api/journals` (tagged union on `type`).
@@ -104,6 +167,8 @@ class JournalTransaction extends JournalItem {
     this.flag = '*',
     this.isBalanced = true,
     this.metas = const [],
+    this.editDropsText,
+    this.version,
   });
 
   factory JournalTransaction.fromJson(JsonMap m) => JournalTransaction(
@@ -118,6 +183,8 @@ class JournalTransaction extends JournalItem {
     flag: optString(m, 'flag') ?? '*',
     isBalanced: optBool(m, 'is_balanced', fallback: true),
     metas: m['metas'] == null ? const [] : [for (final e in asList(m['metas'])) Meta.fromJson(e)],
+    editDropsText: m['edit_drops_text'] is bool ? m['edit_drops_text'] as bool : null,
+    version: optString(m, 'version'),
   );
 
   /// Without `#`.
@@ -134,6 +201,16 @@ class JournalTransaction extends JournalItem {
 
   /// Metadata; attached documents appear as `document` metas.
   final List<Meta> metas;
+
+  /// Whether an edit through the API would drop text of the transaction (a
+  /// comment line between its postings, a comment on its header line or
+  /// after a metadata line); `null` when the server does not say.
+  final bool? editDropsText;
+
+  /// Hash of the transaction's source text (zhang PR #818); sent as
+  /// `If-Match` when editing so a changed transaction answers 412. `null`
+  /// on servers that do not report it.
+  final String? version;
 
   bool get isPending => flag == '!';
 

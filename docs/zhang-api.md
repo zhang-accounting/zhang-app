@@ -136,8 +136,9 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
 | POST | `/api/query/builtins`, `/api/query/builtins/{name}` | reports, errors, form data, balance history, budgets, documents (§3) |
 | GET | `/api/journals?page&size&keyword&tags[i]&links[i]` | journal list, Home recent rows, transaction lookup (`JournalRepository.list`) |
 | POST | `/api/transactions/preview` | validation before saving (`JournalRepository.preview`) |
+| POST | `/api/transactions/{id}/preview` | edit check (unchanged transaction: posting flags) and validation before an edit (`JournalRepository.previewUpdate`) |
 | POST | `/api/transactions` | create (`JournalRepository.create`) |
-| PUT | `/api/transactions/{id}` | replace (`JournalRepository.update`, no screen yet) |
+| PUT | `/api/transactions/{id}` | edit from the transaction detail (`JournalRepository.update`) |
 | GET | `/api/accounts`, `/api/accounts/{name}` | account tree, account header |
 | GET | `/api/accounts/{name}/journals` | account postings (incl. sub-accounts) |
 | POST | `/api/accounts/{name}/balances`, `/api/accounts/batch-balances` | balance check / pad (`AccountRepository`, no screen yet) |
@@ -268,8 +269,39 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
   `AccountDoesNotExist {account_name}`. The record screen refuses to save when a field is refused, the entry is unbalanced or an account is unknown /
   closed (`TransactionPreview.isBlocked`); other ledger errors and notices (e.g. `CommodityDoesNotDefine` on a
   beancount ledger that never declares a commodity) are listed as warnings with "Save anyway".
-* `PUT /api/transactions/{id}` replaces the transaction → `200 {"data":null}`; posting `cost` / `price` / `comment`
-  are **kept** when the keys are omitted; unknown id → 404; plugin-generated → 400.
+* `PUT /api/transactions/{id}` replaces the transaction → `200 {"data":null}`; unknown / stale id → 404 (`there is no
+  transaction … Reopen the journal`); plugin-generated → 400. Request postings also take `metas` and, in the ledger's own
+  syntax, `cost` (`{26000 USD}`, `{{1500 USD}}`, `{}`, `{150 USD, 2024-01-15, "lot"}`), `price` (`@ 7.2 CNY`,
+  `@@ 72 CNY`) and `comment` (without `;`). In an update a left-out `cost` / `price` / `comment` is kept from the
+  posting it is matched to (the only one to that account, else the only one with that account and units), `null`
+  removes it; posting `metas` left out are **dropped**; a posting flag cannot be sent and is kept only by that match.
+* How the app edits (`CreateTransactionRequest.fromJournal`, `features/transaction_new/transaction_edit.dart`): every
+  field read from `/api/journals` is sent back – payee, narration (`""` for none), flag, tags / links in written order,
+  transaction metas, per posting the written unit with its decimals (`unitScale`), `metas` and `written.cost / price /
+  comment` stated explicitly (`null` = none), so nothing depends on the server's posting match. Checked live: the
+  values of an untouched transaction survive; the text is rewritten in the exporter's form, so these change: metadata
+  lines in key order (the journal sorts them), a date-only header gains ` 00:00:00`, `{150 USD}` → `{ 150 USD }`, a
+  lone narration `"x"` → `"" "x"`, `-0.00` → `0`.
+* Edits are refused (with the reason) when `edit_drops_text` is true, a posting has no `written` (plugin) or the server
+  reports no posting `metas` / `edit_drops_text`, or the update preview of the unchanged transaction has no `text` or
+  shows a posting flag (any flag zhang reads: `*`, `!`, `&`, `?`, `%`, `#`, `A`–`Z`, e.g. `  C Expenses:Food …`).
+* Unquoted posting metadata (`lot: 8`, dates, booleans): the journal reports values as strings; the update preview
+  text shows which are unquoted. The server keeps a value unquoted only for the posting it matches, so once that
+  posting's account changes it writes `lot: "8"`. The app mirrors the match and asks before saving such an edit.
+* Ids are places in a file (`hash(file + offset)`): after another write the id of a listed transaction may name
+  another one. Servers with zhang PR #818 list a `version` (hash of the transaction's text) on journal items (account
+  journal rows: `trx_version`) and POST / PUT answers; the app then sends `If-Match: <version>` with the update preview
+  and the `PUT` (mismatch → 412, shown as "changed on the server"), and a transaction opened from an account row whose
+  `trx_version` differs from the item's `version` shows "changed". Without `version` the app reads the item by id
+  (`JournalRepository.findById`) before the edit check and again right before the `PUT` and refuses unless it is still
+  the same transaction; that lookup searches only 5 pages of 100 by payee (an old transaction with a common payee can
+  be reported as changed) and leaves a short race before the `PUT`.
+* Ids after a `PUT`: the edited transaction keeps its id (it stays at the same place in its file); transactions after
+  it in the same file get new ids. The detail screen reads it again by id after the ledger reloaded and shows it only
+  once it matches what was saved (else, after 15 s, it says the change is not listed yet).
+* Preview errors that block a save also include `TransactionCannotInferTradeAmount`,
+  `TransactionExplicitPostingHaveMultipleCommodity` (an empty amount left with several commodities – written
+  unbalanced otherwise) and `TransactionHasMultipleImplicitPosting`.
 * Not available: `DELETE /api/transactions/{id}` (405), an id in the create answer, idempotency keys.
 
 ### 4.4 Statistic graph
@@ -298,5 +330,10 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
 4. No `DELETE` for transactions, no id from `POST /api/transactions`, no idempotency key, no budget writes.
 5. A source build reports version `0.1.0`; use `format` to detect v0.2.
 6. `/openapi.json` is not behind auth.
+7. Edits: posting flags are neither reported by `/api/journals` nor accepted in requests (kept only while the
+   posting keeps its account); comment lines inside a transaction are dropped by any `PUT` (`edit_drops_text`);
+   unquoted posting metadata is quoted once its posting's account changes; metadata comes back sorted by key; a
+   date-only transaction cannot stay date-only (`datetime` needs a time); without `version` / `If-Match`
+   (zhang PR #818) a `PUT` can hit another transaction that moved to a stale id.
 
 Local dev server, ports and the test ledger: see [`dev.md`](dev.md).

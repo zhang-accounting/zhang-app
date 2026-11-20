@@ -189,7 +189,53 @@ void main() {
       expect(json['tags'], ['mobile']);
       expect(json['links'], ['order-42']);
       expect((json['metas'] as List).map((m) => (m as Map)['key']), ['document', 'source']);
-      expect((json['postings'] as List)[1], {'account': 'Expenses:PersonalDiet:Lunch', 'unit': null});
+      // cost / price / comment are stated (null = none) so an update never
+      // keeps or drops one by matching postings on the server.
+      expect((json['postings'] as List)[1], {
+        'account': 'Expenses:PersonalDiet:Lunch',
+        'unit': null,
+        'cost': null,
+        'price': null,
+        'comment': null,
+      });
+    });
+
+    test('journal postings: written forms, metadata, written decimals; edit_drops_text', () {
+      final p = JournalPosting.fromJson({
+        'account': 'Assets:Crypto',
+        'unit': {'number': '0.0100', 'commodity': 'BTC'},
+        'cost': {'number': '26000', 'commodity': 'USD'},
+        'inferred_unit': {'number': '0.0100', 'commodity': 'BTC'},
+        'account_before': {'number': '0', 'commodity': 'BTC'},
+        'account_after': {'number': '0.01', 'commodity': 'BTC'},
+        'metas': [
+          {'key': 'lot', 'value': '7'},
+        ],
+        'written': {'cost': '{ 26000 USD }', 'price': null, 'comment': 'bought'},
+      });
+      expect(p.unitScale, 4);
+      expect(p.metas, [const Meta('lot', '7')]);
+      expect(p.written, const WrittenPosting(cost: '{ 26000 USD }', comment: 'bought'));
+      final tx = JournalTransaction(id: 't', sequence: 1, datetime: DateTime(2026), payee: '', postings: [p]);
+      final json = (CreateTransactionRequest.fromJournal(tx).toJson()['postings']! as List).single as Map<String, Object?>;
+      expect(json['unit'], {'number': '0.0100', 'commodity': 'BTC'});
+      expect(json['cost'], '{ 26000 USD }');
+      expect(json['metas'], [
+        {'key': 'lot', 'value': '7'},
+      ]);
+      // A server that does not report them: unknown, not empty.
+      final old = JournalPosting.fromJson({
+        'account': 'Assets:Cash',
+        'unit': null,
+        'inferred_unit': {'number': '1', 'commodity': 'CNY'},
+        'account_before': {'number': '0', 'commodity': 'CNY'},
+        'account_after': {'number': '1', 'commodity': 'CNY'},
+      });
+      expect(old.metasReported, isFalse);
+      expect(old.metas, isEmpty);
+      expect(old.written, isNull);
+      final page = Pageable.fromJson(fixtureData('journals.json'), JournalItem.fromJson);
+      expect((page.records.first as JournalTransaction).editDropsText, isFalse);
     });
   });
 
@@ -237,6 +283,12 @@ void main() {
       final cafe = list.firstWhere((e) => e.payee == 'Mobile Test Cafe');
       expect(cafe.trxId, journal.records[2].id, reason: 'trx_id is the /api/journals id');
       expect(list.last.isBalanceItem, isTrue);
+      expect(list.first.trxVersion, isNull, reason: 'servers without zhang PR #818');
+      final versioned = AccountJournalEntry.fromJson({
+        ...(fixtureData('account_journals.json')! as List).first as Map<String, Object?>,
+        'trx_version': 'abc',
+      });
+      expect(versioned.trxVersion, 'abc');
     });
 
     test('journals: balance check rows carry asserted / passed', () {

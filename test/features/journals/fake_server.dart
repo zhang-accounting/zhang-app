@@ -39,6 +39,22 @@ class FakeZhangServer {
   /// `/api/info.reload_failure` to report (`{file, message}`), if any.
   Map<String, Object?>? reloadFailure;
 
+  /// Transaction previews and writes: `(method, path, body)`.
+  final transactionRequests = <(String, String, Map<String, Object?>)>[];
+
+  /// Answer `PUT /transactions/{id}` without changing anything (a write the
+  /// journal never shows).
+  bool ignoreWrites = false;
+
+  /// Answer of `POST /api/transactions/preview` and
+  /// `POST /api/transactions/{id}/preview` (clean by default).
+  Map<String, Object?> previewAnswer = const {
+    'text': '2023-09-30 12:00:00 * "Shop" ""\n  Assets:WeChat -10 CNY\n  Expenses:Food',
+    'field_errors': [],
+    'unbalanced': [],
+    'errors': [],
+  };
+
   late final adapter = FakeAdapter(_handle);
 
   late final client = ZhangApiClient(
@@ -67,6 +83,8 @@ class FakeZhangServer {
           : matching.sublist(start, (start + size).clamp(0, matching.length));
       return jsonResponse(pageJson(records, page: page, size: size, total: matching.length));
     }
+    if (path.contains('/transactions')) return _transactions(o);
+    if (path.endsWith('/accounts')) return jsonResponse(fixture('accounts.json'));
     final builtin = builtins.handle(o);
     if (builtin != null) return builtin;
     if (path.endsWith('/info')) {
@@ -84,6 +102,76 @@ class FakeZhangServer {
     if (path.endsWith('/commodities')) return jsonResponse(fixture('commodities.json'));
     return jsonResponse({'message': 'not found'}, status: 404);
   }
+}
+
+extension on FakeZhangServer {
+  /// `POST /transactions[/preview]`, `POST /transactions/{id}/preview`,
+  /// `PUT /transactions/{id}`: an edit replaces the item in place, keeping
+  /// its id (as zhang does: the transaction keeps its place in the file);
+  /// an unknown id is a 404.
+  ResponseBody _transactions(RequestOptions o) {
+    final path = o.uri.path;
+    final body = (o.data as Map).cast<String, Object?>();
+    transactionRequests.add((o.method, path, body));
+    final byId = RegExp(r'/transactions/([^/]+?)(/preview)?$').firstMatch(path);
+    if (byId != null && byId.group(1) != 'preview') {
+      final id = Uri.decodeComponent(byId.group(1)!);
+      final index = journals.indexWhere((j) => j['id'] == id);
+      if (index < 0) return jsonResponse({'message': 'there is no transaction $id in the ledger'}, status: 404);
+      // zhang PR #818: `If-Match` must name the current `version`.
+      final ifMatch = o.headers['If-Match'];
+      final version = journals[index]['version'];
+      if (ifMatch != null && ifMatch != version) {
+        return jsonResponse({'message': 'the transaction changed since version $ifMatch'}, status: 412);
+      }
+      if (byId.group(2) != null) return jsonResponse({'data': previewAnswer});
+      if (ignoreWrites) return jsonResponse({'data': null});
+      journals[index] = {
+        ...journalFromRequest(id, journals[index]['sequence']! as int, body),
+        if (version != null) 'version': '$version+',
+      };
+      return jsonResponse({'data': null});
+    }
+    if (path.endsWith('/preview')) return jsonResponse({'data': previewAnswer});
+    journals.insert(0, journalFromRequest('new-${journals.length}', journals.length + 1000, body));
+    return jsonResponse({'data': 'Ok'});
+  }
+}
+
+/// The journal item zhang would list for a create / update [request].
+Map<String, Object?> journalFromRequest(String id, int sequence, Map<String, Object?> request) {
+  final postings = (request['postings']! as List).cast<Map<String, Object?>>();
+  Map<String, Object?>? unitOf(Map<String, Object?> p) => (p['unit'] as Map?)?.cast<String, Object?>();
+  final known = [for (final p in postings) ?unitOf(p)];
+  final commodity = known.isEmpty ? 'CNY' : known.first['commodity'];
+  final rest = known.fold<double>(0, (sum, u) => sum - double.parse(u['number']! as String));
+  return {
+    'type': 'Transaction',
+    'id': id,
+    'sequence': sequence,
+    'datetime': request['datetime'],
+    'payee': request['payee'],
+    'narration': request['narration'],
+    'tags': request['tags'],
+    'links': request['links'],
+    'flag': request['flag'] ?? '*',
+    'is_balanced': true,
+    'postings': [
+      for (final p in postings)
+        {
+          'account': p['account'],
+          'unit': unitOf(p),
+          'cost': null,
+          'inferred_unit': unitOf(p) ?? {'number': '$rest', 'commodity': commodity},
+          'account_before': {'number': '0', 'commodity': commodity},
+          'account_after': {'number': '0', 'commodity': commodity},
+          'metas': p['metas'] ?? const [],
+          'written': {'cost': p['cost'], 'price': p['price'], 'comment': p['comment']},
+        },
+    ],
+    'metas': request['metas'],
+    'edit_drops_text': false,
+  };
 }
 
 /// [count] simple expense transactions, newest first, two per day starting

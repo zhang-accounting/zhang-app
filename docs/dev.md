@@ -276,7 +276,7 @@ lib/
 | Active profile (name, colour, URL) | `ref.watch(activeProfileProvider)` |
 | HTTP client | `ref.watch(zhangApiClientProvider)` (rarely needed directly) |
 | A built-in query | `client.builtins.query(BuiltinQuery('ledger.now'), (r) => r.rows.first.dateTime('date', 'time'))`, `batch([...], convert)` |
-| Journals / create / preview / update transaction | `journalRepositoryProvider` → `list(JournalQuery)`, `forNewTransaction()`, `preview(req)`, `create(req)`, `update(id, req)` |
+| Journals / create / preview / update transaction | `journalRepositoryProvider` → `list(JournalQuery)`, `forNewTransaction()`, `preview(req)`, `previewUpdate(id, req)`, `create(req)`, `update(id, req)` |
 | Accounts | `accountRepositoryProvider` → `list()`, `get(name)`, `journals(name)`, `balances(name)`, `documents(name)`, `addBalance(name, req)`, `addBalances(reqs)` |
 | Reports | `statisticRepositoryProvider` → `summary(from, to, currency:)`, `graph(from, to)`, `rank(AccountType, from, to, currency:)` (currency = `LedgerOptions.operatingCurrency`) |
 | Budgets | `budgetRepositoryProvider` → `list(year:, month:)`, `get(name, …)`, `interval(name, year, month)` |
