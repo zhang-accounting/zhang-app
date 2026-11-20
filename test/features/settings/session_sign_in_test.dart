@@ -13,6 +13,7 @@ import 'package:zhang_app/data/profiles/secret_store.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 
 import '../../helpers/fake_adapter.dart';
+import '../../helpers/fake_handoff.dart';
 import '../journals/fake_server.dart';
 import '../journals/journal_test_utils.dart';
 
@@ -24,6 +25,7 @@ const _code = 'q3Hn0Zx4c0QyX2xJm9Yb8kq1sV7tWw5uRr6pLe-_aBc';
 class _FakeAuthServer {
   bool appLogin = true;
   bool enabled = true;
+  final handoff = FakeHandoff(_code);
   int exchanges = 0;
   final launched = <String>[];
   final logouts = <String?>[];
@@ -43,11 +45,13 @@ class _FakeAuthServer {
           'user': null,
           'title': 'My Accounting',
           if (appLogin) 'app_login': true,
+          if (appLogin && handoff.pkce) 'app_login_pkce': true,
           if (appLogin) 'app_return_schemes': ['zhang-app'],
         },
       });
     }
     if (path.endsWith('/auth/app/exchange')) {
+      if (!handoff.accepts(o.data)) return jsonResponse({'message': 'invalid or expired code'}, status: 401);
       exchanges++;
       final token = 'tok$exchanges.sig';
       valid.add(token);
@@ -65,7 +69,7 @@ class _FakeAuthServer {
   BrowserSignIn signIn() => BrowserSignIn(
     launch: (url, scheme) async {
       launched.add(url);
-      return '$scheme://auth/callback?code=$_code';
+      return handoff.callbackFor(url, scheme);
     },
     createClient: (profile) => ZhangApiClient(profile)..dio.httpClientAdapter = FakeAdapter(handle),
   );
@@ -190,7 +194,7 @@ void main() {
     // (a) handoff supported: browser → callback → exchange.
     auth.enabled = true;
     await _tapVisible(tester, find.byKey(const Key('profileForm.signIn')));
-    expect(auth.launched, ['$_base/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback']);
+    expect(auth.launched.single, startsWith('$_base/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback&code_challenge='));
     expect(find.byKey(const Key('profileForm.signedIn')), findsOneWidget);
     expect(find.text('Signed in as demo, valid until Nov 9, 2026'), findsOneWidget);
     expect(tester.widget<FilledButton>(find.byKey(const Key('profileForm.submit'))).onPressed, isNotNull);

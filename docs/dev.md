@@ -234,9 +234,10 @@ or year end before relying on "today" / "this month" in a test.
   Start, Settings → Edit server); with `--dart-define=ZHANG_SCREENSHOT_PAUSE=4` it holds each state after
   printing `ZHANG_STATE <name>`, so `xcrun simctl io <id> screenshot <name>.png` can capture it.
   `session_login_live_test.dart` replaces the browser (`webAuthLauncherProvider`, passed to
-  `bootstrap(overrides:)`) with `POST /api/auth/login` + `POST /api/auth/app/code` over HTTP and feeds the returned
-  `zhang-app://auth/callback?code=…` into the app's real callback → exchange → Bearer path, then signs out and in
-  again.
+  `bootstrap(overrides:)`) with `POST /api/auth/login` + `POST /api/auth/app/code` over HTTP (passing on the login
+  URL's `code_challenge` / `code_challenge_method` / `state`) and feeds the returned
+  `zhang-app://auth/callback?code=…&state=…` into the app's real callback → state check → exchange with the code
+  verifier → Bearer path, then signs out and in again.
 
 ## Where things live
 
@@ -253,8 +254,9 @@ lib/
                             describeApiError), ledger_widgets.dart (ActiveLedgerTitle, SettingsButton,
                             LedgerDot, PlaceholderScreen)
   data/profiles/            ServerProfile, ProfileRepository, SecretStore, profilesProvider/activeProfileProvider
-  data/auth/                BrowserSignIn (browser sign-in handoff: status check, login page, callback code,
-                            app/exchange → SessionGrant), webAuthLauncherProvider / browserSignInProvider
+  data/auth/                BrowserSignIn (browser sign-in handoff: status check, SignInSecrets (PKCE verifier +
+                            state), login page, callback code + state check, app/exchange → SessionGrant),
+                            webAuthLauncherProvider / browserSignInProvider
   data/api/                 ZhangApiClient + zhangApiClientProvider, ZhangApiException hierarchy,
                             AuthInterceptor, ZhangEndpoints, ConnectionTester (version gate),
                             BuiltinQueryClient (`client.builtins`), server_gate.dart (serverGateProvider,

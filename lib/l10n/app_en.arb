@@ -588,6 +588,7 @@
   "signInCancelled": "Sign-in was cancelled.",
   "signInBrowserFailed": "Could not open the browser for sign-in.",
   "signInMalformedCallback": "The server returned an invalid sign-in response.",
+  "signInStateMismatch": "The browser returned a sign-in this app did not start, so it was not used. Sign in again.",
   "signInCodeRejected": "The sign-in expired or was already used. Sign in again.",
   "signInRateLimited": "Too many sign-in attempts. Try again in {seconds} s.",
   "@signInRateLimited": {

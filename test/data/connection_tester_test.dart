@@ -157,8 +157,17 @@ void main() {
     expect(withHandoff.appLogin, isTrue);
     expect(withHandoff.appReturnSchemes, ['zhang-app']);
     expect(withHandoff.supportsAppLogin, isTrue);
+    expect(withHandoff.appLoginPkce, isFalse, reason: 'zhang PR #786 without PKCE');
+    final withPkce = AuthStatus.fromJson({
+      'enabled': true,
+      'app_login': true,
+      'app_login_pkce': true,
+      'app_return_schemes': ['zhang-app'],
+    });
+    expect(withPkce.appLoginPkce, isTrue);
     final old = AuthStatus.fromJson(fixtureData('auth_status.json'));
     expect(old.appLogin, isFalse);
+    expect(old.appLoginPkce, isFalse);
     expect(old.supportsAppLogin, isFalse);
   });
 

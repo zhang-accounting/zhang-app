@@ -11,6 +11,7 @@ class AuthStatus {
     this.user,
     this.title,
     this.appLogin = false,
+    this.appLoginPkce = false,
     this.appReturnSchemes = const [],
   });
 
@@ -25,6 +26,7 @@ class AuthStatus {
       user: optString(m, 'user'),
       title: optString(m, 'title'),
       appLogin: optBool(m, 'app_login'),
+      appLoginPkce: optBool(m, 'app_login_pkce'),
       appReturnSchemes: stringList(m['app_return_schemes']),
     );
   }
@@ -46,6 +48,12 @@ class AuthStatus {
   /// `?return_to=` and `POST /api/auth/app/exchange` trades the returned
   /// one-time code for a session token (zhang PR #786).
   final bool appLogin;
+
+  /// The handoff takes the app's PKCE challenge (`S256`) and `state`: the
+  /// callback echoes the state and the exchange checks the code verifier
+  /// (`app_login_pkce`). Older servers ignore both, so the app then accepts a
+  /// callback without state.
+  final bool appLoginPkce;
 
   /// URL schemes the login page may return to (`["zhang-app"]` by default,
   /// `ZHANG_APP_RETURN_SCHEMES`).

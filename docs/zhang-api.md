@@ -47,21 +47,37 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
   Basic is not rate-limited and needs no session.
 * `GET /api/auth/status` (no credentials needed) →
   `{"enabled","authenticated","methods":{"password","passkey"},"passkey_registered","user","title","app_login",
-  "app_return_schemes"}` (the last two only on servers with the app login handoff, zhang PR #786).
+  "app_login_pkce","app_return_schemes"}` (`app_login` / `app_return_schemes` only on servers with the app login
+  handoff, zhang PR #786; `app_login_pkce` only on servers whose handoff takes PKCE and `state`, zhang PR #819).
   The connection test calls it after a `401`: `enabled && !methods.password` (passkey only, `ZHANG_PASSKEY` without
   `ZHANG_AUTH`) → `ApiPasskeyOnly`; with `app_login` the message points to the "Browser" auth type, otherwise to
   "enable password sign-in". Not consulted for "Browser" profiles (their `401` means the session ended).
 * **Browser sign-in** ("Browser" auth type, `AuthType.session`; design in [`passkey-login.md`](passkey-login.md)):
   1. `GET /api/auth/status`: `!enabled` → "sign-in not needed"; `enabled && !app_login` (or `zhang-app` not in
-     `app_return_schemes`) → "upgrade zhang (PR #786)".
-  2. The system browser (`flutter_web_auth_2`, iOS `ASWebAuthenticationSession` / Android Custom Tabs, ephemeral)
-     opens `<base>/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback`; the user signs in with a passkey or password
-     on zhang's own login page, which then calls `POST /api/auth/app/code` and navigates to
-     `zhang-app://auth/callback?code=<base64url>` (60 s, single use).
-  3. The app accepts exactly that URL with one well-formed `code` and nothing else (`BrowserSignIn.codeFromCallback`).
-  4. `POST /api/auth/app/exchange {"code"}` (no credentials) → `{"data":{"token","expires_at","user"}}`;
-     `401 {"message":"invalid or expired code"}` → "expired or already used"; `429` + `Retry-After` (5 failed
-     attempts / 15 min / client, shared with the password login) → "try again in N s" (`ApiRateLimited`).
+     `app_return_schemes`) → "upgrade zhang (PR #786)". `app_login_pkce` decides step 3.
+  2. Every sign-in draws fresh `SignInSecrets`: a PKCE (RFC 7636) code verifier and a `state`, 32 bytes each from
+     `Random.secure()`, base64url without padding. The system browser (`flutter_web_auth_2`, iOS
+     `ASWebAuthenticationSession` / Android Custom Tabs, ephemeral) opens
+     `<base>/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback&code_challenge=<BASE64URL(SHA256(verifier))>&code_challenge_method=S256&state=<state>`;
+     the user signs in with a passkey or password on zhang's own login page, which then calls
+     `POST /api/auth/app/code {"return_to","code_challenge","code_challenge_method","state"}` and navigates to
+     `zhang-app://auth/callback?code=<base64url>&state=<state>` (60 s, single use). Only `S256` is accepted; `plain`
+     or another method gets no code (the page shows the server's `400`). A browser that was signed in already first
+     asks "Sign in to the app as <user>?" with the scheme and host of `return_to` and creates the code only after
+     "Continue" (RFC 8252 §8.6, client impersonation); the app's ephemeral session normally shows the login form.
+  3. The app accepts exactly that URL: one well-formed `code`, at most one `state`, nothing else
+     (`BrowserSignIn.codeFromCallback`). The `state` must be the one it sent; a missing `state` is accepted only when
+     the server lacks `app_login_pkce` (older servers ignore the extra parameters and echo none) and never reported it
+     before: once a status says `app_login_pkce: true`, the base URL (scheme and host lower-cased, default port and
+     trailing `/` dropped) is remembered in shared_preferences
+     (`PkceServers`, `zhang.auth.pkceServers.v1`, not per profile) and a later status without the flag does not relax
+     the check. A missing or other `state` → "the browser returned a sign-in this app did not start"
+     (`stateMismatch`), and the code is never exchanged.
+  4. `POST /api/auth/app/exchange {"code","code_verifier"}` (no credentials) → `{"data":{"token","expires_at","user"}}`
+     (servers without `app_login_pkce` ignore `code_verifier`; empty counts as absent). A code issued with a challenge needs its verifier,
+     one issued without refuses a verifier; a missing or wrong verifier is the same `401` as an unknown code and uses
+     the code up. `401 {"message":"invalid or expired code"}` → "expired or already used"; `429` + `Retry-After` (5
+     failed attempts / 15 min / client, shared with the password login) → "try again in N s" (`ApiRateLimited`).
   5. Every request then sends `Authorization: Bearer <token>` (`/api/sse` and documents too). Token, `expires_at`
      and user are kept in secure storage. The token is a stateless 30-day HMAC: `POST /api/auth/logout` (called best
      effort on "Sign out") only clears the cookie and does not revoke it; it stops working when `ZHANG_AUTH` /

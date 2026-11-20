@@ -401,7 +401,11 @@ class ServerSetupController extends ChangeNotifier {
   Future<void> signInWithBrowser() => _verify(
     proxy: false,
     run: () async {
-      final grant = await browser.startBrowserSignIn(_baseProfile().baseUrl, allowSelfSigned: allowSelfSigned);
+      final grant = await browser.startBrowserSignIn(
+        _baseProfile().baseUrl,
+        pkce: probe?.auth?.appLoginPkce ?? false,
+        allowSelfSigned: allowSelfSigned,
+      );
       final profile = grant.applyTo(_baseProfile());
       return SetupVerified(profile: profile, info: await tester.test(profile), user: grant.user);
     },

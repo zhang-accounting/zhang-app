@@ -7,6 +7,7 @@ import 'package:zhang_app/data/auth/browser_sign_in.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 
 import 'fake_adapter.dart';
+import 'fake_handoff.dart';
 import 'fixtures.dart';
 
 const setupCode = 'q3Hn0Zx4c0QyX2xJm9Yb8kq1sV7tWw5uRr6pLe-_aBc';
@@ -23,6 +24,9 @@ class FakeSetupServer {
 
   /// `/api/auth/status.app_login` (browser sign-in handoff).
   bool appLogin = true;
+
+  /// The handoff's PKCE and state (`handoff.pkce` = `app_login_pkce`).
+  final handoff = FakeHandoff(setupCode);
 
   /// A gateway in front of zhang refuses everything without
   /// `Authorization: Bearer proxy-token` or `X-Gate: open`.
@@ -74,11 +78,13 @@ class FakeSetupServer {
           'user': null,
           'title': 'My Accounting',
           if (appLogin) 'app_login': true,
+          if (appLogin && handoff.pkce) 'app_login_pkce': true,
           if (appLogin) 'app_return_schemes': ['zhang-app'],
         },
       });
     }
     if (path == '/api/auth/app/exchange') {
+      if (!handoff.accepts(o.data)) return jsonResponse({'message': 'invalid or expired code'}, status: 401);
       final token = 'tok${++_exchanges}.sig';
       sessions.add(token);
       return jsonResponse({
@@ -114,7 +120,7 @@ class FakeSetupServer {
         cancelNextSignIn = false;
         throw PlatformException(code: 'CANCELED');
       }
-      return '$scheme://auth/callback?code=$setupCode';
+      return handoff.callbackFor(url, scheme);
     },
     createClient: _client,
   );
