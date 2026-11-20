@@ -161,8 +161,10 @@ void main() {
     // 3. Start → profile with a Bearer session (secure storage) → Home loads.
     await _tapKey(tester, 'setup.start');
     await _waitFor(tester, () => _present('home.summary.expense') || _present('home.authBanner'), seconds: 20);
-    final container = ProviderScope.containerOf(tester.element(find.byKey(const Key('home.list'))));
-    final profile = container.read(activeProfileProvider)!;
+    // The ledger session (and its container) changes with every change of
+    // the active profile (sign-out, sign-in): look it up each time.
+    ProviderContainer container() => ProviderScope.containerOf(tester.element(find.byType(MaterialApp)));
+    final profile = container().read(activeProfileProvider)!;
     final auth = profile.authHeaders()['Authorization'] ?? '';
     _result(
       'saved authType=${profile.authType.name} user=${profile.sessionUser} '
@@ -182,9 +184,9 @@ void main() {
     final expense = tester.widget<Text>(find.byKey(const Key('home.summary.expense'))).data;
     _result('home expense=$expense recentRows=${find.byKey(const Key('home.list')).evaluate().isNotEmpty}');
     // The SSE stream authenticates with the same Bearer header.
-    await _waitFor(tester, () => container.read(ledgerEventsProvider).connected, seconds: 10);
-    _result('sse connected=${container.read(ledgerEventsProvider).connected}');
-    expect(container.read(ledgerEventsProvider).connected, isTrue);
+    await _waitFor(tester, () => container().read(ledgerEventsProvider).connected, seconds: 10);
+    _result('sse connected=${container().read(ledgerEventsProvider).connected}');
+    expect(container().read(ledgerEventsProvider).connected, isTrue);
     await _hold(tester, 'shell-home');
 
     // 4. Settings → "Sign out" clears the session → Home shows the 401 banner.
@@ -197,7 +199,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(Key('settings.signOut.${profile.id}')));
     await tester.pumpAndSettle();
-    final signedOut = container.read(activeProfileProvider)!;
+    final signedOut = container().read(activeProfileProvider)!;
     expect(signedOut.hasSession, isFalse);
     expect(await SecureSecretStore().read(ProfileRepository.secretKey(profile.id)), isNull);
     _result('after sign-out hasSession=${signedOut.hasSession} '
@@ -220,9 +222,9 @@ void main() {
       seconds: 20,
     );
     expect(launched, hasLength(2));
-    expect(container.read(activeProfileProvider)!.hasSession, isTrue);
+    expect(container().read(activeProfileProvider)!.hasSession, isTrue);
     expect(find.byKey(const Key('home.authBanner')), findsNothing);
-    _result('signed in again: hasSession=${container.read(activeProfileProvider)!.hasSession} '
+    _result('signed in again: hasSession=${container().read(activeProfileProvider)!.hasSession} '
         'expense=${tester.widget<Text>(find.byKey(const Key('home.summary.expense'))).data}');
     await _hold(tester, 'home-signed-in-again');
   });
