@@ -94,16 +94,24 @@ sealed class BudgetIntervalItem {
 
 /// A `budgets.events` row: `[date, time, timestamp, type, amount]`.
 class BudgetEvent extends BudgetIntervalItem {
-  const BudgetEvent({required this.timestamp, required this.amount, required this.eventType});
+  const BudgetEvent({required this.timestamp, this.datetime, required this.amount, required this.eventType});
 
-  factory BudgetEvent.fromQueryRow(QueryRow r) =>
-      BudgetEvent(timestamp: r.integer('timestamp'), amount: r.amount('amount'), eventType: r.string('type'));
+  factory BudgetEvent.fromQueryRow(QueryRow r) => BudgetEvent(
+    timestamp: r.integer('timestamp'),
+    datetime: r.dateTime('date', 'time'),
+    amount: r.amount('amount'),
+    eventType: r.string('type'),
+  );
 
   @override
   final int timestamp;
+
+  /// Naive ledger-local wall-clock time (the `date` / `time` columns).
+  final DateTime? datetime;
   final Amount amount;
 
-  /// `assign` (a `budget-add`; transfers are two assigns).
+  /// `assign` (a `budget-add`), `transfer_out` (negative) / `transfer_in`
+  /// (the two sides of a `budget-transfer`).
   final String eventType;
 
   DateTime get instant => ZhangDates.fromEpochSeconds(timestamp);

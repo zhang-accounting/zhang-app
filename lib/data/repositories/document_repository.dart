@@ -21,9 +21,10 @@ class DocumentRepository {
 
   /// `GET /api/documents/{b64path}` – raw bytes (auth header included). A
   /// missing file is `ApiNotFound`; a path outside the ledger is refused
-  /// with 403 (`ApiUnauthorized`).
-  Future<Uint8List> download(DocumentEntity document) =>
-      _client.getBytes(ZhangEndpoints.document(document.b64Path));
+  /// with 403 (`ApiUnauthorized`); a file over [maxBytes] stops downloading
+  /// with `ResponseTooLarge`.
+  Future<Uint8List> download(DocumentEntity document, {int? maxBytes}) =>
+      _client.getBytes(ZhangEndpoints.document(document.b64Path), maxBytes: maxBytes);
 }
 
 final documentRepositoryProvider = Provider<DocumentRepository>(

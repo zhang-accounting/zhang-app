@@ -808,6 +808,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountsNameCopied => 'Account name copied';
 
   @override
+  String get documentsTitle => 'Documents';
+
+  @override
+  String documentsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count documents',
+      one: '1 document',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String documentsShowAll(int count) {
+    return 'Show all $count';
+  }
+
+  @override
+  String get documentsEmpty =>
+      'No documents in this ledger. They come from document directives and from document metadata on transactions.';
+
+  @override
+  String get documentsOfTransaction => 'Transaction attachment';
+
+  @override
+  String get documentsShare => 'Share';
+
+  @override
+  String get documentsOpenOrShare => 'Open or share';
+
+  @override
+  String get documentsOpenHint =>
+      'Downloads the file and opens the share sheet, where you can open it in another app or save it.';
+
+  @override
+  String documentsTooLarge(int size) {
+    return 'This file is larger than $size MB, too large to download on the phone.';
+  }
+
+  @override
+  String get documentsNoPreview => 'No preview for this file type';
+
+  @override
+  String get documentsType => 'Type';
+
+  @override
+  String get documentsUnknownType => 'Unknown';
+
+  @override
+  String get documentsDate => 'Date';
+
+  @override
+  String get documentsAccount => 'Account';
+
+  @override
+  String get documentsAttachedTo => 'Belongs to';
+
+  @override
+  String get documentsPath => 'Path';
+
+  @override
   String get reportsPeriodWeek => 'Week';
 
   @override
@@ -872,6 +934,119 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsOpenAccount => 'Open account';
+
+  @override
+  String get reportsSegmentFlows => 'Income & expense';
+
+  @override
+  String get reportsSegmentBudgets => 'Budgets';
+
+  @override
+  String get budgetsPreviousMonth => 'Previous month';
+
+  @override
+  String get budgetsNextMonth => 'Next month';
+
+  @override
+  String get budgetsAssigned => 'Assigned';
+
+  @override
+  String get budgetsActivity => 'Activity';
+
+  @override
+  String get budgetsAvailable => 'Available';
+
+  @override
+  String get budgetsUncategorized => 'Uncategorized';
+
+  @override
+  String get budgetsClosed => 'Closed';
+
+  @override
+  String get budgetsOver => 'Over budget';
+
+  @override
+  String budgetsOverCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count budgets over',
+      one: '1 budget over',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String budgetsDaysLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days left this month',
+      one: 'Last day of the month',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String budgetsSpentOf(String spent, String assigned) {
+    return 'Spent $spent of $assigned';
+  }
+
+  @override
+  String budgetsOverBy(String amount) {
+    return 'Over budget by $amount';
+  }
+
+  @override
+  String budgetsPerDay(String amount) {
+    return '≈ $amount a day';
+  }
+
+  @override
+  String get budgetsProgressLabel => 'Share of the assigned money spent';
+
+  @override
+  String budgetsEmptyTitle(String month) {
+    return 'No budgets in $month';
+  }
+
+  @override
+  String get budgetsEmptyBody =>
+      'Budgets are written in the ledger: a budget directive creates one, budget-add assigns money to it for a month, and a budget metadata on an open links an expense account to it.';
+
+  @override
+  String get budgetsReadOnly =>
+      'The app shows budgets; change them in the ledger file.';
+
+  @override
+  String get budgetsAssignedHint =>
+      'Assigned includes what was left (or overspent) last month.';
+
+  @override
+  String get budgetsLinkedAccounts => 'Linked accounts';
+
+  @override
+  String get budgetsNoLinkedAccounts =>
+      'No account is linked: add a budget metadata to an open directive.';
+
+  @override
+  String budgetsHistory(String month) {
+    return 'Assigned and spent in $month';
+  }
+
+  @override
+  String budgetsNoHistory(String month) {
+    return 'Nothing assigned or spent in $month';
+  }
+
+  @override
+  String get budgetsEventAssigned => 'Assigned';
+
+  @override
+  String get budgetsEventMovedOut => 'Moved to another budget';
+
+  @override
+  String get budgetsEventMovedIn => 'Moved from another budget';
 
   @override
   String get authSession => 'Browser';

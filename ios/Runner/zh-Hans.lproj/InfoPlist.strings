@@ -1,0 +1,2 @@
+/* 从分享面板保存文档（如收据）时显示。 */
+"NSPhotoLibraryAddUsageDescription" = "Zhang 会把你选择保存的文档（如收据）存入照片图库。";

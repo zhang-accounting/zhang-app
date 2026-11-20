@@ -13,6 +13,7 @@ import '../../data/models/journal.dart';
 import '../../data/repositories/ledger_data_providers.dart';
 import '../../l10n/l10n.dart';
 import '../../router.dart';
+import '../documents/widgets/document_sections.dart';
 import 'classify.dart';
 import 'journal_providers.dart';
 import 'transaction_text.dart';
@@ -114,6 +115,7 @@ class _DetailScaffold extends ConsumerWidget {
           _SectionTitle(l10n.trxDetails),
           _InfoRow(label: l10n.trxDate, value: _dateTime(item.datetime)),
           if (item is JournalTransaction) ..._transactionDetails(context, ref, item),
+          if (item is JournalTransaction) TransactionDocumentsSection(transaction: item),
         ],
       ),
     );

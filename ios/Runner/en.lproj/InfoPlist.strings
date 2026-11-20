@@ -1,0 +1,2 @@
+/* Shown when saving a document (e.g. a receipt) from the share sheet. */
+"NSPhotoLibraryAddUsageDescription" = "Zhang saves the documents you choose, such as receipts, to your photo library.";

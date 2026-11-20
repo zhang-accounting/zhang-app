@@ -12,6 +12,7 @@ class JournalPosting {
     required this.inferredUnit,
     required this.accountBefore,
     required this.accountAfter,
+    this.metas = const [],
   });
 
   factory JournalPosting.fromJson(JsonMap m) => JournalPosting(
@@ -21,6 +22,7 @@ class JournalPosting {
     inferredUnit: Amount.fromJson(m['inferred_unit']),
     accountBefore: Amount.fromJson(m['account_before']),
     accountAfter: Amount.fromJson(m['account_after']),
+    metas: m['metas'] == null ? const [] : [for (final e in asList(m['metas'])) Meta.fromJson(e)],
   );
 
   final String account;
@@ -38,6 +40,9 @@ class JournalPosting {
   /// Running balance of [account] in `inferredUnit.commodity` before/after.
   final Amount accountBefore;
   final Amount accountAfter;
+
+  /// Posting metadata (a `document` meta attaches a document here too).
+  final List<Meta> metas;
 }
 
 /// An item of `GET /api/journals` (tagged union on `type`).
@@ -137,6 +142,10 @@ class JournalTransaction extends JournalItem {
     for (final m in metas)
       if (m.key == 'document') m.value,
   ];
+
+  /// Whether the transaction or one of its postings names a document.
+  bool get hasDocuments =>
+      documentPaths.isNotEmpty || postings.any((p) => p.metas.any((m) => m.key == 'document'));
 }
 
 /// `type == "BalanceCheck"` (`type_ == "C"`) or `"BalancePad"` (`"P"`).

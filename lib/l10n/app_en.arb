@@ -511,6 +511,43 @@
   "accountsBalancePad": "Balance pad",
   "accountsCopyName": "Copy account name",
   "accountsNameCopied": "Account name copied",
+  "documentsTitle": "Documents",
+  "documentsCount": "{count, plural, =1{1 document} other{{count} documents}}",
+  "@documentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "documentsShowAll": "Show all {count}",
+  "@documentsShowAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "documentsEmpty": "No documents in this ledger. They come from document directives and from document metadata on transactions.",
+  "documentsOfTransaction": "Transaction attachment",
+  "documentsShare": "Share",
+  "documentsOpenOrShare": "Open or share",
+  "documentsOpenHint": "Downloads the file and opens the share sheet, where you can open it in another app or save it.",
+  "documentsTooLarge": "This file is larger than {size} MB, too large to download on the phone.",
+  "@documentsTooLarge": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "documentsNoPreview": "No preview for this file type",
+  "documentsType": "Type",
+  "documentsUnknownType": "Unknown",
+  "documentsDate": "Date",
+  "documentsAccount": "Account",
+  "documentsAttachedTo": "Belongs to",
+  "documentsPath": "Path",
   "reportsPeriodWeek": "Week",
   "reportsPeriodMonth": "Month",
   "reportsPeriodYear": "Year",
@@ -533,6 +570,92 @@
   "reportsUpOneLevel": "Up one level",
   "reportsShowSubAccounts": "Show sub-accounts",
   "reportsOpenAccount": "Open account",
+  "reportsSegmentFlows": "Income & expense",
+  "reportsSegmentBudgets": "Budgets",
+  "budgetsPreviousMonth": "Previous month",
+  "budgetsNextMonth": "Next month",
+  "budgetsAssigned": "Assigned",
+  "budgetsActivity": "Activity",
+  "budgetsAvailable": "Available",
+  "budgetsUncategorized": "Uncategorized",
+  "budgetsClosed": "Closed",
+  "budgetsOver": "Over budget",
+  "budgetsOverCount": "{count, plural, =1{1 budget over} other{{count} budgets over}}",
+  "@budgetsOverCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "budgetsDaysLeft": "{count, plural, =1{Last day of the month} other{{count} days left this month}}",
+  "@budgetsDaysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "budgetsSpentOf": "Spent {spent} of {assigned}",
+  "@budgetsSpentOf": {
+    "placeholders": {
+      "spent": {
+        "type": "String"
+      },
+      "assigned": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetsOverBy": "Over budget by {amount}",
+  "@budgetsOverBy": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetsPerDay": "≈ {amount} a day",
+  "@budgetsPerDay": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetsProgressLabel": "Share of the assigned money spent",
+  "budgetsEmptyTitle": "No budgets in {month}",
+  "@budgetsEmptyTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetsEmptyBody": "Budgets are written in the ledger: a budget directive creates one, budget-add assigns money to it for a month, and a budget metadata on an open links an expense account to it.",
+  "budgetsReadOnly": "The app shows budgets; change them in the ledger file.",
+  "budgetsAssignedHint": "Assigned includes what was left (or overspent) last month.",
+  "budgetsLinkedAccounts": "Linked accounts",
+  "budgetsNoLinkedAccounts": "No account is linked: add a budget metadata to an open directive.",
+  "budgetsHistory": "Assigned and spent in {month}",
+  "@budgetsHistory": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetsNoHistory": "Nothing assigned or spent in {month}",
+  "@budgetsNoHistory": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetsEventAssigned": "Assigned",
+  "budgetsEventMovedOut": "Moved to another budget",
+  "budgetsEventMovedIn": "Moved from another budget",
   "authSession": "Browser",
   "@authSession": {
     "description": "Auth type segment: sign in on the server's login page in the system browser"

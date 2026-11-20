@@ -12,6 +12,8 @@ import '../../data/models/commodity.dart';
 import '../../data/repositories/ledger_data_providers.dart';
 import '../../l10n/l10n.dart';
 import '../../router.dart';
+import '../documents/document_providers.dart';
+import '../documents/widgets/document_sections.dart';
 import '../journals/journal_routes.dart';
 import 'accounts_providers.dart';
 import 'widgets/amount_format.dart';
@@ -26,7 +28,8 @@ String accountDetailLocation(String name, {String base = AppRoutes.accounts}) =>
 /// Account detail (S13): balances per commodity, status, balance-history
 /// step chart (the account and its sub-accounts) and the postings of the
 /// account and its sub-accounts with running balance; tapping a posting
-/// opens its transaction.
+/// opens its transaction. Documents of the account (and its sub-accounts)
+/// are listed above the postings when there are any.
 class AccountDetailScreen extends ConsumerWidget {
   const AccountDetailScreen({super.key, required this.name});
 
@@ -37,6 +40,7 @@ class AccountDetailScreen extends ConsumerWidget {
     ref.invalidate(accountBalanceHistoryProvider(name));
     ref.invalidate(accountDetailProvider(name));
     ref.invalidate(accountJournalsProvider(name));
+    ref.invalidate(accountDocumentsProvider(name));
     await ref.read(accountJournalsProvider(name).future);
   }
 
@@ -102,6 +106,7 @@ class AccountDetailScreen extends ConsumerWidget {
                 ),
               ),
             ),
+            SliverToBoxAdapter(child: AccountDocumentsSection(account: name)),
             SliverToBoxAdapter(child: _JournalHeader()),
             ...journals.when(
               data: (list) => list.isEmpty

@@ -6,6 +6,7 @@ import '../../core/widgets/error_view.dart';
 import '../../data/models/account.dart';
 import '../../data/repositories/ledger_data_providers.dart';
 import '../../l10n/l10n.dart';
+import '../../router.dart';
 import 'account_detail_screen.dart';
 import 'account_tree.dart';
 import 'accounts_providers.dart';
@@ -13,7 +14,8 @@ import 'widgets/account_tree_tile.dart';
 import 'widgets/net_worth_card.dart';
 
 /// Accounts tab (S12): net-worth card and the collapsible account tree per
-/// type, with search and a "show closed accounts" toggle.
+/// type, with search, a "show closed accounts" toggle and the ledger's
+/// documents (S15) in the menu.
 class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
 
@@ -90,6 +92,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
             key: const Key('accounts.menu'),
             onSelected: (v) {
               if (v == 'closed') setState(() => _showClosed = !_showClosed);
+              if (v == 'documents') context.push(AppRoutes.documents);
             },
             itemBuilder: (context) => [
               CheckedPopupMenuItem(
@@ -97,6 +100,15 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
                 value: 'closed',
                 checked: _showClosed,
                 child: Text(l10n.accountsShowClosed),
+              ),
+              PopupMenuItem(
+                key: const Key('accounts.documents'),
+                value: 'documents',
+                child: ListTile(
+                  leading: const Icon(Icons.folder_open_outlined),
+                  title: Text(l10n.documentsTitle),
+                  contentPadding: EdgeInsets.zero,
+                ),
               ),
             ],
           ),

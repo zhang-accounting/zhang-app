@@ -7,6 +7,9 @@ import 'core/widgets/app_shell.dart';
 import 'data/profiles/profile_providers.dart';
 import 'features/accounts/account_detail_screen.dart';
 import 'features/accounts/accounts_screen.dart';
+import 'features/budgets/budget_detail_screen.dart';
+import 'features/budgets/budget_routes.dart';
+import 'features/documents/documents_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/journals/journal_routes.dart';
 import 'features/journals/journals_screen.dart';
@@ -26,6 +29,9 @@ abstract final class AppRoutes {
   static const journals = '/journals';
   static const reports = '/reports';
   static const accounts = '/accounts';
+
+  // Pages inside a tab.
+  static const documents = '/accounts/documents';
 
   // Full-screen routes on the root navigator (cover the bottom nav).
   static const newTransaction = '/transactions/new';
@@ -108,6 +114,16 @@ GoRouter createAppRouter(ValueListenable<bool> hasProfile) {
                         AccountDetailScreen(name: state.pathParameters['name']!),
                     routes: [JournalRoutes.accountDetailRoute()],
                   ),
+                  // `/reports/budgets/<YYYY-MM>/<name>`, see budgetDetailLocation().
+                  GoRoute(
+                    path: 'budgets/:month/:name',
+                    // A malformed month is the ledger's current month.
+                    builder: (context, state) => BudgetDetailScreen(
+                      name: state.pathParameters['name']!,
+                      month: parseBudgetMonth(state.pathParameters['month']!),
+                    ),
+                    routes: [JournalRoutes.accountDetailRoute()],
+                  ),
                 ],
               ),
             ],
@@ -118,6 +134,8 @@ GoRouter createAppRouter(ValueListenable<bool> hasProfile) {
                 path: AppRoutes.accounts,
                 builder: (context, state) => const AccountsScreen(),
                 routes: [
+                  // Before `:name` (no account is called `documents`).
+                  GoRoute(path: 'documents', builder: (context, state) => const DocumentsScreen()),
                   // `/accounts/<percent-encoded name>`, see accountDetailLocation().
                   GoRoute(
                     path: ':name',

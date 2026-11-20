@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zhang_app/app.dart';
@@ -48,13 +49,15 @@ ResponseBody? commonRoute(String path) => switch (path) {
 /// Pumps the whole app with an active profile whose API calls are answered
 /// by [handler] (called with the decoded request path, relative to `/api`).
 /// Built-in queries are answered by [builtins] (captured fixtures by
-/// default) before [handler] is asked.
+/// default) before [handler] is asked. [overrides] are added to the
+/// container's.
 Future<(ProviderContainer, FakeAdapter)> pumpLedgerApp(
   WidgetTester tester,
   ResponseBody Function(String path, RequestOptions options) handler, {
   DateTime? now,
   Map<String, Object?>? info,
   FakeBuiltins? builtins,
+  List<Override> overrides = const [],
 }) async {
   final queries = builtins ?? FakeBuiltins();
   tester.view.physicalSize = const Size(1170, 2532); // 390 x 844 logical
@@ -78,6 +81,7 @@ Future<(ProviderContainer, FakeAdapter)> pumpLedgerApp(
       ),
       zhangApiClientProvider.overrideWithValue(client),
       if (now != null) reportsClockProvider.overrideWithValue(() => now),
+      ...overrides,
     ],
     retry: (_, _) => null,
   );

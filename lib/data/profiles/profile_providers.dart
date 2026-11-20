@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/utils/shared_files.dart';
 import 'profile_repository.dart';
 import 'secret_store.dart';
 import 'server_profile.dart';
@@ -99,11 +102,13 @@ class ProfilesController extends Notifier<ProfilesState> {
   }
 
   /// Deletes a profile. If it was active, the first remaining profile becomes
-  /// active; when none remain the app returns to onboarding.
+  /// active; when none remain the app returns to onboarding. Copies of
+  /// shared documents are wiped too (they may belong to that ledger).
   Future<void> delete(String id) async {
     final repo = ref.read(profileRepositoryProvider);
     final store = ref.read(profilesStoreProvider);
     await repo.delete(id);
+    unawaited(clearSharedDocuments());
     final list = store.value.profiles.where((p) => p.id != id).toList();
     String? activeId = store.value.activeId;
     if (activeId == id) {

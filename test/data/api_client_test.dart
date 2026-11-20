@@ -391,6 +391,52 @@ void main() {
       expect(docs, hasLength(3));
       await DocumentRepository(client).download(docs.last);
       expect(adapter.last.uri.path, '/api/documents/YXR0YWNobWVudHMvcmVjZWlwdC50eHQ=');
+      expect(utf8.decode(await DocumentRepository(client).download(docs.last, maxBytes: 13)), 'hello receipt');
+      await expectLater(
+        DocumentRepository(client).download(docs.last, maxBytes: 12),
+        throwsA(isA<ResponseTooLarge>().having((e) => e.maxBytes, 'maxBytes', 12)),
+      );
+    });
+
+    test('budgets: history items at the same instant keep events before postings, in query order', () async {
+      Map<String, Object?> rows(int index, List<List<Object?>> rows) => {
+        ...batchResult('budget_interval.json', index),
+        'rows': rows,
+      };
+      List<Object?> event(String amount) => [
+        '2023-09-01',
+        '00:00:00',
+        1693494000,
+        'assign',
+        {'number': amount, 'currency': 'CNY'},
+      ];
+      List<Object?> posting(String id) => [
+        '2023-09-01',
+        '00:00:00',
+        1693494000,
+        'Expenses:Groceries',
+        id,
+        'Shop',
+        '',
+        {'number': '1', 'currency': 'CNY'},
+        {'number': '1', 'currency': 'CNY'},
+      ];
+      final builtins = FakeBuiltins({
+        'budgets.events': (_) => rows(0, [event('1'), event('2'), event('3')]),
+        'budgets.postings': (_) => rows(1, [posting('a'), posting('b'), posting('c')]),
+      });
+      final (client, _) = _client(_base, (o) => builtins.handle(o)!);
+      final items = await BudgetRepository(client).interval('food', 2023, 9);
+      expect(
+        [
+          for (final i in items)
+            switch (i) {
+              BudgetEvent(:final amount) => 'e${amount.number}',
+              BudgetPosting(:final entry) => 'p${entry.trxId}',
+            },
+        ],
+        ['e1', 'e2', 'e3', 'pa', 'pb', 'pc'],
+      );
     });
   });
 }

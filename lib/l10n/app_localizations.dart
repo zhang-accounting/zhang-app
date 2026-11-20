@@ -1490,6 +1490,102 @@ abstract class AppLocalizations {
   /// **'Account name copied'**
   String get accountsNameCopied;
 
+  /// No description provided for @documentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get documentsTitle;
+
+  /// No description provided for @documentsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 document} other{{count} documents}}'**
+  String documentsCount(int count);
+
+  /// No description provided for @documentsShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Show all {count}'**
+  String documentsShowAll(int count);
+
+  /// No description provided for @documentsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No documents in this ledger. They come from document directives and from document metadata on transactions.'**
+  String get documentsEmpty;
+
+  /// No description provided for @documentsOfTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction attachment'**
+  String get documentsOfTransaction;
+
+  /// No description provided for @documentsShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get documentsShare;
+
+  /// No description provided for @documentsOpenOrShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Open or share'**
+  String get documentsOpenOrShare;
+
+  /// No description provided for @documentsOpenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads the file and opens the share sheet, where you can open it in another app or save it.'**
+  String get documentsOpenHint;
+
+  /// No description provided for @documentsTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is larger than {size} MB, too large to download on the phone.'**
+  String documentsTooLarge(int size);
+
+  /// No description provided for @documentsNoPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'No preview for this file type'**
+  String get documentsNoPreview;
+
+  /// No description provided for @documentsType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get documentsType;
+
+  /// No description provided for @documentsUnknownType.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get documentsUnknownType;
+
+  /// No description provided for @documentsDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get documentsDate;
+
+  /// No description provided for @documentsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get documentsAccount;
+
+  /// No description provided for @documentsAttachedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Belongs to'**
+  String get documentsAttachedTo;
+
+  /// No description provided for @documentsPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Path'**
+  String get documentsPath;
+
   /// No description provided for @reportsPeriodWeek.
   ///
   /// In en, this message translates to:
@@ -1621,6 +1717,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open account'**
   String get reportsOpenAccount;
+
+  /// No description provided for @reportsSegmentFlows.
+  ///
+  /// In en, this message translates to:
+  /// **'Income & expense'**
+  String get reportsSegmentFlows;
+
+  /// No description provided for @reportsSegmentBudgets.
+  ///
+  /// In en, this message translates to:
+  /// **'Budgets'**
+  String get reportsSegmentBudgets;
+
+  /// No description provided for @budgetsPreviousMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get budgetsPreviousMonth;
+
+  /// No description provided for @budgetsNextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get budgetsNextMonth;
+
+  /// No description provided for @budgetsAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get budgetsAssigned;
+
+  /// No description provided for @budgetsActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get budgetsActivity;
+
+  /// No description provided for @budgetsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get budgetsAvailable;
+
+  /// No description provided for @budgetsUncategorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncategorized'**
+  String get budgetsUncategorized;
+
+  /// No description provided for @budgetsClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get budgetsClosed;
+
+  /// No description provided for @budgetsOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Over budget'**
+  String get budgetsOver;
+
+  /// No description provided for @budgetsOverCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 budget over} other{{count} budgets over}}'**
+  String budgetsOverCount(int count);
+
+  /// No description provided for @budgetsDaysLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Last day of the month} other{{count} days left this month}}'**
+  String budgetsDaysLeft(int count);
+
+  /// No description provided for @budgetsSpentOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent {spent} of {assigned}'**
+  String budgetsSpentOf(String spent, String assigned);
+
+  /// No description provided for @budgetsOverBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Over budget by {amount}'**
+  String budgetsOverBy(String amount);
+
+  /// No description provided for @budgetsPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {amount} a day'**
+  String budgetsPerDay(String amount);
+
+  /// No description provided for @budgetsProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of the assigned money spent'**
+  String get budgetsProgressLabel;
+
+  /// No description provided for @budgetsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No budgets in {month}'**
+  String budgetsEmptyTitle(String month);
+
+  /// No description provided for @budgetsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Budgets are written in the ledger: a budget directive creates one, budget-add assigns money to it for a month, and a budget metadata on an open links an expense account to it.'**
+  String get budgetsEmptyBody;
+
+  /// No description provided for @budgetsReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'The app shows budgets; change them in the ledger file.'**
+  String get budgetsReadOnly;
+
+  /// No description provided for @budgetsAssignedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned includes what was left (or overspent) last month.'**
+  String get budgetsAssignedHint;
+
+  /// No description provided for @budgetsLinkedAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked accounts'**
+  String get budgetsLinkedAccounts;
+
+  /// No description provided for @budgetsNoLinkedAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'No account is linked: add a budget metadata to an open directive.'**
+  String get budgetsNoLinkedAccounts;
+
+  /// No description provided for @budgetsHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned and spent in {month}'**
+  String budgetsHistory(String month);
+
+  /// No description provided for @budgetsNoHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing assigned or spent in {month}'**
+  String budgetsNoHistory(String month);
+
+  /// No description provided for @budgetsEventAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned'**
+  String get budgetsEventAssigned;
+
+  /// No description provided for @budgetsEventMovedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved to another budget'**
+  String get budgetsEventMovedOut;
+
+  /// No description provided for @budgetsEventMovedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved from another budget'**
+  String get budgetsEventMovedIn;
 
   /// Auth type segment: sign in on the server's login page in the system browser
   ///
