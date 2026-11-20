@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,6 +50,38 @@ class SessionGrant {
   String toString() => 'SessionGrant(user: $user, expiresAt: $expiresAt)';
 }
 
+/// The secrets of one browser sign-in: a PKCE code verifier (RFC 7636) and a
+/// `state`, each 32 bytes of a CSPRNG, base64url without padding (43
+/// characters). The login URL carries [codeChallenge] (`S256`) and [state];
+/// the callback must echo [state] and the exchange sends [codeVerifier], so an
+/// app that intercepts the `zhang-app://` callback cannot use the code.
+///
+/// [toString] never includes them.
+@immutable
+class SignInSecrets {
+  const SignInSecrets({required this.codeVerifier, required this.state});
+
+  /// Fresh secrets from [random] (default `Random.secure()`).
+  factory SignInSecrets.generate([Random? random]) {
+    final r = random ?? Random.secure();
+    return SignInSecrets(codeVerifier: _randomToken(r), state: _randomToken(r));
+  }
+
+  final String codeVerifier;
+  final String state;
+
+  /// `BASE64URL(SHA256(code_verifier))` without padding (method `S256`).
+  String get codeChallenge => _base64UrlNoPadding(sha256.convert(ascii.encode(codeVerifier)).bytes);
+
+  static String _randomToken(Random random) => _base64UrlNoPadding(List<int>.generate(32, (_) => random.nextInt(256)));
+
+  @override
+  String toString() => 'SignInSecrets(<redacted>)';
+}
+
+/// RFC 4648 §5 base64url without the `=` padding (RFC 7636 appendix A).
+String _base64UrlNoPadding(List<int> bytes) => base64Url.encode(bytes).replaceAll('=', '');
+
 /// Why a browser sign-in did not produce a session.
 enum BrowserSignInFailure {
   /// `/api/auth/status.enabled == false`: the server needs no sign-in.
@@ -63,8 +98,13 @@ enum BrowserSignInFailure {
   browserFailed,
 
   /// The browser returned something other than
-  /// `zhang-app://auth/callback?code=<one-time code>`.
+  /// `zhang-app://auth/callback?code=<one-time code>[&state=<state>]`.
   malformedCallback,
+
+  /// The callback's `state` is not the one this sign-in sent, or is missing
+  /// although the server echoes it (`app_login_pkce`): the callback answers a
+  /// sign-in the app did not start, so its code is never exchanged.
+  stateMismatch,
 
   /// `401` from the exchange: the code is unknown, expired (60 s) or used.
   codeRejected,
@@ -104,37 +144,62 @@ Future<String> systemBrowserLauncher(String url, String callbackScheme) => Flutt
 /// Browser sign-in handoff (docs/passkey-login.md):
 ///
 /// 1. `GET /api/auth/status` – sign-in enabled and `app_login` supported?
-/// 2. open `<base>/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback` in the
-///    system browser; the user signs in with a passkey or password there,
-/// 3. the page redirects to `zhang-app://auth/callback?code=<one-time code>`
-///    (60 s, single use); only that `code` is read from the callback,
-/// 4. `POST /api/auth/app/exchange {"code"}` → [SessionGrant].
+///    `app_login_pkce` – does the server echo `state` and check the verifier?
+/// 2. fresh [SignInSecrets]; open
+///    `<base>/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback&code_challenge=…&code_challenge_method=S256&state=…`
+///    in the system browser; the user signs in with a passkey or password,
+/// 3. the page redirects to `zhang-app://auth/callback?code=<one-time code>&state=<state>`
+///    (60 s, single use); the `state` must be this sign-in's (a server
+///    without `app_login_pkce` ignores the extra parameters and echoes none),
+/// 4. `POST /api/auth/app/exchange {"code","code_verifier"}` → [SessionGrant].
 ///
-/// Tests inject [launch] (no browser) and [createClient] (fake adapter).
-/// Never logs codes or tokens.
+/// Tests inject [launch] (no browser), [createClient] (fake adapter) and
+/// [newSecrets]. Never logs codes, verifiers, states or tokens.
 class BrowserSignIn {
-  BrowserSignIn({WebAuthLauncher? launch, this.createClient = ZhangApiClient.new})
-    : launch = launch ?? systemBrowserLauncher;
+  BrowserSignIn({
+    WebAuthLauncher? launch,
+    this.createClient = ZhangApiClient.new,
+    this.newSecrets = SignInSecrets.generate,
+  }) : launch = launch ?? systemBrowserLauncher;
 
   final WebAuthLauncher launch;
 
   /// Builds the (credential-less) client for the server being signed in to.
   final ZhangApiClient Function(ServerProfile profile) createClient;
 
+  /// The secrets of each new sign-in.
+  final SignInSecrets Function() newSecrets;
+
   static const callbackScheme = 'zhang-app';
   static const callbackUrl = '$callbackScheme://auth/callback';
 
-  /// The server's login page, told to return to the app.
-  static String loginUrl(String baseUrl) =>
-      '$baseUrl/login?return_to=${Uri.encodeQueryComponent(callbackUrl)}';
+  /// The server's login page, told to return to the app, with the PKCE
+  /// challenge and the state of [secrets].
+  static String loginUrl(String baseUrl, SignInSecrets secrets) {
+    final query = Uri(
+      queryParameters: {
+        'return_to': callbackUrl,
+        'code_challenge': secrets.codeChallenge,
+        'code_challenge_method': 'S256',
+        'state': secrets.state,
+      },
+    ).query;
+    return '$baseUrl/login?$query';
+  }
 
   static final _codePattern = RegExp(r'^[A-Za-z0-9_-]{16,512}={0,2}$');
 
   /// The one-time code of a callback URL. Accepts exactly
-  /// `zhang-app://auth/callback?code=<base64url>`: any other scheme, host or
-  /// path, a fragment, a missing / repeated / malformed `code` or any other
-  /// query parameter throws [BrowserSignInFailure.malformedCallback].
-  static String codeFromCallback(String callback) {
+  /// `zhang-app://auth/callback?code=<base64url>[&state=<state>]`: any other
+  /// scheme, host or path, a fragment, a missing / repeated / malformed
+  /// `code`, a repeated `state` or any other query parameter throws
+  /// [BrowserSignInFailure.malformedCallback].
+  ///
+  /// The `state` must be [state] (constant-time comparison); without one the
+  /// callback is accepted only when ![stateRequired] (a server without
+  /// `app_login_pkce` ignores the state it was sent). Otherwise throws
+  /// [BrowserSignInFailure.stateMismatch].
+  static String codeFromCallback(String callback, {required String state, required bool stateRequired}) {
     const malformed = BrowserSignInException(BrowserSignInFailure.malformedCallback);
     final uri = Uri.tryParse(callback.trim());
     if (uri == null ||
@@ -147,10 +212,30 @@ class BrowserSignIn {
       throw malformed;
     }
     final params = uri.queryParametersAll;
-    if (params.length != 1) throw malformed;
+    if (params.keys.any((name) => name != 'code' && name != 'state')) throw malformed;
     final codes = params['code'];
     if (codes == null || codes.length != 1 || !_codePattern.hasMatch(codes.single)) throw malformed;
+    final states = params['state'];
+    if (states != null && states.length != 1) throw malformed;
+    final returned = states?.single;
+    if (returned == null ? stateRequired : !_sameSecret(returned, state)) {
+      throw const BrowserSignInException(
+        BrowserSignInFailure.stateMismatch,
+        detail: 'the callback does not carry the state of this sign-in',
+      );
+    }
     return codes.single;
+  }
+
+  /// Compares two strings without stopping at the first difference.
+  static bool _sameSecret(String a, String b) {
+    final x = utf8.encode(a);
+    final y = utf8.encode(b);
+    var diff = x.length ^ y.length;
+    for (var i = 0; i < x.length && i < y.length; i++) {
+      diff |= x[i] ^ y[i];
+    }
+    return diff == 0;
   }
 
   /// `GET /api/auth/status` of [baseUrl] (no credentials).
@@ -164,15 +249,18 @@ class BrowserSignIn {
     final status = await this.status(baseUrl, allowSelfSigned: allowSelfSigned);
     if (!status.enabled) throw const BrowserSignInException(BrowserSignInFailure.notNeeded);
     if (!status.supportsAppLogin) throw const BrowserSignInException(BrowserSignInFailure.notSupported);
-    return startBrowserSignIn(baseUrl, allowSelfSigned: allowSelfSigned);
+    return startBrowserSignIn(baseUrl, pkce: status.appLoginPkce, allowSelfSigned: allowSelfSigned);
   }
 
   /// Opens the login page in the system browser and exchanges the returned
-  /// code (steps 2–4, no status check).
-  Future<SessionGrant> startBrowserSignIn(String baseUrl, {bool allowSelfSigned = false}) async {
+  /// code (steps 2–4, no status check). [pkce] is the server's
+  /// `app_login_pkce` (`AuthStatus.appLoginPkce`): then the callback must
+  /// echo the state.
+  Future<SessionGrant> startBrowserSignIn(String baseUrl, {required bool pkce, bool allowSelfSigned = false}) async {
+    final secrets = newSecrets();
     final String callback;
     try {
-      callback = await launch(loginUrl(baseUrl), callbackScheme);
+      callback = await launch(loginUrl(baseUrl, secrets), callbackScheme);
     } on PlatformException catch (e) {
       if (e.code == 'CANCELED') throw const BrowserSignInException(BrowserSignInFailure.cancelled);
       throw BrowserSignInException(BrowserSignInFailure.browserFailed, detail: '${e.code}: ${e.message}');
@@ -181,26 +269,45 @@ class BrowserSignIn {
     } catch (e) {
       throw BrowserSignInException(BrowserSignInFailure.browserFailed, detail: '${e.runtimeType}');
     }
-    return completeSignIn(baseUrl, callback, allowSelfSigned: allowSelfSigned);
+    return completeSignIn(baseUrl, callback, secrets, pkce: pkce, allowSelfSigned: allowSelfSigned);
   }
 
-  /// Steps 3–4 for a callback URL the browser returned. Also the entry point
-  /// for tests that obtain the callback without a browser.
-  Future<SessionGrant> completeSignIn(String baseUrl, String callback, {bool allowSelfSigned = false}) async =>
-      exchange(baseUrl, codeFromCallback(callback), allowSelfSigned: allowSelfSigned);
+  /// Steps 3–4 for a callback URL the browser returned to the sign-in of
+  /// [secrets]: checks the state ([codeFromCallback], `stateRequired` =
+  /// [pkce]), then exchanges the code with the verifier. Also the entry
+  /// point for tests that obtain the callback without a browser.
+  Future<SessionGrant> completeSignIn(
+    String baseUrl,
+    String callback,
+    SignInSecrets secrets, {
+    required bool pkce,
+    bool allowSelfSigned = false,
+  }) async => exchange(
+    baseUrl,
+    codeFromCallback(callback, state: secrets.state, stateRequired: pkce),
+    codeVerifier: secrets.codeVerifier,
+    allowSelfSigned: allowSelfSigned,
+  );
 
-  /// `POST /api/auth/app/exchange {"code"}` (no credentials: the code is
-  /// one). `401` → [BrowserSignInFailure.codeRejected], `429` →
+  /// `POST /api/auth/app/exchange {"code","code_verifier"}` (no credentials:
+  /// the code and the verifier are). A server without `app_login_pkce`
+  /// ignores the verifier. `401` → [BrowserSignInFailure.codeRejected]
+  /// (also a wrong verifier, which uses the code up), `429` →
   /// [BrowserSignInFailure.rateLimited]; anything else is a
   /// [ZhangApiException].
-  Future<SessionGrant> exchange(String baseUrl, String code, {bool allowSelfSigned = false}) async {
+  Future<SessionGrant> exchange(
+    String baseUrl,
+    String code, {
+    required String? codeVerifier,
+    bool allowSelfSigned = false,
+  }) async {
     try {
       final grant = await _withClient(
         baseUrl,
         allowSelfSigned,
         (client) => client.post(
           ZhangEndpoints.authAppExchange,
-          body: {'code': code},
+          body: {'code': code, 'code_verifier': ?codeVerifier},
           decode: SessionGrant.fromJson,
         ),
       );

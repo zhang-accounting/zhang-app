@@ -910,6 +910,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get signInMalformedCallback => '服务器返回的登录结果无效。';
 
   @override
+  String get signInStateMismatch => '浏览器返回的登录不是本 App 发起的，已拒绝使用。请重新登录。';
+
+  @override
   String get signInCodeRejected => '登录凭证已过期或已被使用，请重新登录。';
 
   @override

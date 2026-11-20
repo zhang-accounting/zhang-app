@@ -31,6 +31,7 @@ String describeSignInFailure(AppLocalizations l10n, BrowserSignInException error
   BrowserSignInFailure.cancelled => l10n.signInCancelled,
   BrowserSignInFailure.browserFailed => l10n.signInBrowserFailed,
   BrowserSignInFailure.malformedCallback => l10n.signInMalformedCallback,
+  BrowserSignInFailure.stateMismatch => l10n.signInStateMismatch,
   BrowserSignInFailure.codeRejected => l10n.signInCodeRejected,
   BrowserSignInFailure.rateLimited => _rateLimited(l10n, error.retryAfter),
 };

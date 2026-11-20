@@ -937,6 +937,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server returned an invalid sign-in response.';
 
   @override
+  String get signInStateMismatch =>
+      'The browser returned a sign-in this app did not start, so it was not used. Sign in again.';
+
+  @override
   String get signInCodeRejected =>
       'The sign-in expired or was already used. Sign in again.';
 

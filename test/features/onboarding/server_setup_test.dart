@@ -239,7 +239,14 @@ void main() {
     expect(find.byKey(const Key('setup.username')), findsNothing);
 
     await _tap(tester, 'setup.signInBrowser');
-    expect(server.launched, ['http://127.0.0.1:18121/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback']);
+    final login = Uri.parse(server.launched.single);
+    expect(login.path, '/login');
+    expect(login.queryParameters, {
+      'return_to': 'zhang-app://auth/callback',
+      'code_challenge': matches(RegExp(r'^[A-Za-z0-9_-]{43}$')),
+      'code_challenge_method': 'S256',
+      'state': matches(RegExp(r'^[A-Za-z0-9_-]{43}$')),
+    });
     expect(find.byKey(const Key('setup.result.error')), findsNothing);
     expect(find.byKey(const Key('setup.continue')), findsNothing);
 
@@ -259,6 +266,40 @@ void main() {
     expect(active.sessionUser, 'demo');
     expect(active.sessionExpiresAt, DateTime.utc(2026, 11, 9, 3, 7, 29));
     expect(active.authHeaders(), {'Authorization': 'Bearer tok1.sig'});
+  });
+
+  testWidgets('browser sign-in: a callback without this sign-in\'s state is refused, never exchanged', (tester) async {
+    final server = FakeSetupServer();
+    await _pump(tester, server);
+    await _toServer(tester, 'http://127.0.0.1:18121');
+
+    for (final forge in [() => server.handoff.dropNextState = true, () => server.handoff.plantNextState = 'other']) {
+      forge();
+      await _tap(tester, 'setup.signInBrowser');
+      expect(find.byKey(const Key('setup.result.error')), findsOneWidget);
+      expect(
+        find.text('The browser returned a sign-in this app did not start, so it was not used. Sign in again.'),
+        findsOneWidget,
+      );
+      expect(server.requests.where((o) => o.uri.path == '/api/auth/app/exchange'), isEmpty);
+    }
+
+    await _tap(tester, 'setup.signInBrowser');
+    expect(find.byKey(const Key('setup.result.ok')), findsOneWidget);
+    expect(server.requests.where((o) => o.uri.path == '/api/auth/app/exchange'), hasLength(1));
+  });
+
+  testWidgets('browser sign-in: a server without app_login_pkce (no state echoed) still signs in', (tester) async {
+    final server = FakeSetupServer()..handoff.pkce = false;
+    final app = await _pump(tester, server);
+    await _toServer(tester, 'http://127.0.0.1:18121');
+
+    await _tap(tester, 'setup.signInBrowser');
+    expect(find.byKey(const Key('setup.result.ok')), findsOneWidget);
+    expect(find.text('Signed in as demo'), findsOneWidget);
+    await _tap(tester, 'setup.continue');
+    await _tap(tester, 'setup.start');
+    expect(app.container.read(activeProfileProvider)!.authHeaders(), {'Authorization': 'Bearer tok1.sig'});
   });
 
   testWidgets('username and password: from the browser page, wrong password inline, then right', (tester) async {

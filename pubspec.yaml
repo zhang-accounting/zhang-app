@@ -46,6 +46,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_web_auth_2: ^5.1.0
+  crypto: ^3.0.7
   url_launcher: ^6.3.3
 
 dev_dependencies:

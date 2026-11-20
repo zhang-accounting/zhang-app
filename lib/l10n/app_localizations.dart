@@ -1724,6 +1724,12 @@ abstract class AppLocalizations {
   /// **'The server returned an invalid sign-in response.'**
   String get signInMalformedCallback;
 
+  /// No description provided for @signInStateMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The browser returned a sign-in this app did not start, so it was not used. Sign in again.'**
+  String get signInStateMismatch;
+
   /// No description provided for @signInCodeRejected.
   ///
   /// In en, this message translates to:

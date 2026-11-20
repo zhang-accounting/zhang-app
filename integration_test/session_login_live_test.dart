@@ -1,5 +1,6 @@
 // Live end-to-end check of the browser sign-in ("Browser" auth type) against
-// a running zhang server with the app login handoff (zhang PR #786). NOT part
+// a running zhang server with the app login handoff (zhang PR #786; PKCE and
+// state since `app_login_pkce`). NOT part
 // of `flutter test` (needs a server + device):
 //
 //   ZHANG_SESSION_SECRET=ob-test zhang serve /tmp/zhang-ob-ledger --addr 127.0.0.1 \
@@ -12,10 +13,12 @@
 // The setup wizard probes the server, offers "Sign in with browser" first and
 // verifies the session inline. No browser is driven: the launcher ([webAuthLauncherProvider]) is replaced
 // by one that does what the login page does – `POST /api/auth/login`, then
-// `POST /api/auth/app/code` with the session cookie – and returns the
-// `zhang-app://auth/callback?code=…` redirect. Everything after the callback
-// (code parsing, exchange, storage, Bearer requests, sign-out) is the app's
-// real code path. Clears the app's saved profiles first. Never prints tokens.
+// `POST /api/auth/app/code` with the session cookie and the login URL's
+// `code_challenge` / `code_challenge_method` / `state` – and returns the
+// `zhang-app://auth/callback?code=…&state=…` redirect. Everything after the
+// callback (state check, exchange with the code verifier, storage, Bearer
+// requests, sign-out) is the app's real code path. Clears the app's saved
+// profiles first. Never prints tokens.
 import 'dart:convert';
 import 'dart:io';
 
@@ -50,10 +53,15 @@ Future<void> _hold(WidgetTester tester, String marker) async {
 }
 
 /// What the server's login page does after a successful sign-in: password
-/// login (cookie `zhang_session`), then a one-time code for the app.
+/// login (cookie `zhang_session`), then a one-time code for the app, bound to
+/// the PKCE challenge of the login URL and echoing its state.
 Future<String> _callbackFromServer(String loginUrl, String scheme) async {
   final login = Uri.parse(loginUrl);
   final returnTo = login.queryParameters['return_to']!;
+  final handoff = {
+    for (final name in ['code_challenge', 'code_challenge_method', 'state'])
+      if (login.queryParameters[name] case final value? when value.isNotEmpty) name: value,
+  };
   final http = HttpClient();
   try {
     final req = await http.postUrl(Uri.parse('$_url/api/auth/login'));
@@ -67,7 +75,7 @@ Future<String> _callbackFromServer(String loginUrl, String scheme) async {
     final codeReq = await http.postUrl(Uri.parse('$_url/api/auth/app/code'));
     codeReq.headers.contentType = ContentType.json;
     codeReq.cookies.add(Cookie(cookie.name, cookie.value));
-    codeReq.write(jsonEncode({'return_to': returnTo}));
+    codeReq.write(jsonEncode({'return_to': returnTo, ...handoff}));
     final codeRes = await codeReq.close();
     final body = await codeRes.transform(utf8.decoder).join();
     if (codeRes.statusCode != 200) throw StateError('app/code failed: HTTP ${codeRes.statusCode}');
@@ -141,8 +149,13 @@ void main() {
     // with the session (verified inline).
     await _tapKey(tester, 'setup.signInBrowser');
     await _waitFor(tester, () => _present('setup.result.ok') || _present('setup.result.error'));
-    _result('launched ${launched.single}');
-    expect(launched.single, '$_url/login?return_to=zhang-app%3A%2F%2Fauth%2Fcallback');
+    final login = Uri.parse(launched.single);
+    // The parameter names only: the state is a one-time secret of this sign-in.
+    _result('launched ${login.replace(query: '').toString()}${login.queryParameters.keys.join('&')}');
+    expect(login.queryParameters['return_to'], 'zhang-app://auth/callback');
+    expect(login.queryParameters['code_challenge_method'], 'S256');
+    expect(login.queryParameters['code_challenge'], hasLength(43));
+    expect(login.queryParameters['state'], hasLength(43));
     for (final key in ['setup.result.ok', 'setup.result.error']) {
       if (_present(key)) _result('$key: ${_texts(find.byKey(Key(key)))}');
     }
