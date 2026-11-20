@@ -140,6 +140,18 @@ abstract class AppLocalizations {
   /// **'New transaction'**
   String get newTransactionTitle;
 
+  /// No description provided for @editTransactionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit transaction'**
+  String get editTransactionTitle;
+
+  /// No description provided for @advTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New transaction (advanced)'**
+  String get advTitle;
+
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:
@@ -536,6 +548,12 @@ abstract class AppLocalizations {
   /// **'Transfer'**
   String get addModeTransfer;
 
+  /// No description provided for @addModeAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get addModeAdvanced;
+
   /// No description provided for @addClose.
   ///
   /// In en, this message translates to:
@@ -752,11 +770,23 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 saved} other{{count} saved}}'**
   String addSavedCount(int count);
 
+  /// No description provided for @editSavedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes saved'**
+  String get editSavedSnack;
+
   /// No description provided for @addSaveFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not save'**
   String get addSaveFailed;
+
+  /// No description provided for @editStale.
+  ///
+  /// In en, this message translates to:
+  /// **'this transaction changed on the server since it was opened (its id is out of date). Go back, refresh the list and open it again.'**
+  String get editStale;
 
   /// No description provided for @addPreviewRejected.
   ///
@@ -913,6 +943,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expenses'**
   String get addTypeExpenses;
+
+  /// No description provided for @advAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting account'**
+  String get advAccount;
+
+  /// No description provided for @advAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'empty = auto-balance'**
+  String get advAuto;
+
+  /// No description provided for @advAutoTakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty amount takes {amounts}'**
+  String advAutoTakes(String amounts);
+
+  /// No description provided for @advToggleSign.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle sign'**
+  String get advToggleSign;
+
+  /// No description provided for @advCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get advCost;
+
+  /// No description provided for @advCostHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 26000 USD'**
+  String get advCostHint;
+
+  /// No description provided for @advPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get advPrice;
+
+  /// No description provided for @advPriceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 7.2 CNY'**
+  String get advPriceHint;
+
+  /// No description provided for @advComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get advComment;
+
+  /// No description provided for @advMoreFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost, price, comment'**
+  String get advMoreFields;
+
+  /// No description provided for @advMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get advMoveUp;
+
+  /// No description provided for @advMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get advMoveDown;
+
+  /// No description provided for @advRemovePosting.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove posting'**
+  String get advRemovePosting;
+
+  /// No description provided for @advAddPosting.
+  ///
+  /// In en, this message translates to:
+  /// **'Add posting'**
+  String get advAddPosting;
+
+  /// No description provided for @advAddMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'Add metadata'**
+  String get advAddMeta;
+
+  /// No description provided for @advMetaKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get advMetaKey;
+
+  /// No description provided for @advMetaValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get advMetaValue;
+
+  /// No description provided for @advLinksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'^trip-2026, separated by spaces'**
+  String get advLinksHint;
+
+  /// No description provided for @advFlagComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get advFlagComplete;
+
+  /// No description provided for @advRemainder.
+  ///
+  /// In en, this message translates to:
+  /// **'Remainder'**
+  String get advRemainder;
+
+  /// No description provided for @advBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced'**
+  String get advBalanced;
+
+  /// No description provided for @advUnbalancedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Off by {amounts}'**
+  String advUnbalancedBy(String amounts);
+
+  /// No description provided for @advBalanceUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked by the server when saving (cost booked against lots)'**
+  String get advBalanceUnknown;
+
+  /// No description provided for @advNeedsPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Several commodities: add a price or a cost to convert them, or leave one amount empty.'**
+  String get advNeedsPrice;
+
+  /// No description provided for @advIssuePostings.
+  ///
+  /// In en, this message translates to:
+  /// **'Add at least two postings'**
+  String get advIssuePostings;
+
+  /// No description provided for @advIssueAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an account for every posting'**
+  String get advIssueAccount;
+
+  /// No description provided for @advIssueAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a number'**
+  String get advIssueAmount;
+
+  /// No description provided for @advIssueAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Only one amount may be left empty'**
+  String get advIssueAuto;
+
+  /// No description provided for @advIssueUnbalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'The postings do not balance'**
+  String get advIssueUnbalanced;
 
   /// No description provided for @homeExpense.
   ///
@@ -1279,6 +1483,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copied to clipboard'**
   String get trxCopied;
+
+  /// No description provided for @trxEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get trxEdit;
+
+  /// No description provided for @trxDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as new transaction'**
+  String get trxDuplicate;
+
+  /// No description provided for @trxEditBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This transaction can\'t be edited here'**
+  String get trxEditBlockedTitle;
+
+  /// No description provided for @trxEditBlockedNotTransaction.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance checks and pads can\'t be edited in the app.'**
+  String get trxEditBlockedNotTransaction;
+
+  /// No description provided for @trxEditBlockedUnknownShape.
+  ///
+  /// In en, this message translates to:
+  /// **'This server does not report everything an edit has to keep (posting metadata, comments). Update zhang to edit transactions in the app.'**
+  String get trxEditBlockedUnknownShape;
+
+  /// No description provided for @trxEditBlockedNotWritten.
+  ///
+  /// In en, this message translates to:
+  /// **'This transaction was made by a plugin, or its postings can\'t be read as they are written, so it can\'t be edited through the server.'**
+  String get trxEditBlockedNotWritten;
+
+  /// No description provided for @trxEditBlockedDropsText.
+  ///
+  /// In en, this message translates to:
+  /// **'This transaction has comments in the ledger file (between its postings, on its first line or after metadata) that saving through the server would delete. Edit it in the ledger file instead.'**
+  String get trxEditBlockedDropsText;
+
+  /// No description provided for @trxEditBlockedPostingFlag.
+  ///
+  /// In en, this message translates to:
+  /// **'A posting of this transaction has its own flag (such as !). The server does not report posting flags, so an edit could drop it. Edit it in the ledger file instead.'**
+  String get trxEditBlockedPostingFlag;
+
+  /// No description provided for @trxEditBlockedUnverified.
+  ///
+  /// In en, this message translates to:
+  /// **'The server reports problems with this transaction as it is written, so the app can\'t check that an edit would keep everything. Fix it in the ledger file first.'**
+  String get trxEditBlockedUnverified;
+
+  /// No description provided for @trxEditCopyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can still copy it as a new transaction.'**
+  String get trxEditCopyHint;
+
+  /// No description provided for @trxRefreshing.
+  ///
+  /// In en, this message translates to:
+  /// **'Updating…'**
+  String get trxRefreshing;
+
+  /// No description provided for @trxEditedNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. The updated transaction could not be found again – it may have moved. Open it again from the list.'**
+  String get trxEditedNotFound;
 
   /// No description provided for @trxNotFound.
   ///

@@ -31,6 +31,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newTransactionTitle => 'New transaction';
 
   @override
+  String get editTransactionTitle => 'Edit transaction';
+
+  @override
+  String get advTitle => 'New transaction (advanced)';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override
@@ -254,6 +260,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addModeTransfer => 'Transfer';
 
   @override
+  String get addModeAdvanced => 'Advanced';
+
+  @override
   String get addClose => 'Close';
 
   @override
@@ -374,7 +383,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get editSavedSnack => 'Changes saved';
+
+  @override
   String get addSaveFailed => 'Could not save';
+
+  @override
+  String get editStale =>
+      'this transaction changed on the server since it was opened (its id is out of date). Go back, refresh the list and open it again.';
 
   @override
   String get addPreviewRejected => 'Not saved – the ledger would report:';
@@ -466,6 +482,99 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addTypeExpenses => 'Expenses';
+
+  @override
+  String get advAccount => 'Posting account';
+
+  @override
+  String get advAuto => 'empty = auto-balance';
+
+  @override
+  String advAutoTakes(String amounts) {
+    return 'Empty amount takes $amounts';
+  }
+
+  @override
+  String get advToggleSign => 'Toggle sign';
+
+  @override
+  String get advCost => 'Cost';
+
+  @override
+  String get advCostHint => 'e.g. 26000 USD';
+
+  @override
+  String get advPrice => 'Price';
+
+  @override
+  String get advPriceHint => 'e.g. 7.2 CNY';
+
+  @override
+  String get advComment => 'Comment';
+
+  @override
+  String get advMoreFields => 'Cost, price, comment';
+
+  @override
+  String get advMoveUp => 'Move up';
+
+  @override
+  String get advMoveDown => 'Move down';
+
+  @override
+  String get advRemovePosting => 'Remove posting';
+
+  @override
+  String get advAddPosting => 'Add posting';
+
+  @override
+  String get advAddMeta => 'Add metadata';
+
+  @override
+  String get advMetaKey => 'Key';
+
+  @override
+  String get advMetaValue => 'Value';
+
+  @override
+  String get advLinksHint => '^trip-2026, separated by spaces';
+
+  @override
+  String get advFlagComplete => 'Complete';
+
+  @override
+  String get advRemainder => 'Remainder';
+
+  @override
+  String get advBalanced => 'Balanced';
+
+  @override
+  String advUnbalancedBy(String amounts) {
+    return 'Off by $amounts';
+  }
+
+  @override
+  String get advBalanceUnknown =>
+      'Checked by the server when saving (cost booked against lots)';
+
+  @override
+  String get advNeedsPrice =>
+      'Several commodities: add a price or a cost to convert them, or leave one amount empty.';
+
+  @override
+  String get advIssuePostings => 'Add at least two postings';
+
+  @override
+  String get advIssueAccount => 'Choose an account for every posting';
+
+  @override
+  String get advIssueAmount => 'Not a number';
+
+  @override
+  String get advIssueAuto => 'Only one amount may be left empty';
+
+  @override
+  String get advIssueUnbalanced => 'The postings do not balance';
 
   @override
   String get homeExpense => 'Expenses';
@@ -679,6 +788,49 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trxCopied => 'Copied to clipboard';
+
+  @override
+  String get trxEdit => 'Edit';
+
+  @override
+  String get trxDuplicate => 'Copy as new transaction';
+
+  @override
+  String get trxEditBlockedTitle => 'This transaction can\'t be edited here';
+
+  @override
+  String get trxEditBlockedNotTransaction =>
+      'Balance checks and pads can\'t be edited in the app.';
+
+  @override
+  String get trxEditBlockedUnknownShape =>
+      'This server does not report everything an edit has to keep (posting metadata, comments). Update zhang to edit transactions in the app.';
+
+  @override
+  String get trxEditBlockedNotWritten =>
+      'This transaction was made by a plugin, or its postings can\'t be read as they are written, so it can\'t be edited through the server.';
+
+  @override
+  String get trxEditBlockedDropsText =>
+      'This transaction has comments in the ledger file (between its postings, on its first line or after metadata) that saving through the server would delete. Edit it in the ledger file instead.';
+
+  @override
+  String get trxEditBlockedPostingFlag =>
+      'A posting of this transaction has its own flag (such as !). The server does not report posting flags, so an edit could drop it. Edit it in the ledger file instead.';
+
+  @override
+  String get trxEditBlockedUnverified =>
+      'The server reports problems with this transaction as it is written, so the app can\'t check that an edit would keep everything. Fix it in the ledger file first.';
+
+  @override
+  String get trxEditCopyHint => 'You can still copy it as a new transaction.';
+
+  @override
+  String get trxRefreshing => 'Updating…';
+
+  @override
+  String get trxEditedNotFound =>
+      'Saved. The updated transaction could not be found again – it may have moved. Open it again from the list.';
 
   @override
   String get trxNotFound =>

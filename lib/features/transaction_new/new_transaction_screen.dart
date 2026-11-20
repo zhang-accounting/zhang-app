@@ -12,13 +12,18 @@ import '../../core/utils/money.dart';
 import '../../core/widgets/error_view.dart';
 import '../../data/models/account.dart';
 import '../../data/models/commodity.dart';
+import '../../data/models/json_utils.dart';
 import '../../data/models/transaction_preview.dart';
+import '../../data/models/transaction_request.dart';
 import '../../data/repositories/journal_repository.dart';
 import '../../data/repositories/ledger_data_providers.dart';
+import '../../data/repositories/ledger_revision.dart';
 import '../../l10n/l10n.dart';
 import '../../router.dart';
 import '../account_picker/account_picker_data.dart';
 import '../account_picker/account_picker_sheet.dart';
+import 'advanced_draft.dart';
+import 'advanced_entry_screen.dart';
 import 'amount_expression.dart';
 import 'category_tree.dart';
 import 'entry_form.dart';
@@ -26,9 +31,11 @@ import 'entry_mode.dart';
 import 'payee_autofill.dart';
 import 'record_prefs.dart';
 import 'transaction_builder.dart';
+import 'transaction_edit.dart';
 import 'transaction_history.dart';
 import 'widgets/amount_keypad.dart';
 import 'widgets/category_grid.dart';
+import 'widgets/save_error_banner.dart';
 import 'widgets/suggestion_chips.dart';
 import 'widgets/tags_sheet.dart';
 
@@ -36,11 +43,17 @@ import 'widgets/tags_sheet.dart';
 /// segments, category grid + sub-category chips (or transfer accounts),
 /// date / funding / tags chips, payee + narration with completion, and the
 /// calculator keypad. Opened full-screen from the shell's centre FAB;
-/// `?mode=income|transfer` preselects a mode.
+/// `?mode=income|transfer` preselects a mode. The "Advanced" segment opens
+/// the multi-posting editor with what was entered so far.
+///
+/// With [prefill] it edits (`PUT`) or copies a two-posting transaction
+/// (S08): fields the form does not show are kept ([overlaySimpleEntry]);
+/// an edit keeps its mode. Pops with [EntrySaved] once saved.
 class NewTransactionScreen extends ConsumerStatefulWidget {
-  const NewTransactionScreen({super.key, this.initialMode = EntryMode.expense});
+  const NewTransactionScreen({super.key, this.initialMode = EntryMode.expense, this.prefill});
 
   final EntryMode initialMode;
+  final EntryPrefill? prefill;
 
   @override
   ConsumerState<NewTransactionScreen> createState() => _NewTransactionScreenState();
@@ -80,9 +93,22 @@ class _Resolved {
 }
 
 class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
-  late EntryForm _form = EntryForm(mode: widget.initialMode);
-  final _payee = TextEditingController();
-  final _narration = TextEditingController();
+  late EntryForm _form = switch (widget.prefill) {
+    final p? => EntryForm.prefilled(p.fit, date: p.datetime, tags: p.tags),
+    null => EntryForm(mode: widget.initialMode),
+  };
+  late final _payee = TextEditingController(text: widget.prefill?.payee);
+  late final _narration = TextEditingController(text: widget.prefill?.narration);
+
+  /// Prefilled category account still to place in the grid once loaded.
+  late String? _placeCategory = widget.prefill?.fit.category;
+
+  /// Kept fields of an edit / copy ([EntryPrefill.base]); dropped after a
+  /// copy was saved with "save and add another".
+  late CreateTransactionRequest? _base = widget.prefill?.base;
+
+  /// A prefilled form was changed (asks before discarding).
+  bool _touched = false;
   final _payeeFocus = FocusNode();
   final _narrationFocus = FocusNode();
   bool _submitting = false;
@@ -138,6 +164,11 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     };
     bool isOpen(String account) => open.containsKey(account);
     final tree = _treeFor(accounts, _form.mode.categoryRoot);
+    final place = _placeCategory;
+    if (place != null && tree != null) {
+      _form = _form.withCategoryAccount(place, tree);
+      _placeCategory = null;
+    }
     final commodity = _form.commodity ?? options?.operatingCurrency;
     final precision = commodities[commodity]?.precision ?? options?.defaultCommodityPrecision ?? 2;
     final mode = _form.mode;
@@ -182,11 +213,14 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
 
   // ---------------------------------------------------------------- actions
 
+  bool get _editing => widget.prefill?.isEdit ?? false;
+
   void _update(EntryForm next) {
     if (identical(next, _form)) return;
     setState(() {
       _form = next;
       _error = null;
+      _touched = true;
     });
   }
 
@@ -232,10 +266,14 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       tags: _form.tags,
     );
     if (validateEntry(draft).isNotEmpty) return;
-    final request = buildTransactionRequest(draft);
+    final built = buildTransactionRequest(draft);
+    final base = _base;
+    final request = base == null ? built : overlaySimpleEntry(base, built);
+    final editId = widget.prefill?.editId;
     // Read everything needed after the request now: `ref` must not be used
     // once the screen is gone (e.g. closed while saving).
     final repository = ref.read(journalRepositoryProvider);
+    final revision = ref.read(ledgerRevisionProvider);
     final history = ref.read(transactionHistoryProvider.notifier);
     final recordPrefs = ref.read(recordPrefsProvider);
     final pickerPrefs = ref.read(accountPickerPrefsProvider);
@@ -249,12 +287,18 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       // Validate first: an unbalanced entry or an unknown / closed account
       // would still be written (and only show up as a ledger error). Other
       // ledger errors / notices (e.g. an undeclared commodity) only warn.
-      final preview = await repository.preview(request);
+      final preview = editId == null
+          ? await repository.preview(request)
+          : await repository.previewUpdate(editId, request);
       if (preview.isBlocked) throw TransactionRejected(preview);
       if (!acceptWarnings && preview.warnings.isNotEmpty) {
         throw TransactionNeedsConfirmation(preview, again: again);
       }
-      await repository.create(request);
+      if (editId == null) {
+        await repository.create(request);
+      } else {
+        await repository.update(editId, request);
+      }
     } catch (e) {
       if (!mounted) return;
       HapticFeedback.heavyImpact();
@@ -265,10 +309,13 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       return;
     }
     HapticFeedback.mediumImpact();
-    history.addLocal(HistoryEntry.fromRequest(request));
-    await _rememberAfterSave(draft, category, recordPrefs, pickerPrefs);
+    if (editId == null) {
+      history.addLocal(HistoryEntry.fromRequest(request));
+      await _rememberAfterSave(draft, category, recordPrefs, pickerPrefs);
+    }
     if (!mounted) return;
     final l10n = context.l10n;
+    final saved = EntrySaved(revision: revision, hint: EntrySaved.hintFor(request));
     final sign = switch (draft.mode) {
       EntryMode.expense => '−',
       EntryMode.income => '+',
@@ -277,8 +324,14 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     final title = _entryTitle(r, draft);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(l10n.addSavedSnack('$sign${r.format(draft.amount!)}', title))));
-    if (again) {
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            editId != null ? l10n.editSavedSnack : l10n.addSavedSnack('$sign${r.format(draft.amount!)}', title),
+          ),
+        ),
+      );
+    if (again && editId == null) {
       setState(() {
         _form = _form.afterSaveAndAnother();
         _payee.clear();
@@ -286,6 +339,8 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
         _hint = null;
         _submitting = false;
         _savedCount++;
+        _base = null; // the next entry is a plain new one
+        _touched = false;
       });
       return;
     }
@@ -294,7 +349,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       _allowPop = true;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _close();
+      if (mounted) _close(saved);
     });
   }
 
@@ -326,17 +381,87 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     }
   }
 
-  void _close() {
+  void _close([EntrySaved? saved]) {
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
-      navigator.pop();
+      navigator.pop(saved);
     } else {
       GoRouter.maybeOf(context)?.go(AppRoutes.home);
     }
   }
 
-  bool get _hasInput =>
-      _form.hasInput || _payee.text.trim().isNotEmpty || _narration.text.trim().isNotEmpty;
+  bool get _hasInput => widget.prefill != null
+      ? _touched
+      : _form.hasInput || _payee.text.trim().isNotEmpty || _narration.text.trim().isNotEmpty;
+
+  /// The multi-posting editor with what was entered so far (S06: no input
+  /// is lost). Closes this screen too once it saved.
+  Future<void> _openAdvanced(_Resolved r) async {
+    FocusScope.of(context).unfocus();
+    final args = AdvancedEntryArgs(draft: _carryOver(r), editId: widget.prefill?.editId);
+    final saved = await pushAdvancedEntry(context, args);
+    if (saved == null || !mounted) return;
+    setState(() => _allowPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _close(saved);
+    });
+  }
+
+  AdvancedDraft _carryOver(_Resolved r) {
+    final draft = EntryDraft(
+      mode: r.draft.mode,
+      amount: _form.amount.value,
+      commodity: r.draft.commodity,
+      datetime: _form.date ?? _now(),
+      precision: r.precision,
+      categoryChosen: r.draft.categoryChosen,
+      categoryAccount: r.draft.categoryAccount,
+      funding: r.draft.funding,
+      from: r.draft.from,
+      to: r.draft.to,
+      payee: _payee.text,
+      narration: _narration.text,
+      tags: _form.tags,
+    );
+    final keepDate = _form.date != null;
+    final base = _base;
+    if (validateEntry(draft).isEmpty) {
+      final built = buildTransactionRequest(draft);
+      return AdvancedDraft.fromRequest(base == null ? built : overlaySimpleEntry(base, built), keepDate: keepDate);
+    }
+    if (base != null) {
+      final kept = base.copyWith(payee: _payee.text.trim(), narration: _narration.text.trim(), tags: _form.tags);
+      return AdvancedDraft.fromRequest(kept, keepDate: false).copyWith(datetime: _form.date);
+    }
+    // Partial entry: the accounts chosen so far, money source first.
+    final amount = draft.amount;
+    final (String? source, String? target) = switch (draft.mode) {
+      EntryMode.expense => (draft.funding, draft.categoryAccount),
+      EntryMode.income => (draft.categoryAccount, draft.funding),
+      EntryMode.transfer => (draft.from, draft.to),
+    };
+    String number(Decimal value) => decimalToJson(value, minScale: r.precision);
+    return AdvancedDraft(
+      datetime: _form.date,
+      payee: _payee.text.trim(),
+      narration: _narration.text.trim(),
+      tags: [for (final t in _form.tags) ?normalizeTag(t)],
+      postings: [
+        PostingDraft(
+          key: 0,
+          account: source,
+          amount: amount == null || amount == Decimal.zero ? '' : number(-amount),
+          commodity: draft.commodity,
+        ),
+        PostingDraft(
+          key: 1,
+          account: target,
+          amount: amount == null || amount == Decimal.zero ? '' : number(amount),
+          commodity: draft.commodity,
+        ),
+      ],
+    );
+  }
 
   Future<void> _confirmDiscard() async {
     final l10n = context.l10n;
@@ -458,7 +583,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.of(context).maybePop(),
           ),
-          title: Text(l10n.newTransactionTitle),
+          title: Text(_editing ? l10n.editTransactionTitle : l10n.newTransactionTitle),
           actions: [
             if (_savedCount > 0)
               Padding(
@@ -477,30 +602,49 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: SizedBox(
                 width: double.infinity,
-                child: SegmentedButton<EntryMode>(
+                // `null` = "Advanced": opens the multi-posting editor.
+                child: SegmentedButton<EntryMode?>(
                   showSelectedIcon: false,
+                  // Four labels on one line, also on narrow phones.
+                  style: const ButtonStyle(padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 6))),
                   segments: [
+                    for (final (mode, label) in [
+                      (EntryMode.expense, l10n.addModeExpense),
+                      (EntryMode.income, l10n.addModeIncome),
+                      (EntryMode.transfer, l10n.addModeTransfer),
+                    ])
+                      ButtonSegment(
+                        value: mode,
+                        // An edit keeps its mode (its postings keep their roles).
+                        enabled: !_editing || mode == _form.mode,
+                        label: Text(label, key: Key('add.mode.${mode.name}'), softWrap: false, overflow: TextOverflow.fade),
+                      ),
                     ButtonSegment(
-                      value: EntryMode.expense,
-                      label: Text(l10n.addModeExpense, key: const Key('add.mode.expense')),
-                    ),
-                    ButtonSegment(
-                      value: EntryMode.income,
-                      label: Text(l10n.addModeIncome, key: const Key('add.mode.income')),
-                    ),
-                    ButtonSegment(
-                      value: EntryMode.transfer,
-                      label: Text(l10n.addModeTransfer, key: const Key('add.mode.transfer')),
+                      value: null,
+                      label: Text(
+                        l10n.addModeAdvanced,
+                        key: const Key('add.mode.advanced'),
+                        softWrap: false,
+                        overflow: TextOverflow.fade,
+                      ),
                     ),
                   ],
-                  selected: {_form.mode},
+                  selected: <EntryMode?>{_form.mode},
                   onSelectionChanged: _submitting
                       ? null
-                      : (s) => setState(() {
-                          _form = _form.withMode(s.single);
-                          _hint = null;
-                          _error = null;
-                        }),
+                      : (s) {
+                          final mode = s.single;
+                          if (mode == null) {
+                            _openAdvanced(r);
+                            return;
+                          }
+                          setState(() {
+                            _form = _form.withMode(mode);
+                            _hint = null;
+                            _error = null;
+                            _touched = true;
+                          });
+                        },
                 ),
               ),
             ),
@@ -615,7 +759,10 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
           controller: _payee,
           focusNode: _payeeFocus,
           textInputAction: TextInputAction.next,
-          onChanged: (_) => setState(() => _error = null),
+          onChanged: (_) => setState(() {
+            _error = null;
+            _touched = true;
+          }),
           onSubmitted: (_) => _narrationFocus.requestFocus(),
           decoration: decoration(l10n.addPayee, Icons.storefront_outlined),
         ),
@@ -638,7 +785,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
           controller: _narration,
           focusNode: _narrationFocus,
           textInputAction: TextInputAction.done,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() => _touched = true),
           decoration: decoration(l10n.addNarration, Icons.notes),
         ),
       ),
@@ -699,8 +846,9 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_error case final error?)
-              _ErrorBanner(
+              SaveErrorBanner(
                 error: error,
+                editing: _editing,
                 onClose: () => setState(() => _error = null),
                 onSaveAnyway: error is TransactionNeedsConfirmation
                     ? () => _submit(again: error.again, acceptWarnings: true)
@@ -769,7 +917,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
               onBackspace: () => _key(_form.amount.backspace()),
               onClear: () => _update(_form.withAmount(AmountExpression.empty)),
               onSave: _form.amount.hasOperator || valid ? _onSave : null,
-              onSaveAndAnother: valid ? _onSaveAndAnother : null,
+              onSaveAndAnother: valid && !_editing ? _onSaveAndAnother : null,
             ),
           ],
         ),
@@ -946,91 +1094,3 @@ class _TransferAccountCard extends StatelessWidget {
     );
   }
 }
-
-/// Save failure, blocking preview problems, or preview warnings with a
-/// "Save anyway" action ([onSaveAnyway]).
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.error, required this.onClose, this.onSaveAnyway});
-
-  final Object error;
-  final VoidCallback onClose;
-  final VoidCallback? onSaveAnyway;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final scheme = Theme.of(context).colorScheme;
-    final warning = error is TransactionNeedsConfirmation;
-    final background = warning ? scheme.tertiaryContainer : scheme.errorContainer;
-    final foreground = warning ? scheme.onTertiaryContainer : scheme.onErrorContainer;
-    return Container(
-      key: Key(warning ? 'add.warning' : 'add.error'),
-      width: double.infinity,
-      color: background,
-      padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
-      child: Row(
-        children: [
-          Icon(
-            switch (error) {
-              TransactionNeedsConfirmation() => Icons.warning_amber,
-              TransactionRejected() => Icons.rule,
-              _ => iconForApiError(error),
-            },
-            color: foreground,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  switch (error) {
-                    final TransactionRejected r =>
-                      '${l10n.addPreviewRejected}\n${previewProblems(l10n, r.preview).join('\n')}',
-                    final TransactionNeedsConfirmation c =>
-                      '${l10n.addPreviewWarning}\n${[for (final e in c.preview.warnings) previewErrorText(l10n, e)].join('\n')}',
-                    _ => '${l10n.addSaveFailed}: ${describeApiError(l10n, error)}',
-                  },
-                  style: TextStyle(color: foreground),
-                ),
-                if (onSaveAnyway != null)
-                  TextButton(
-                    key: const Key('add.saveAnyway'),
-                    onPressed: onSaveAnyway,
-                    style: TextButton.styleFrom(foregroundColor: foreground, padding: EdgeInsets.zero),
-                    child: Text(l10n.addSaveAnyway),
-                  ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: l10n.addClose,
-            icon: Icon(Icons.close, color: foreground),
-            onPressed: onClose,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// One line per problem of a [TransactionPreview] (the server's message for
-/// refused fields, localised text for the rest).
-List<String> previewProblems(AppLocalizations l10n, TransactionPreview preview) => [
-  for (final f in preview.fieldErrors) f.message.isEmpty ? '${f.field}: ${f.kind}' : f.message,
-  if (preview.isUnbalanced)
-    l10n.addPreviewUnbalanced(preview.unbalanced!.map((a) => formatMoney(a.number, a.commodity, signed: true)).join(', ')),
-  for (final e in preview.errors)
-    // The unbalanced amounts are already listed above.
-    if (!(e.type == 'UnbalancedTransaction' && preview.isUnbalanced)) previewErrorText(l10n, e),
-];
-
-/// One ledger error of a preview (localised for the common kinds, else the
-/// kind and its account).
-String previewErrorText(AppLocalizations l10n, PreviewLedgerError e) => switch (e.type) {
-  'AccountDoesNotExist' => l10n.addPreviewAccountMissing(e.account ?? ''),
-  'AccountClosed' => l10n.addPreviewAccountClosed(e.account ?? ''),
-  'CommodityDoesNotDefine' => l10n.addPreviewCommodityUndeclared(e.commodity ?? ''),
-  'CommodityNotAllowed' => l10n.addPreviewCommodityNotAllowed(e.account ?? '', e.commodity ?? ''),
-  _ => e.account == null ? e.type : '${e.type}: ${e.account}',
-};
