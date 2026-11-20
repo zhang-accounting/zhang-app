@@ -289,11 +289,13 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
   text shows which are unquoted. The server keeps a value unquoted only for the posting it matches, so once that
   posting's account changes it writes `lot: "8"`. The app mirrors the match and asks before saving such an edit.
 * Ids are places in a file (`hash(file + offset)`): after another write the id of a listed transaction may name
-  another one. Before the edit check and again right before the `PUT` the app reads the item by id
-  (`JournalRepository.findById`) and refuses unless it is still the same transaction. Servers with zhang PR #818 list a
-  `version` (hash of the transaction's text) on journal items and POST / PUT answers; the app then sends
-  `If-Match: <version>` with the update preview and the `PUT` (mismatch → 412, shown as "changed on the server").
-  Without `version` there is still a short race between that re-read and the `PUT`.
+  another one. Servers with zhang PR #818 list a `version` (hash of the transaction's text) on journal items (account
+  journal rows: `trx_version`) and POST / PUT answers; the app then sends `If-Match: <version>` with the update preview
+  and the `PUT` (mismatch → 412, shown as "changed on the server"), and a transaction opened from an account row whose
+  `trx_version` differs from the item's `version` shows "changed". Without `version` the app reads the item by id
+  (`JournalRepository.findById`) before the edit check and again right before the `PUT` and refuses unless it is still
+  the same transaction; that lookup searches only 5 pages of 100 by payee (an old transaction with a common payee can
+  be reported as changed) and leaves a short race before the `PUT`.
 * Ids after a `PUT`: the edited transaction keeps its id (it stays at the same place in its file); transactions after
   it in the same file get new ids. The detail screen reads it again by id after the ledger reloaded and shows it only
   once it matches what was saved (else, after 15 s, it says the change is not listed yet).

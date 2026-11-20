@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zhang_app/router.dart';
 
 import '../../helpers/builtin_fake.dart';
 import 'fake_server.dart';
@@ -238,5 +239,20 @@ void main() {
     expect(find.text('Uniqlo · Shirt'), findsOneWidget);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('trx.editedPending')), findsOneWidget);
+  });
+
+  testWidgets('opened with a version that no longer matches (an account row): changed, not shown', (tester) async {
+    final server = FakeZhangServer(journals: [editableJson(version: 'v2')]);
+    final container = await pumpApp(tester, server);
+    container.read(routerProvider).push('/journals/tx-1?q=Uniqlo&v=v1');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('trx.changed')), findsOneWidget);
+    expect(find.byKey(const Key('trx.edit')), findsNothing);
+
+    container.read(routerProvider).pop();
+    await tester.pumpAndSettle();
+    container.read(routerProvider).push('/journals/tx-1?q=Uniqlo&v=v2');
+    await tester.pumpAndSettle();
+    expect(find.text('Uniqlo · Shirt'), findsOneWidget);
   });
 }

@@ -1586,6 +1586,12 @@ abstract class AppLocalizations {
   /// **'Transaction not found. Ids change when the ledger reloads – open it again from the list.'**
   String get trxNotFound;
 
+  /// No description provided for @trxChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'This transaction changed since the list was loaded – open it again from the list.'**
+  String get trxChanged;
+
   /// No description provided for @trxUnbalanced.
   ///
   /// In en, this message translates to:

@@ -29,16 +29,29 @@ abstract final class JournalRoutes {
       id: state.pathParameters['id']!,
       initial: extra is JournalItem ? extra : null,
       searchHint: state.uri.queryParameters['q'],
+      expectedVersion: state.uri.queryParameters['v'],
     );
   }
 }
 
 /// Opens the transaction of a posting listed on an account page
 /// ([accountLocation] = that page's location); [hint] (payee or narration)
-/// speeds up the lookup.
-void openAccountPostingDetail(BuildContext context, String accountLocation, String transactionId, String? hint) {
-  final query = hint == null || hint.trim().isEmpty ? '' : '?q=${Uri.encodeQueryComponent(hint.trim())}';
-  context.push('$accountLocation/transactions/${Uri.encodeComponent(transactionId)}$query');
+/// speeds up the lookup; [version] (the row's `trx_version`) tells a
+/// transaction that changed since the row was listed.
+void openAccountPostingDetail(
+  BuildContext context,
+  String accountLocation,
+  String transactionId,
+  String? hint, {
+  String? version,
+}) {
+  final query = [
+    if (hint != null && hint.trim().isNotEmpty) 'q=${Uri.encodeQueryComponent(hint.trim())}',
+    if (version != null && version.isNotEmpty) 'v=${Uri.encodeQueryComponent(version)}',
+  ];
+  context.push(
+    '$accountLocation/transactions/${Uri.encodeComponent(transactionId)}${query.isEmpty ? '' : '?${query.join('&')}'}',
+  );
 }
 
 /// Opens the detail of [item] from the Journal tab, passing the item as

@@ -119,15 +119,18 @@ Future<void> verifyUnchanged(JournalRepository repository, JournalTransaction sn
 typedef EditCheck = ({EditBlock? block, EditTarget? target});
 
 /// [editBlockFor], then what only the server can tell: the transaction must
-/// still be listed unchanged under its id ([verifyUnchanged]), and the update
-/// preview of it unchanged (`POST /api/transactions/{id}/preview`, with
+/// still be listed unchanged under its id ([verifyUnchanged], only without
+/// a `version`: the lookup searches a few pages), and the update preview of
+/// it unchanged (`POST /api/transactions/{id}/preview`, with
 /// `If-Match` when it has a `version`) must have a text, without posting
 /// flags. Throws [TransactionChanged] or the API error (404 / 412 = changed,
 /// see [isStaleEdit]).
 Future<EditCheck> checkEditable(JournalRepository repository, JournalTransaction tx) async {
   final block = editBlockFor(tx);
   if (block != null) return (block: block, target: null);
-  await verifyUnchanged(repository, tx);
+  // With a `version`, `If-Match` makes the server refuse another or a
+  // changed transaction; without one, read it again by id.
+  if (tx.version == null) await verifyUnchanged(repository, tx);
   final preview = await repository.previewUpdate(tx.id, CreateTransactionRequest.fromJournal(tx), version: tx.version);
   final text = preview.text;
   if (text == null) return (block: EditBlock.unverified, target: null);
@@ -136,30 +139,57 @@ Future<EditCheck> checkEditable(JournalRepository repository, JournalTransaction
 }
 
 /// A posting line of a transaction text: optional flag (`*`, `!`, `&`, `?`,
-/// `%`, `#` or `A`–`Z`, zhang's parser) and an account, which starts with a
-/// capital letter (metadata keys start with a lower-case letter or `"`).
-final _postingLine = RegExp(r'^[ \t]+(?:([*!&?%#A-Z])[ \t]+)?[A-Z][^\s:]*:');
+/// `%`, `#` or `A`–`Z`, zhang's parser) and an account – `Type:Name[:…]`,
+/// a capital first letter and a non-space after every colon. A metadata
+/// key, capitalised or not, is followed by `: ` (`Lot: 8`), so it never
+/// reads as an account.
+final _postingLine = RegExp(r'^[ \t]+(?:([*!&?%#A-Z])[ \t]+)?[A-Z][^\s:"]*(?::[^\s:"]+)+(?=[ \t;]|$)');
+
+/// `key: value` of a metadata line (a key may be quoted).
+final _metaLine = RegExp(r'^[ \t]+(?:"(?:[^"\\]|\\.)*"|[^\s:"]+):[ \t]*(.*)$');
+
+/// The lines after the header of a transaction [text] at the postings'
+/// level – the least indented ones: transaction metadata and postings –,
+/// each with the deeper (posting metadata) lines that follow it.
+List<(String line, List<String> deeper)> _bodyBlocks(String text) {
+  int indent(String line) => line.length - line.trimLeft().length;
+  final lines = [
+    for (final line in text.split('\n').skip(1))
+      if (line.trim().isNotEmpty) line,
+  ];
+  if (lines.isEmpty) return const [];
+  final level = lines.map(indent).reduce((a, b) => a < b ? a : b);
+  final blocks = <(String, List<String>)>[];
+  for (final line in lines) {
+    if (indent(line) <= level || blocks.isEmpty) {
+      blocks.add((line, <String>[]));
+    } else {
+      blocks.last.$2.add(line);
+    }
+  }
+  return blocks;
+}
 
 /// Whether a transaction [text] (as the server writes it) has a posting
 /// line with its own flag, such as `  ! Assets:Cash -1 CNY` or
 /// `  C Expenses:Food 1 USD`.
 bool hasPostingFlags(String text) =>
-    text.split('\n').skip(1).any((line) => _postingLine.firstMatch(line)?.group(1) != null);
+    _bodyBlocks(text).any((block) => _postingLine.firstMatch(block.$1)?.group(1) != null);
 
-/// The metadata lines with an unquoted value (`lot: 8`, `when: 2026-11-02`)
-/// of each posting (by index) of a transaction [text].
+/// The metadata lines with an unquoted value (`lot: 8`, `Lot: 8`,
+/// `when: 2026-11-02`) of each posting (by index) of a transaction [text]:
+/// the lines indented below a posting line.
 Map<int, List<String>> bareMetaLines(String text) {
-  final meta = RegExp(r'^[ \t]+(?:"(?:[^"\\]|\\.)*"|[^\s:"]+):[ \t]*(.*)$');
   final out = <int, List<String>>{};
   var posting = -1;
-  for (final line in text.split('\n').skip(1)) {
-    if (_postingLine.hasMatch(line)) {
-      posting++;
-      continue;
+  for (final (line, deeper) in _bodyBlocks(text)) {
+    if (!_postingLine.hasMatch(line)) continue; // transaction metadata
+    posting++;
+    for (final meta in deeper) {
+      final value = _metaLine.firstMatch(meta)?.group(1)?.trim();
+      if (value == null || value.isEmpty || value.startsWith('"')) continue;
+      out.putIfAbsent(posting, () => []).add(meta.trim());
     }
-    final value = meta.firstMatch(line)?.group(1)?.trim();
-    if (posting < 0 || value == null || value.isEmpty || value.startsWith('"')) continue;
-    out.putIfAbsent(posting, () => []).add(line.trim());
   }
   return out;
 }
@@ -484,9 +514,9 @@ class AdvancedEntryArgs {
   bool get isEdit => target != null;
 }
 
-/// Saves [request] like both editors do: an edit of [target] is first
-/// checked to still be the transaction the edit started from
-/// ([verifyUnchanged]), then previewed and replaced on its id (with
+/// Saves [request] like both editors do: an edit of [target] without a
+/// `version` is first checked to still be the transaction the edit started
+/// from ([verifyUnchanged]), then previewed and replaced on its id (with
 /// `If-Match` when it has a `version`); anything else is previewed and
 /// created. Throws [TransactionRejected] / [TransactionNeedsConfirmation]
 /// (nothing written), [TransactionChanged] or the API error.
@@ -501,7 +531,7 @@ Future<void> saveEntry(
   if (target == null) {
     preview = await repository.preview(request);
   } else {
-    await verifyUnchanged(repository, target.tx);
+    if (target.version == null) await verifyUnchanged(repository, target.tx);
     preview = await repository.previewUpdate(target.id, request, version: target.version);
   }
   if (preview.isBlocked) throw TransactionRejected(preview);

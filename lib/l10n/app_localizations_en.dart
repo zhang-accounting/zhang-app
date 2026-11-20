@@ -852,6 +852,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Transaction not found. Ids change when the ledger reloads – open it again from the list.';
 
   @override
+  String get trxChanged =>
+      'This transaction changed since the list was loaded – open it again from the list.';
+
+  @override
   String get trxUnbalanced => 'This transaction does not balance.';
 
   @override

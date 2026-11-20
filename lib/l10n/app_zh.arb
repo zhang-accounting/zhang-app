@@ -248,6 +248,7 @@
   "trxEditedNotFound": "已保存，但找不到更新后的交易（可能已移动）。请从列表重新打开。",
   "trxEditedPending": "已保存，但服务器暂时还没有显示这次修改。请从列表重新打开这笔交易。",
   "trxNotFound": "找不到这笔交易。账本重载后 id 会变化，请从列表重新打开。",
+  "trxChanged": "这笔交易在列表加载后已变化，请从列表重新打开。",
   "trxUnbalanced": "这笔交易不平衡。",
   "trxFilterByTag": "查看带 #{tag} 标签的交易",
   "accountsNetWorth": "净资产",

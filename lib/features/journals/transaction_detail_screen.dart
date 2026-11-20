@@ -34,13 +34,18 @@ const _mono = TextStyle(fontFamily: 'monospace', fontFamilyFallback: ['Menlo', '
 /// an edit the transaction is read again once the ledger has reloaded (ids
 /// stay with the edited transaction, see docs/zhang-api.md §1.6).
 class TransactionDetailScreen extends ConsumerStatefulWidget {
-  const TransactionDetailScreen({super.key, required this.id, this.initial, this.searchHint});
+  const TransactionDetailScreen({super.key, required this.id, this.initial, this.searchHint, this.expectedVersion});
 
   final String id;
   final JournalItem? initial;
 
   /// Payee or narration to search for when [initial] is missing.
   final String? searchHint;
+
+  /// `version` the transaction had where it was listed (an account row's
+  /// `trx_version`): a different one under the id means it changed or
+  /// another transaction has the id now.
+  final String? expectedVersion;
 
   @override
   ConsumerState<TransactionDetailScreen> createState() => _TransactionDetailScreenState();
@@ -164,9 +169,14 @@ class _TransactionDetailScreenState extends ConsumerState<TransactionDetailScree
     if (item != null) return _scaffold(item);
     final lookup = ref.watch(journalItemByIdProvider((widget.id, widget.searchHint)));
     return lookup.when(
-      data: (found) => found == null
-          ? _MessageScaffold(l10n.trxNotFound, key: const Key('trx.notFound'))
-          : _scaffold(found),
+      data: (found) {
+        if (found == null) return _MessageScaffold(l10n.trxNotFound, key: const Key('trx.notFound'));
+        final expected = widget.expectedVersion;
+        if (expected != null && found is JournalTransaction && found.version != null && found.version != expected) {
+          return _MessageScaffold(l10n.trxChanged, key: const Key('trx.changed'));
+        }
+        return _scaffold(found);
+      },
       loading: () => Scaffold(
         appBar: AppBar(title: Text(l10n.trxTitle)),
         body: const Center(child: CircularProgressIndicator()),

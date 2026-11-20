@@ -823,6 +823,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trxNotFound => '找不到这笔交易。账本重载后 id 会变化，请从列表重新打开。';
 
   @override
+  String get trxChanged => '这笔交易在列表加载后已变化，请从列表重新打开。';
+
+  @override
   String get trxUnbalanced => '这笔交易不平衡。';
 
   @override

@@ -180,6 +180,23 @@ void main() {
         1: ['when: 2026-11-02', '"my key": TRUE'],
       });
     });
+
+    test('capitalised metadata keys are metadata, not postings (indentation and `Type:Name`)', () {
+      const text = '2026-11-02 10:00:00 * "S" "W"\n'
+          '  Receipt: 7\n'
+          '  Assets:Bank -8 CNY\n'
+          '    Lot: 8\n'
+          '    when: 2026-01-02\n'
+          '    Ref: Assets:Bank\n'
+          '    C: 1\n'
+          '  Expenses:Food 8 CNY\n'
+          '    Note: "x"';
+      expect(bareMetaLines(text), {
+        0: ['Lot: 8', 'when: 2026-01-02', 'Ref: Assets:Bank', 'C: 1'],
+      });
+      expect(hasPostingFlags(text), isFalse);
+      expect(hasPostingFlags(text.replaceFirst('  Expenses:Food', '  C Expenses:Food')), isTrue);
+    });
   });
 
   group('checkEditable', () {
@@ -199,10 +216,11 @@ void main() {
       expect(repo.previews.single.$3, isNull, reason: 'no version: no If-Match');
     });
 
-    test('a version is sent as If-Match', () async {
+    test('with a version: If-Match instead of the lookup (which only searches a few pages)', () async {
       final versioned = tx([posting('Assets:Bank', '-1'), posting('Expenses:Food', null)], version: 'v-1');
-      final repo = _Repo(clean)..snapshot = versioned;
+      final repo = _Repo(clean, listed: (_) => null);
       expect((await checkEditable(repo, versioned)).target!.version, 'v-1');
+      expect(repo.calls, ['preview tx-1']);
       expect(repo.previews.single.$3, 'v-1');
     });
 
@@ -213,10 +231,6 @@ void main() {
         await expectLater(checkEditable(repo, editable), throwsA(isA<TransactionChanged>()));
         expect(repo.previews, isEmpty);
       }
-      final newer = tx([posting('Assets:Bank', '-1'), posting('Expenses:Food', null)], version: 'v-2');
-      final repo = _Repo(clean, listed: (_) => newer);
-      final older = tx([posting('Assets:Bank', '-1'), posting('Expenses:Food', null)], version: 'v-1');
-      await expectLater(checkEditable(repo, older), throwsA(isA<TransactionChanged>()));
     });
 
     test('a posting flag or a refused transaction blocks the edit', () async {
@@ -247,14 +261,22 @@ void main() {
   });
 
   group('saveEntry', () {
-    test('an edit re-reads the id, then previews and replaces with If-Match', () async {
-      final versioned = tx([posting('Assets:Bank', '-1'), posting('Expenses:Food', null)], version: 'v-1');
-      final repo = _Repo(const TransactionPreview(text: 'x', unbalanced: []))..snapshot = versioned;
-      final request = CreateTransactionRequest.fromJournal(versioned).copyWith(narration: 'Edited');
-      await saveEntry(repo, request, target: EditTarget(versioned));
+    test('without a version an edit re-reads the id, then previews and replaces', () async {
+      final snapshot = tx([posting('Assets:Bank', '-1'), posting('Expenses:Food', null)]);
+      final repo = _Repo(const TransactionPreview(text: 'x', unbalanced: []))..snapshot = snapshot;
+      final request = CreateTransactionRequest.fromJournal(snapshot).copyWith(narration: 'Edited');
+      await saveEntry(repo, request, target: EditTarget(snapshot));
       expect(repo.calls, ['find tx-1', 'preview tx-1', 'put tx-1']);
-      expect(repo.updates.single.$3, 'v-1');
+      expect(repo.updates.single.$3, isNull);
       expect(repo.updates.single.$2['narration'], 'Edited');
+    });
+
+    test('with a version an edit previews and replaces with If-Match, no lookup', () async {
+      final versioned = tx([posting('Assets:Bank', '-1'), posting('Expenses:Food', null)], version: 'v-1');
+      final repo = _Repo(const TransactionPreview(text: 'x', unbalanced: []), listed: (_) => null);
+      await saveEntry(repo, CreateTransactionRequest.fromJournal(versioned), target: EditTarget(versioned));
+      expect(repo.calls, ['preview tx-1', 'put tx-1']);
+      expect([repo.previews.single.$3, repo.updates.single.$3], ['v-1', 'v-1']);
     });
 
     test('nothing is written when the transaction changed meanwhile', () async {

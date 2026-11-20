@@ -283,6 +283,12 @@ void main() {
       final cafe = list.firstWhere((e) => e.payee == 'Mobile Test Cafe');
       expect(cafe.trxId, journal.records[2].id, reason: 'trx_id is the /api/journals id');
       expect(list.last.isBalanceItem, isTrue);
+      expect(list.first.trxVersion, isNull, reason: 'servers without zhang PR #818');
+      final versioned = AccountJournalEntry.fromJson({
+        ...(fixtureData('account_journals.json')! as List).first as Map<String, Object?>,
+        'trx_version': 'abc',
+      });
+      expect(versioned.trxVersion, 'abc');
     });
 
     test('journals: balance check rows carry asserted / passed', () {
