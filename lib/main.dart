@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/utils/shared_files.dart';
 import 'data/api/api_exception.dart';
 import 'data/profiles/profile_providers.dart';
 import 'data/profiles/profile_repository.dart';
@@ -12,6 +15,8 @@ import 'ledger_session.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Documents shared during an earlier run (the app was killed meanwhile).
+  unawaited(clearSharedDocuments());
   runApp(await bootstrap());
 }
 
