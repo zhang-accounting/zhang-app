@@ -136,9 +136,19 @@ class JournalRepository {
   Future<TransactionPreview> preview(CreateTransactionRequest request) =>
       _client.post(ZhangEndpoints.transactionPreview, body: request.toJson(), decode: TransactionPreview.fromJson);
 
-  /// `PUT /api/transactions/{id}` – replaces the whole transaction. Build
-  /// [request] with `CreateTransactionRequest.fromJournal` so tags, links,
-  /// metas and written units are preserved.
+  /// `POST /api/transactions/{id}/preview` – [preview] for an edit: checks
+  /// [request] in place of the transaction [id] it would replace (404 when
+  /// the id is stale, 400 for a transaction a plugin made).
+  Future<TransactionPreview> previewUpdate(String id, CreateTransactionRequest request) => _client.post(
+    ZhangEndpoints.transactionUpdatePreview(id),
+    body: request.toJson(),
+    decode: TransactionPreview.fromJson,
+  );
+
+  /// `PUT /api/transactions/{id}` – replaces the whole transaction (404 when
+  /// the id is stale: ids change when the file changes). Build [request]
+  /// with `CreateTransactionRequest.fromJournal` so tags, links, metas,
+  /// posting metadata and the written cost / price / comment are preserved.
   Future<void> update(String id, CreateTransactionRequest request) async {
     await _client.send('PUT', ZhangEndpoints.transaction(id), body: request.toJson());
     _onMutated?.call();
