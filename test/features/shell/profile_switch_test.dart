@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zhang_app/data/api/api_exception.dart';
@@ -14,6 +15,7 @@ import 'package:zhang_app/data/profiles/secret_store.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/repositories.dart';
 import 'package:zhang_app/features/account_picker/account_picker_data.dart';
+import 'package:zhang_app/ledger_session.dart';
 
 import '../../helpers/app_host.dart';
 import '../../helpers/builtin_fake.dart';
@@ -175,6 +177,21 @@ class _SlowSecrets extends InMemorySecretStore {
   }
 }
 
+/// Bumps the ledger revision while it builds when [bump] is set – what
+/// flutter_riverpod's debug check must report.
+class _BumpWhileBuilding extends ConsumerWidget {
+  const _BumpWhileBuilding();
+
+  static var bump = false;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(ledgerRevisionProvider);
+    if (bump) ref.read(ledgerRevisionProvider.notifier).bump();
+    return const SizedBox();
+  }
+}
+
 bool _enabled(WidgetTester tester, String key) =>
     tester.widget<InkWell>(find.descendant(of: find.byKey(Key(key)), matching: find.byType(InkWell))).onTap != null;
 
@@ -286,6 +303,38 @@ void main() {
     await second.read(profilesProvider.notifier).save(_work.copyWith(name: 'Office'));
     await tester.pumpAndSettle();
     expect(identical(app.container, second), isTrue);
+  });
+
+  testWidgets('the "provider modified while building" check survives session switches', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      LedgerSessionHost(
+        initialProfiles: const ProfilesState(profiles: [_family, _work], activeId: 'p1'),
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          secretStoreProvider.overrideWithValue(InMemorySecretStore()),
+        ],
+        child: const _BumpWhileBuilding(),
+      ),
+    );
+    addTearDown(() => _BumpWhileBuilding.bump = false);
+    for (var i = 0; i < 4; i++) {
+      final probe = find.byType(_BumpWhileBuilding);
+      final container = ProviderScope.containerOf(tester.element(probe));
+      expect(container.read(activeProfileProvider), i.isEven ? _family : _work);
+      _BumpWhileBuilding.bump = true;
+      tester.element(probe).markNeedsBuild();
+      await tester.pump();
+      _BumpWhileBuilding.bump = false;
+      expect(
+        '${tester.takeException()}',
+        contains('Tried to modify a provider while the widget tree was building'),
+        reason: 'session ${i + 1}',
+      );
+      await container.read(profilesProvider.notifier).activate(i.isEven ? 'p2' : 'p1');
+      await tester.pump();
+    }
   });
 
   testWidgets('a profile change still running when its session ends lands in the next one', (tester) async {

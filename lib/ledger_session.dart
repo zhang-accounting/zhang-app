@@ -68,6 +68,12 @@ class _LedgerSessionHostState extends State<LedgerSessionHost> {
   /// instead of rebuilding it.
   final _appKey = GlobalKey(debugLabel: 'ledgerSession.app');
 
+  /// An empty container whose scope stays for the host's lifetime, above the
+  /// per-session scopes. flutter_riverpod's debug check "no provider is
+  /// modified while widgets build" belongs to the first scope mounted; held
+  /// by a session scope it would go away with that session.
+  final _outer = ProviderContainer();
+
   late _Session _session = _open(_profiles.value.active);
 
   _Session _open(ServerProfile? profile) {
@@ -106,6 +112,7 @@ class _LedgerSessionHostState extends State<LedgerSessionHost> {
       container.dispose();
     }
     _ended.clear();
+    _outer.dispose();
     _profiles.dispose();
     _router.dispose();
     _hasProfile.dispose();
@@ -114,11 +121,14 @@ class _LedgerSessionHostState extends State<LedgerSessionHost> {
 
   @override
   Widget build(BuildContext context) => UncontrolledProviderScope(
-    // A new scope per session (it registers with its container); the
-    // GlobalKey below re-parents the app into it with its state.
-    key: ObjectKey(_session.container),
-    container: _session.container,
-    child: KeyedSubtree(key: _appKey, child: widget.child),
+    container: _outer,
+    child: UncontrolledProviderScope(
+      // A new scope per session (it registers with its container); the
+      // GlobalKey below re-parents the app into it with its state.
+      key: ObjectKey(_session.container),
+      container: _session.container,
+      child: KeyedSubtree(key: _appKey, child: widget.child),
+    ),
   );
 }
 
