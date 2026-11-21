@@ -132,14 +132,14 @@ class JournalRepository {
   /// of it, see `CreateIntent`) a zhang ≥ 0.3 server writes the transaction
   /// once: a create sent again answers the transaction written the first
   /// time, [WrittenTransaction.replayed]. Older servers ignore the header
-  /// and answer `"Ok"` ([WrittenTransaction.unknown]).
+  /// and answer `"Ok"`, and a 2xx without a readable body (a proxy) is
+  /// saved too: [WrittenTransaction.unknown], no id.
   Future<WrittenTransaction> create(CreateTransactionRequest request, {String? idempotencyKey}) async {
-    final answer = await _client.exchange(
+    final answer = await _client.write(
       'POST',
       ZhangEndpoints.transactions,
       body: request.toJson(),
       headers: idempotencyKey == null ? null : {Idempotency.keyHeader: idempotencyKey},
-      decode: (data) => data,
     );
     final replayed = answer.headers.value(Idempotency.replayedHeader)?.trim().toLowerCase() == 'true';
     _onMutated?.call();

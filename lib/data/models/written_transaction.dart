@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import 'json_utils.dart';
-
 /// What `POST /api/transactions` (and `PUT /api/transactions/{id}`) answer
 /// for the transaction they wrote.
 ///
@@ -17,11 +15,13 @@ class WrittenTransaction {
   static const unknown = WrittenTransaction();
 
   /// The `data` of the answer: an object with `id` / `version` (either may
-  /// be `null`), anything else (`"Ok"`, `null`) = an older server.
+  /// be `null`); anything else (`"Ok"` from an older server, `null` for a
+  /// body that could not be read) has neither. Never throws: the write is
+  /// done whatever its answer says.
   factory WrittenTransaction.fromJson(Object? data, {bool replayed = false}) {
+    String? text(Object? value) => value is String ? value : null;
     if (data is! Map) return WrittenTransaction(replayed: replayed);
-    final m = asMap(data, 'written transaction');
-    return WrittenTransaction(id: optString(m, 'id'), version: optString(m, 'version'), replayed: replayed);
+    return WrittenTransaction(id: text(data['id']), version: text(data['version']), replayed: replayed);
   }
 
   /// The id the transaction has in the reloaded ledger.

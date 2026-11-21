@@ -295,6 +295,32 @@ void main() {
       expect(await repo.create(_cafe), WrittenTransaction.unknown);
     });
 
+    test('create: a 2xx without a readable body is saved, without an id (a proxy)', () async {
+      for (final answer in [
+        () => emptyResponse(200),
+        () => emptyResponse(204),
+        () => textResponse('OK'),
+        () => rawJsonResponse('{"data": '),
+        () => rawJsonResponse('{"data": {"id": 7, "version": false}}'),
+      ]) {
+        final (client, _) = _client(_base, (_) => answer());
+        expect(await JournalRepository(client).create(_cafe, idempotencyKey: 'k'), WrittenTransaction.unknown);
+      }
+    });
+
+    test('create: a refusal keeps zhang\'s message; a 5xx with a broken body is still an error', () async {
+      final (client, adapter) = _client(_base, (_) => jsonResponse({'message': 'invalid account "x"'}, status: 400));
+      final repo = JournalRepository(client);
+      await expectLater(
+        repo.create(_cafe),
+        throwsA(isA<ApiServerError>().having((e) => e.message, 'message', 'invalid account "x"')),
+      );
+      adapter.handler = (_) => jsonResponse({'message': 'unauthorized'}, status: 401);
+      await expectLater(repo.create(_cafe), throwsA(isA<ApiUnauthorized>()));
+      adapter.handler = (_) => rawJsonResponse('{"oops', status: 502);
+      await expectLater(repo.create(_cafe), throwsA(isA<ApiServerError>().having((e) => e.statusCode, 'status', 502)));
+    });
+
     test('idempotency keys are random UUIDs zhang accepts', () {
       final keys = {for (var i = 0; i < 50; i++) Idempotency.newKey()};
       expect(keys, hasLength(50));
