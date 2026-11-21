@@ -865,6 +865,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trxEditCopyHint => '仍可以把它复制为新交易。';
 
   @override
+  String get trxDeleteTitle => '删除这笔交易？';
+
+  @override
+  String trxDeleteMessage(String summary) {
+    return '将从账本文件中删除：$summary。App 里无法撤销。';
+  }
+
+  @override
+  String get trxDeleting => '正在删除…';
+
+  @override
+  String get trxDeletedSnack => '已删除交易';
+
+  @override
+  String get trxDeleteStaleTitle => '已在服务器上变化';
+
+  @override
+  String get trxDeleteStale =>
+      '这笔交易打开后已在服务器上被修改或删除，或者另一笔交易占用了它的 id，没有删除任何内容。请刷新列表后重新打开。';
+
+  @override
+  String get trxRefreshList => '刷新';
+
+  @override
   String get trxRefreshing => '正在更新…';
 
   @override

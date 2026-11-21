@@ -30,6 +30,7 @@
 - 预算：首页还没有预算汇总条（design-research §2.9）；预算详情不能切换月份（从列表换月后再进）；月份选择和报表一样不能翻到未来月份。
 
 ## 已修（供参考）
+- 删除交易（2026-11-21，需要 zhang ≥ 0.3，PR #818；原「zhang server 侧」的「DELETE 交易」）：交易详情的溢出菜单 →「删除」→ 确认后发 `DELETE` 并带 `If-Match: <version>`；只有带 `version` 的交易才提供（旧服务器没有入口），过期的 id 不会删掉另一笔交易。412 / 404 提示「已在服务器上变化」并可刷新列表；成功后关闭详情，列表随重载刷新。不做撤销和列表滑动删除（见 decisions.md「删除交易」）。
 - 记账后打开新交易（2026-11-21，需要 zhang ≥ 0.3，PR #818；原「zhang server 侧」的「POST 不返回 id」）：保存后的 snackbar 带「查看」（6 秒），打开服务器返回 id 的那笔交易：从首页记账就在首页标签打开，其他情况（包括从账户、报表标签）在流水标签打开；切换 profile 时这条 snackbar 会被收起（id 属于原来的账本）；按 id 查找并比对 version，id 已移动时显示「已变化」而不是另一笔交易。旧服务器（回答 `"Ok"`）、「再记一笔」、编辑时没有「查看」，与以前相同。
 - 幂等记账（2026-11-21，需要 zhang ≥ 0.3，PR #831；原「zhang server 侧」的「无幂等键」）：每次新建交易都带 `Idempotency-Key`（随机 UUID），一个 key 对应用户的一次保存：超时 / 断线后重试、预览警告后「仍然保存」、被拒后修改再保存都沿用它，服务器只写一次，重放的回答（`Idempotency-Replayed: true`）当作保存成功；新开记一笔页面或「再记一笔」才换 key。时间为「现在」的记录在重试时沿用第一次可能已写入的尝试的时间。之前的尝试发过不同内容时，提示「这笔交易已由之前的一次保存写入，之后的修改可能没有保存」。旧服务器忽略这个 header（实测），不依赖它。服务器把 key 写成交易的 `idempotency-key` 元数据：App 记的每笔交易在账本文件里多这一行（见 decisions.md「幂等记账」）。
 - 明文 http 发送凭据需要显式确认（2026-11-21，原 P1，S01 的 opt-in）：`http://` 地址又带凭据时，编辑表单和配置向导都要先勾选「仍然通过 http 发送我的凭据」才会测试、登录或保存，确认按 profile 保存、改地址要重新确认；本机回环（localhost、127.0.0.0/8、::1）豁免，`*.localhost` 和局域网地址不豁免；只有自定义 Header 的 profile 也算带凭据。账本名旁和服务器列表里常驻「未加密（http）」提示。升级前已有的 http profile 照常可用，下次保存或「重新登录」时要求确认（decisions.md「明文 http」）。
@@ -45,5 +46,5 @@
 - 更早：标签转义（未转义会把账本文件写坏，P0）、切换账本残留数据/筛选、删除 profile 不清偏好、U+2212 负号、商品 rounding、写入按币种精度、类目名换行、FAB 遮挡最后一行、funding 默认账户跨币种、测试 retry policy、重复 accounts provider。
 
 ## zhang server 侧（见 decisions.md 末尾与 zhang-api.md §5）
-仍缺：无预算写接口；zhang ≥ 0.3 之前的服务器没有 DELETE 交易、POST 不返回 id、没有幂等键（PR #818 / #831 已补；App 已用幂等键和 POST 返回的 id，DELETE 尚未使用）；`/api/journals` 的 `tags[]` 百分号编码被静默忽略；`--auth` 不带 `:` 会静默关闭鉴权；不平衡 / 未开户的交易仍会写入；源码构建的版本号仍是 `0.1.0`。
+仍缺：无预算写接口；zhang ≥ 0.3 之前的服务器没有 DELETE 交易、POST 不返回 id、没有幂等键（PR #818 / #831 已补，App 都已使用）；`/api/journals` 的 `tags[]` 百分号编码被静默忽略；`--auth` 不带 `:` 会静默关闭鉴权；不平衡 / 未开户的交易仍会写入；源码构建的版本号仍是 `0.1.0`。
 v0.2 已修（App 已去掉对应 workaround）：`size=0` 崩溃、最早价格而非最新、无直接价格的商品算 0、`1E-8` 指数写法、未知 `/api` 路径返回 200、账户流水 `trx_id` 是 posting id、含 `/` 的 base64 文档无法下载、未知商品崩溃、预算月份 13 崩溃、for-new-transaction 混入 Balance Check / Pad、交易数含余额项、graph 忽略 interval 且用 UTC 日期、PUT 丢 cost/price/comment、失败的余额检查重置余额、reload 失败无提示、Basic scheme 大小写敏感。

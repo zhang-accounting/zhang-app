@@ -37,6 +37,8 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
 | 404 | unknown account / commodity / transaction / built-in query, missing document | `not found`, `there is no built-in query nope.nope`, `there is no transaction …` | `ApiNotFound` |
 | 404 / 405 | route the server does not have (API version mismatch) | `no route GET /api/statistic/summary`, `no route GET /api/accounts/X/balances: the path takes another method` | `isMissingRoute == true` → "API mismatch" message |
 | 409 | reload failed / file changed | `the ledger failed to reload, so the version loaded before is still shown…` | `ApiServerError(409)` |
+| 412 | `If-Match` names another version (zhang ≥ 0.3: `PUT`, `DELETE`, update preview) | `the transaction … is not the version the If-Match header names: …` | `ApiServerError(412)` |
+| 428 | `DELETE /api/transactions/{id}` without `If-Match` (zhang ≥ 0.3) | `the request needs an If-Match header with the version of the transaction…` | `ApiServerError(428)` (never sent without it) |
 | 415 / 422 | wrong content type / body does not deserialize | `Failed to deserialize the JSON body into the target type: missing field \`metas\`…` | `ApiServerError` |
 
   A `200` that is not JSON (a URL that is not a zhang API) is an `ApiParseError`.
@@ -141,6 +143,7 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
 | POST | `/api/transactions/{id}/preview` | edit check (unchanged transaction: posting flags) and validation before an edit (`JournalRepository.previewUpdate`) |
 | POST | `/api/transactions` | create, with an `Idempotency-Key` (`JournalRepository.create`, `CreateIntent`) |
 | PUT | `/api/transactions/{id}` | edit from the transaction detail (`JournalRepository.update`) |
+| DELETE | `/api/transactions/{id}` | delete from the transaction detail, zhang ≥ 0.3 (`JournalRepository.delete`) |
 | GET | `/api/accounts`, `/api/accounts/{name}` | account tree, account header |
 | GET | `/api/accounts/{name}/journals` | account postings (incl. sub-accounts) |
 | POST | `/api/accounts/{name}/balances`, `/api/accounts/batch-balances` | balance check / pad (`AccountRepository`, no screen yet) |
@@ -339,7 +342,25 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
   of showing another transaction if the id has moved by then. The id belongs to the ledger it was saved to: a profile
   switch hides the snackbar, and the action does nothing once that ledger session has ended. No "View" without an id
   (older servers, a failed reload), after "Save and add another" (the entry screen stays open) or for edits.
-* Not used yet: `DELETE /api/transactions/{id}` (zhang ≥ 0.3; 405 before).
+* `DELETE /api/transactions/{id}` (zhang ≥ 0.3, PR #818) → `200 {"data":null}`, answered after the reload. It needs
+  `If-Match: <version>` (several, quoted or not, may be named): without it 428; when the transaction at the id has
+  another version, 412 – it changed, or another transaction took the id (the ones after a deleted transaction in its
+  file move and the next can take its id), or the server deleted or replaced that very version at that id lately
+  (tombstones: in memory, 24 h, the last 1000, gone after a restart), so a delete sent again never removes a twin
+  written alike that took the place. Unknown id 404, a transaction a plugin made or the padding of a pad 400, a file
+  that changed since the load 409; nothing is deleted then. The text goes with its lines and the blank line after it;
+  a comment above it and the documents it names stay. Checked live against zhang `origin/main` (c34d46df): 428
+  without `If-Match`, 412 with a wrong version, 200 with the right one; of two identical entries, deleting the first
+  moved the second to its id with the same version, and the same delete sent again was a 412 ("deleted or replaced
+  lately") that left the second in place; a create with the `Idempotency-Key` of a deleted transaction wrote it
+  again. Servers before PR #818: 405 `no route DELETE …: the path takes another method`.
+* How the app deletes (`TransactionDetailScreen._delete`, `transaction_actions.dart`): the detail's overflow menu
+  (⋮) → "Delete" → a confirmation naming date, payee, narration and amount → `DELETE` with `If-Match` = the
+  `version` the detail shows. Offered only for transactions listed with a `version` (`canDelete`): without one
+  there is no precondition and a stale positional id could name another transaction, so older servers get no
+  delete. Once deleted: a snackbar, the detail closes, the lists refresh on the SSE `Reload` (or the write timer)
+  as after an edit. 412 / 404 → "Changed on the server", nothing was deleted, "Refresh" goes back to the list and
+  refetches it. Other errors (400, 409) show the server's message. No undo, no swipe-to-delete (decisions.md).
 
 ### 4.4 Statistic graph
 
@@ -365,7 +386,7 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
 2. Unbalanced transactions and unknown / closed accounts are written anyway → preview before saving.
 3. `--auth` without `:` silently disables auth (server side).
 4. No budget writes. `DELETE` for transactions, the id of a create and idempotency keys need zhang ≥ 0.3 (§4.3;
-   the app uses the last two).
+   the app uses all three).
 5. A source build reports version `0.1.0`; use `format` to detect v0.2.
 6. `/openapi.json` is not behind auth.
 7. Edits: posting flags are neither reported by `/api/journals` nor accepted in requests (kept only while the

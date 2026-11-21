@@ -528,6 +528,20 @@
   "trxEditBlockedPostingFlag": "A posting of this transaction has its own flag (such as !). The server does not report posting flags, so an edit could drop it. Edit it in the ledger file instead.",
   "trxEditBlockedUnverified": "The server reports problems with this transaction as it is written, so the app can't check that an edit would keep everything. Fix it in the ledger file first.",
   "trxEditCopyHint": "You can still copy it as a new transaction.",
+  "trxDeleteTitle": "Delete this transaction?",
+  "trxDeleteMessage": "It is removed from its ledger file: {summary}. The app cannot undo this.",
+  "@trxDeleteMessage": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "trxDeleting": "Deleting…",
+  "trxDeletedSnack": "Transaction deleted",
+  "trxDeleteStaleTitle": "Changed on the server",
+  "trxDeleteStale": "Since it was opened, this transaction was changed or deleted on the server, or another transaction took its id. Nothing was deleted. Refresh the list and open it again.",
+  "trxRefreshList": "Refresh",
   "trxRefreshing": "Updating…",
   "trxEditedNotFound": "Saved. The updated transaction could not be found again – it may have moved. Open it again from the list.",
   "trxEditedPending": "Saved, but the server does not list the change yet. Open the transaction again from the list.",
