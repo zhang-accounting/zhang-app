@@ -134,7 +134,7 @@ class _ProfileTile extends ConsumerWidget {
       ),
       subtitle: Text(
         [
-          '${profile.baseUrl} · ${_authLabel(l10n)}',
+          [profile.baseUrl, _authLabel(l10n), if (profile.sendsCredentialsInClear) l10n.plainHttpIndicator].join(' · '),
           ?_sessionLine(l10n),
         ].join('\n'),
         key: Key('settings.profileSubtitle.${profile.id}'),

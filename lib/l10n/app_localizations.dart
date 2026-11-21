@@ -326,6 +326,36 @@ abstract class AppLocalizations {
   /// **'Only enable this for servers you trust.'**
   String get allowSelfSignedHelp;
 
+  /// No description provided for @plainHttpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not encrypted: this server uses http://'**
+  String get plainHttpTitle;
+
+  /// No description provided for @plainHttpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password, token or headers are sent in plain text: anyone on the same network can read them. Use https:// if the server supports it.'**
+  String get plainHttpBody;
+
+  /// No description provided for @plainHttpAcknowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'Send my credentials over http anyway'**
+  String get plainHttpAcknowledge;
+
+  /// No description provided for @plainHttpContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue over http'**
+  String get plainHttpContinue;
+
+  /// No description provided for @plainHttpIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Not encrypted (http)'**
+  String get plainHttpIndicator;
+
   /// No description provided for @colorLabel.
   ///
   /// In en, this message translates to:

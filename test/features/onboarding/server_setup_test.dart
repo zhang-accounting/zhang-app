@@ -374,6 +374,76 @@ void main() {
     expect(active.basicPassword, 'secret');
   });
 
+  testWidgets('plain http to another host: step 2 asks before any credentials are sent', (tester) async {
+    final server = FakeSetupServer()
+      ..appLogin = false
+      ..passkey = false;
+    final app = await _pump(tester, server);
+    await _toServer(tester, 'http://192.168.1.20:8000');
+    expect(find.byKey(const Key('setup.plainHttp')), findsOneWidget);
+    expect(find.text('Not encrypted: this server uses http://'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('setup.username')), 'demo');
+    await tester.enterText(find.byKey(const Key('setup.password')), 'secret');
+    final before = server.requests.length;
+    expect(tester.widget<FilledButton>(find.byKey(const Key('setup.signIn'))).onPressed, isNull);
+    await tester.testTextInput.receiveAction(TextInputAction.go); // the keyboard's "go" too
+    await tester.pumpAndSettle();
+    expect(server.requests.length, before, reason: 'nothing sent before the acknowledgement');
+
+    await _tap(tester, 'setup.plainHttpAck');
+    await _tap(tester, 'setup.signIn');
+    expect(find.byKey(const Key('setup.result.ok')), findsOneWidget);
+    await _tap(tester, 'setup.continue');
+    await _tap(tester, 'setup.start');
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.basic);
+    expect(active.plainHttpAcknowledged, isTrue);
+    expect(find.byKey(const Key('ledger.plainHttp')), findsOneWidget);
+  });
+
+  testWidgets('plain http behind a gateway: the tick is locked once the gateway headers went out', (tester) async {
+    final server = FakeSetupServer()
+      ..gateway = true
+      ..signInBehindGateway = true;
+    final app = await _pump(tester, server);
+    await _toServer(tester, 'http://192.168.1.20:8000');
+    expect(find.byKey(const Key('setup.plainHttp')), findsOneWidget);
+    await tester.tap(find.text('Custom headers'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('setup.headerName.0')), 'X-Gate');
+    await tester.enterText(find.byKey(const Key('setup.headerValue.0')), 'open');
+    final before = server.requests.length;
+    expect(tester.widget<FilledButton>(find.byKey(const Key('setup.connect'))).onPressed, isNull);
+    expect(server.requests.length, before);
+
+    await _tap(tester, 'setup.plainHttpAck');
+    await _tap(tester, 'setup.connect');
+    expect(find.byKey(const Key('setup.gatewayPassed')), findsOneWidget);
+    final tick = tester.widget<CheckboxListTile>(find.byKey(const Key('setup.plainHttpAck')));
+    expect(tick.value, isTrue);
+    expect(tick.onChanged, isNull, reason: 'cannot be taken back after the headers were sent');
+
+    await _tap(tester, 'setup.usePassword');
+    await tester.enterText(find.byKey(const Key('setup.username')), 'demo');
+    await tester.enterText(find.byKey(const Key('setup.password')), 'secret');
+    await _tap(tester, 'setup.signIn');
+    await _tap(tester, 'setup.continue');
+    await _tap(tester, 'setup.start');
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.customHeaders, {'X-Gate': 'open'});
+    expect(active.authType, AuthType.basic);
+    expect(active.plainHttpAcknowledged, isTrue);
+  });
+
+  testWidgets('plain http to this device (loopback): no acknowledgement', (tester) async {
+    final loopback = FakeSetupServer()
+      ..appLogin = false
+      ..passkey = false;
+    await _pump(tester, loopback);
+    await _toServer(tester, 'http://127.0.0.1:18121');
+    expect(find.byKey(const Key('setup.plainHttp')), findsNothing, reason: 'loopback is exempt');
+  });
+
   testWidgets('password only (no app handoff): fields directly, no browser option', (tester) async {
     final server = FakeSetupServer()
       ..appLogin = false

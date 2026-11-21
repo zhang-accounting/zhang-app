@@ -61,6 +61,7 @@ class ServerProfile {
     this.sessionExpiresAt,
     this.sessionUser,
     this.allowSelfSigned = false,
+    this.plainHttpAcknowledged = false,
     this.color,
   });
 
@@ -94,6 +95,10 @@ class ServerProfile {
   /// Accept self-signed / invalid TLS certificates for this server's host.
   final bool allowSelfSigned;
 
+  /// The user agreed to send this profile's credentials over plain `http://`
+  /// (asked when [sendsCredentialsInClear]; decisions.md "明文 http").
+  final bool plainHttpAcknowledged;
+
   /// Optional ARGB colour used to tag this ledger in the UI (e.g. a dot in the
   /// app bar). `null` = use the theme's primary colour.
   final int? color;
@@ -103,6 +108,43 @@ class ServerProfile {
 
   /// Host part of [baseUrl] (empty if unparsable).
   String get host => Uri.tryParse(baseUrl)?.host ?? '';
+
+  /// The server is reached over plain `http://` (no TLS).
+  bool get usesPlainHttp => Uri.tryParse(baseUrl)?.scheme == 'http';
+
+  /// Requests carry (or, for a browser sign-in, will carry) credentials:
+  /// a sign-in method or custom headers.
+  bool get carriesCredentials => authType != AuthType.none || customHeaders.isNotEmpty;
+
+  /// Credentials go over the network unencrypted: plain `http://` to a host
+  /// other than this device's loopback ([isLoopbackHost]). Needs
+  /// [plainHttpAcknowledged] in the profile form and the setup wizard, and
+  /// shows the "not encrypted" indicator next to the ledger name.
+  bool get sendsCredentialsInClear => carriesCredentials && plainHttpRiskFor(baseUrl);
+
+  /// Whether credentials sent to [baseUrl] (normalised) would cross the
+  /// network unencrypted: `http://` and not a loopback host.
+  static bool plainHttpRiskFor(String baseUrl) {
+    final uri = Uri.tryParse(baseUrl);
+    return uri != null && uri.scheme == 'http' && !isLoopbackHost(uri.host);
+  }
+
+  /// `localhost`, `127.0.0.0/8` and `::1`: traffic to them never leaves the
+  /// device (e.g. an SSH tunnel), so plain http is exempt from the
+  /// acknowledgement. `*.localhost` is not (Android / iOS resolvers need not
+  /// map it to loopback), nor are private LAN addresses (shared Wi-Fi can be
+  /// read).
+  static bool isLoopbackHost(String host) {
+    var h = host.toLowerCase();
+    if (h.startsWith('[') && h.endsWith(']')) h = h.substring(1, h.length - 1);
+    if (h.endsWith('.')) h = h.substring(0, h.length - 1);
+    if (h == 'localhost') return true;
+    if (h == '::1' || h == '0:0:0:0:0:0:0:1') return true;
+    final ipv4 = RegExp(r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$').firstMatch(h);
+    if (ipv4 == null) return false;
+    final octets = [for (var i = 1; i <= 4; i++) int.parse(ipv4.group(i)!)];
+    return octets[0] == 127 && octets.every((o) => o <= 255);
+  }
 
   /// A browser sign-in profile that currently holds a session token.
   bool get hasSession =>
@@ -133,6 +175,7 @@ class ServerProfile {
     String? sessionUser,
     bool clearSession = false,
     bool? allowSelfSigned,
+    bool? plainHttpAcknowledged,
     int? color,
     bool clearColor = false,
   }) {
@@ -149,6 +192,7 @@ class ServerProfile {
       sessionExpiresAt: clearSession ? null : (sessionExpiresAt ?? this.sessionExpiresAt),
       sessionUser: clearSession ? null : (sessionUser ?? this.sessionUser),
       allowSelfSigned: allowSelfSigned ?? this.allowSelfSigned,
+      plainHttpAcknowledged: plainHttpAcknowledged ?? this.plainHttpAcknowledged,
       color: clearColor ? null : (color ?? this.color),
     );
   }
@@ -170,6 +214,7 @@ class ServerProfile {
     if (basicUsername != null) 'basicUsername': basicUsername,
     'customHeaderNames': customHeaders.keys.toList(),
     'allowSelfSigned': allowSelfSigned,
+    if (plainHttpAcknowledged) 'plainHttpAcknowledged': true,
     if (color != null) 'color': color,
   };
 
@@ -239,6 +284,7 @@ class ServerProfile {
       sessionExpiresAt: expires is String ? DateTime.tryParse(expires)?.toUtc() : null,
       sessionUser: secret?['sessionUser'] as String?,
       allowSelfSigned: public['allowSelfSigned'] == true,
+      plainHttpAcknowledged: public['plainHttpAcknowledged'] == true,
       color: color is int ? color : null,
     );
   }
@@ -393,6 +439,7 @@ class ServerProfile {
       other.sessionExpiresAt == sessionExpiresAt &&
       other.sessionUser == sessionUser &&
       other.allowSelfSigned == allowSelfSigned &&
+      other.plainHttpAcknowledged == plainHttpAcknowledged &&
       other.color == color;
 
   @override
@@ -411,6 +458,7 @@ class ServerProfile {
     sessionExpiresAt,
     sessionUser,
     allowSelfSigned,
+    plainHttpAcknowledged,
     color,
   );
 

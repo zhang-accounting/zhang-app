@@ -129,6 +129,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allowSelfSignedHelp => 'Only enable this for servers you trust.';
 
   @override
+  String get plainHttpTitle => 'Not encrypted: this server uses http://';
+
+  @override
+  String get plainHttpBody =>
+      'Your password, token or headers are sent in plain text: anyone on the same network can read them. Use https:// if the server supports it.';
+
+  @override
+  String get plainHttpAcknowledge => 'Send my credentials over http anyway';
+
+  @override
+  String get plainHttpContinue => 'Continue over http';
+
+  @override
+  String get plainHttpIndicator => 'Not encrypted (http)';
+
+  @override
   String get colorLabel => 'Colour';
 
   @override

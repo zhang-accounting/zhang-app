@@ -6,6 +6,7 @@ import '../../data/profiles/profile_providers.dart';
 import '../../data/profiles/server_profile.dart';
 import '../../l10n/l10n.dart';
 import '../../router.dart';
+import '../theme/app_colors.dart';
 
 /// Colour of a profile's ledger dot (its own colour or the theme primary).
 Color profileColor(BuildContext context, ServerProfile? profile) {
@@ -28,7 +29,8 @@ class LedgerDot extends StatelessWidget {
   );
 }
 
-/// App-bar title showing the active ledger: coloured dot + profile name.
+/// App-bar title showing the active ledger: coloured dot + profile name, and
+/// [PlainHttpIndicator] while its credentials go over plain http.
 /// Use as `AppBar(title: const ActiveLedgerTitle())`.
 class ActiveLedgerTitle extends ConsumerWidget {
   const ActiveLedgerTitle({super.key, this.subtitle});
@@ -50,7 +52,16 @@ class ActiveLedgerTitle extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(profile?.name ?? '', overflow: TextOverflow.ellipsis),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: Text(profile?.name ?? '', overflow: TextOverflow.ellipsis)),
+                  if (profile != null && profile.sendsCredentialsInClear) ...[
+                    const SizedBox(width: 6),
+                    const PlainHttpIndicator(),
+                  ],
+                ],
+              ),
               if (subtitle != null)
                 Text(
                   subtitle!,
@@ -62,6 +73,25 @@ class ActiveLedgerTitle extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Small "not encrypted" mark for a profile whose credentials go over plain
+/// http ([ServerProfile.sendsCredentialsInClear]); the tooltip says why.
+class PlainHttpIndicator extends StatelessWidget {
+  const PlainHttpIndicator({super.key, this.size = 16});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.l10n.plainHttpIndicator;
+    return Tooltip(
+      key: const Key('ledger.plainHttp'),
+      message: label,
+      triggerMode: TooltipTriggerMode.tap,
+      child: Icon(Icons.no_encryption_outlined, size: size, color: context.zhangColors.warning, semanticLabel: label),
     );
   }
 }

@@ -306,13 +306,15 @@ class ServerSetupController extends ChangeNotifier {
     return SignInMode.unsupported;
   }
 
-  /// The probed server without credentials (but with [gatewayHeaders]).
+  /// The probed server without credentials, but with [gatewayHeaders] and
+  /// the http acknowledgement of step 2.
   ServerProfile _baseProfile() => ServerProfile(
     id: '',
     name: '',
     baseUrl: probe?.baseUrl ?? normalizedUrl,
     allowSelfSigned: allowSelfSigned,
     customHeaders: gatewayHeaders,
+    plainHttpAcknowledged: plainHttpRisk && plainHttpAcknowledged,
   );
 
   /// Host (and port) of the probed server, for headings.
@@ -351,6 +353,22 @@ class ServerSetupController extends ChangeNotifier {
   /// Access + zhang's Basic). Sent with every later request of the wizard
   /// and kept in the profile, next to zhang's sign-in.
   Map<String, String> gatewayHeaders = const {};
+
+  /// "Send my credentials over http anyway" (step 2 on a [plainHttpRisk]
+  /// server).
+  bool plainHttpAcknowledged = false;
+
+  /// Credentials for the probed server would cross the network unencrypted
+  /// ([ServerProfile.plainHttpRiskFor]): step 2 asks first.
+  bool get plainHttpRisk => ServerProfile.plainHttpRiskFor(probe?.baseUrl ?? normalizedUrl);
+
+  /// No sign-in or connection attempt before the acknowledgement.
+  bool get needsPlainHttpAck => plainHttpRisk && !plainHttpAcknowledged;
+
+  void setPlainHttpAcknowledged(bool value) {
+    plainHttpAcknowledged = value;
+    _notify();
+  }
 
   /// Browser and password sign-in both work on this server.
   bool get canSwitchToPassword => mode == SignInMode.browser && (probe?.auth?.password ?? false);
@@ -393,6 +411,7 @@ class ServerSetupController extends ChangeNotifier {
   void _resetSignIn() {
     verified = null;
     gatewayHeaders = const {};
+    plainHttpAcknowledged = false;
     signInError = null;
     proxyError = null;
     username.clear();
@@ -484,6 +503,7 @@ class ServerSetupController extends ChangeNotifier {
   }
 
   Future<void> _verify({required bool proxy, required Future<SetupVerified?> Function() run}) async {
+    if (needsPlainHttpAck) return;
     final op = ++_op;
     busy = true;
     signInError = null;
@@ -506,8 +526,11 @@ class ServerSetupController extends ChangeNotifier {
     }
   }
 
-  /// "Check again" (passkey-only server, after upgrading it).
+  /// "Check again" (passkey-only server, after upgrading it). Sends the
+  /// [gatewayHeaders], so it waits for the http acknowledgement like a
+  /// sign-in.
   Future<void> recheck() async {
+    if (gatewayHeaders.isNotEmpty && needsPlainHttpAck) return;
     final op = ++_op;
     busy = true;
     signInError = null;

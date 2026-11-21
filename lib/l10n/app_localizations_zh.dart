@@ -128,6 +128,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get allowSelfSignedHelp => '仅对你信任的服务器开启。';
 
   @override
+  String get plainHttpTitle => '未加密：这个服务器用的是 http://';
+
+  @override
+  String get plainHttpBody =>
+      '密码、令牌或 Header 会以明文发送，同一网络里的任何人都能读到。服务器支持的话请改用 https://。';
+
+  @override
+  String get plainHttpAcknowledge => '仍然通过 http 发送我的凭据';
+
+  @override
+  String get plainHttpContinue => '仍用 http 继续';
+
+  @override
+  String get plainHttpIndicator => '未加密（http）';
+
+  @override
   String get colorLabel => '颜色';
 
   @override
