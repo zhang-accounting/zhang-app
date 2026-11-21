@@ -106,6 +106,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeHeader => 'Remove header';
 
   @override
+  String get customHeadersLabel => 'Custom headers';
+
+  @override
+  String get customHeadersHelp =>
+      'Sent with every request, in addition to the sign-in method. For a gateway in front of zhang, e.g. CF-Access-Client-Id and CF-Access-Client-Secret of Cloudflare Access.';
+
+  @override
+  String get headerAuthorizationReserved =>
+      'The sign-in method sets Authorization. To send your own, choose “No sign-in”.';
+
+  @override
   String get showSecret => 'Show';
 
   @override
@@ -116,6 +127,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allowSelfSignedHelp => 'Only enable this for servers you trust.';
+
+  @override
+  String get plainHttpTitle => 'Not encrypted: this server uses http://';
+
+  @override
+  String get plainHttpBody =>
+      'Your password, token or headers are sent in plain text: anyone on the same network can read them. Use https:// if the server supports it.';
+
+  @override
+  String get plainHttpAcknowledge => 'Send my credentials over http anyway';
+
+  @override
+  String get plainHttpContinue => 'Continue over http';
+
+  @override
+  String get plainHttpIndicator => 'Not encrypted (http)';
 
   @override
   String get colorLabel => 'Colour';
@@ -163,6 +190,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorNotFound => 'Not found (404).';
+
+  @override
+  String errorRedirect(int status, String location) {
+    return 'The server redirects ($status) to $location. The app does not follow redirects, so your credentials stay with this address: enter the final address as the server URL.';
+  }
+
+  @override
+  String errorRedirectGateway(String host) {
+    return 'The server sends the app to a sign-in page on $host: a gateway in front of zhang did not let the request through.';
+  }
 
   @override
   String errorServer(int status, String message) {
@@ -344,6 +381,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addHintAmountPositive => 'The amount must be greater than 0';
+
+  @override
+  String addHintAmountDecimals(String commodity, int precision) {
+    String _temp0 = intl.Intl.pluralLogic(
+      precision,
+      locale: localeName,
+      other: '$commodity allows $precision decimals: remove the extra digits',
+      one: '$commodity allows 1 decimal: remove the extra digits',
+      zero: '$commodity has no decimals: remove them',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get addHintCategory => 'Choose a category';
@@ -1413,6 +1462,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setupBehindGateway => 'It is behind a sign-in gateway';
 
   @override
+  String get setupRedirectGatewayHint =>
+      'This usually means a sign-in gateway such as Cloudflare Access in front of zhang. Continue with the credentials it gives apps (for Cloudflare Access: the service token headers).';
+
+  @override
   String get setupTooOldTitle => 'This server needs an update';
 
   @override
@@ -1472,6 +1525,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get setupGatewayBody =>
       'Something in front of zhang, such as a reverse proxy, asks for credentials. Enter them under “Reverse proxy or gateway”.';
+
+  @override
+  String get setupGatewayPassed =>
+      'The gateway accepted the custom headers. Now sign in to zhang: the headers are sent with every request.';
 
   @override
   String get setupAdvancedTitle => 'Reverse proxy or gateway';
@@ -1563,9 +1620,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authBearerLong => 'Bearer token (reverse proxy)';
-
-  @override
-  String get authHeadersLong => 'Custom headers (reverse proxy)';
 
   @override
   String get setupProxyHeaders => 'Custom headers';

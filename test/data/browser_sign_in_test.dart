@@ -289,6 +289,29 @@ void main() {
       expect(requests.last.data, {'code': _code, 'code_verifier': _verifier});
     });
 
+    test('gateway headers go with the status check and the exchange, an Authorization never', () async {
+      final requests = <RequestOptions>[];
+      final signIn = _signIn(
+        (o) => o.uri.path.endsWith('/auth/status') ? jsonResponse(_status()) : jsonResponse(_exchangeOk),
+        requests: requests,
+        launch: (url, scheme) async => _callback,
+      );
+      final grant = await signIn.signIn(
+        _base,
+        headers: {'CF-Access-Client-Id': 'cf-id', 'authorization': 'Basic stale'},
+      );
+      expect(grant.token, _token);
+      expect(requests.map((r) => r.uri.path), ['/api/auth/status', '/api/auth/app/exchange']);
+      for (final r in requests) {
+        expect(r.headers['CF-Access-Client-Id'], 'cf-id');
+        expect(r.headers.containsKey('Authorization'), isFalse);
+      }
+      final profile = grant.applyTo(
+        const ServerProfile(id: 'p', name: 'x', baseUrl: _base, customHeaders: {'CF-Access-Client-Id': 'cf-id'}),
+      );
+      expect(profile.authHeaders(), {'CF-Access-Client-Id': 'cf-id', 'Authorization': 'Bearer $_token'});
+    });
+
     test('every sign-in has fresh secrets', () async {
       final launched = <Uri>[];
       final signIn = BrowserSignIn(

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -124,10 +126,10 @@ void main() {
       'Username and password',
       'Browser sign-in (passkey or password)',
       'Bearer token (reverse proxy)',
-      'Custom headers (reverse proxy)',
     ]) {
       expect(find.text(label), findsWidgets);
     }
+    expect(find.text('Custom headers (reverse proxy)'), findsNothing, reason: 'headers are not a method any more');
     await tester.tap(find.text('Username and password').last);
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('profileForm.username')), 'demo');
@@ -153,12 +155,202 @@ void main() {
     final active = app.container.read(activeProfileProvider)!;
     expect(active.authType, AuthType.basic);
     expect(active.basicPassword, 'secret');
+    expect(active.plainHttpAcknowledged, isFalse, reason: 'loopback: not asked');
     expect(find.text('Servers'), findsOneWidget);
+  });
+
+  testWidgets('edit server: Basic + custom headers are saved and tested together', (tester) async {
+    final fake = _FakeTester(
+      (p) async => const ServerInfo(title: 'My Accounting', version: '0.2.0', buildDate: '2026-11-21', format: 'zhang'),
+    );
+    const open = ServerProfile(id: 'p1', name: 'Family', baseUrl: 'https://ledger.example.com');
+    final app = await _pumpApp(
+      tester,
+      initial: const ProfilesState(profiles: [open], activeId: 'p1'),
+      connectionTester: fake,
+    );
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Custom headers'), findsOneWidget, reason: 'shown for every sign-in method');
+    expect(find.byKey(const Key('profileForm.headerName.0')), findsNothing, reason: 'no empty row by default');
+
+    await tester.tap(find.byKey(const Key('profileForm.authType')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Username and password').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('profileForm.username')), 'demo');
+    await tester.enterText(find.byKey(const Key('profileForm.password')), 'secret');
+    for (final (i, name, value) in [(0, 'CF-Access-Client-Id', 'cf-id'), (1, 'Authorization', 'Token mine')]) {
+      await tester.ensureVisible(find.byKey(const Key('profileForm.addHeader')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('profileForm.addHeader')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(Key('profileForm.headerName.$i')), name);
+      await tester.enterText(find.byKey(Key('profileForm.headerValue.$i')), value);
+    }
+
+    // A custom Authorization would compete with Basic: refused, nothing sent.
+    await tester.ensureVisible(find.byKey(const Key('profileForm.test')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.test')));
+    await tester.pumpAndSettle();
+    expect(find.text('The sign-in method sets Authorization. To send your own, choose “No sign-in”.'), findsOneWidget);
+    expect(fake.tested, isEmpty);
+    await tester.ensureVisible(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    expect(app.container.read(activeProfileProvider)!.authType, AuthType.none, reason: 'not saved');
+
+    await tester.ensureVisible(find.byKey(const Key('profileForm.removeHeader.1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.removeHeader.1')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('profileForm.test')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.test')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.testOk')), findsOneWidget);
+    expect(fake.tested.single.authHeaders(), {
+      'CF-Access-Client-Id': 'cf-id',
+      'Authorization': 'Basic ${base64Encode(utf8.encode('demo:secret'))}',
+    });
+
+    await tester.ensureVisible(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.basic);
+    expect(active.customHeaders, {'CF-Access-Client-Id': 'cf-id'});
+    expect(find.text('https://ledger.example.com · Basic + Headers'), findsOneWidget);
+  });
+
+  testWidgets('edit server: credentials over plain http need an acknowledgement, stored per profile', (tester) async {
+    const open = ServerProfile(id: 'p1', name: 'NAS', baseUrl: 'http://192.168.1.2:8000');
+    final app = await _pumpApp(tester, initial: const ProfilesState(profiles: [open], activeId: 'p1'));
+    expect(find.byKey(const Key('ledger.plainHttp')), findsNothing, reason: 'no credentials yet');
+    Future<void> openEdit() async {
+      await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+    }
+
+    VoidCallback? onSubmit() => tester.widget<FilledButton>(find.byKey(const Key('profileForm.submit'))).onPressed;
+    VoidCallback? onTest() => tester.widget<OutlinedButton>(find.byKey(const Key('profileForm.test'))).onPressed;
+    bool? acked() => tester.widget<CheckboxListTile>(find.byKey(const Key('profileForm.plainHttpAck'))).value;
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await openEdit();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('profileForm.authType')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Username and password').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsOneWidget);
+    expect(find.text('Not encrypted: this server uses http://'), findsOneWidget);
+    expect(onSubmit(), isNull);
+    expect(onTest(), isNull, reason: 'testing sends the credentials too');
+
+    await tester.enterText(find.byKey(const Key('profileForm.username')), 'demo');
+    await tester.enterText(find.byKey(const Key('profileForm.password')), 'secret');
+    await tester.ensureVisible(find.byKey(const Key('profileForm.plainHttpAck')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.plainHttpAck')));
+    await tester.pumpAndSettle();
+    expect(onSubmit(), isNotNull);
+    expect(onTest(), isNotNull);
+    await tester.ensureVisible(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.basic);
+    expect(active.plainHttpAcknowledged, isTrue);
+    expect(find.text('http://192.168.1.2:8000 · Basic · Not encrypted (http)'), findsOneWidget);
+
+    // Kept when editing again; another address asks again; https needs nothing.
+    await openEdit();
+    expect(acked(), isTrue);
+    await tester.enterText(find.byKey(const Key('profileForm.url')), 'http://192.168.1.3:8000');
+    await tester.pumpAndSettle();
+    expect(acked(), isFalse);
+    expect(onSubmit(), isNull);
+    await tester.enterText(find.byKey(const Key('profileForm.url')), 'https://192.168.1.3:8000');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsNothing);
+    expect(onSubmit(), isNotNull);
+    await tester.enterText(find.byKey(const Key('profileForm.url')), 'http://localhost:8000');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsNothing, reason: 'loopback is exempt');
+    await tester.enterText(find.byKey(const Key('profileForm.url')), 'http://192.168.1.2:8000');
+    await tester.pumpAndSettle();
+    expect(acked(), isTrue, reason: 'back to the acknowledged address');
+  });
+
+  testWidgets('edit server: custom headers alone over plain http need the acknowledgement too', (tester) async {
+    const open = ServerProfile(id: 'p1', name: 'NAS', baseUrl: 'http://192.168.1.2:8000');
+    final app = await _pumpApp(tester, initial: const ProfilesState(profiles: [open], activeId: 'p1'));
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    VoidCallback? onSubmit() => tester.widget<FilledButton>(find.byKey(const Key('profileForm.submit'))).onPressed;
+
+    await tester.ensureVisible(find.byKey(const Key('profileForm.addHeader')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.addHeader')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsNothing, reason: 'an empty row sends nothing');
+    await tester.enterText(find.byKey(const Key('profileForm.headerName.0')), 'CF-Access-Client-Secret');
+    await tester.enterText(find.byKey(const Key('profileForm.headerValue.0')), 'cf-secret');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsOneWidget);
+    expect(onSubmit(), isNull);
+
+    await tester.ensureVisible(find.byKey(const Key('profileForm.plainHttpAck')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.plainHttpAck')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.none);
+    expect(active.customHeaders, {'CF-Access-Client-Secret': 'cf-secret'});
+    expect(active.plainHttpAcknowledged, isTrue);
+    expect(find.text('http://192.168.1.2:8000 · Headers · Not encrypted (http)'), findsOneWidget);
+  });
+
+  testWidgets('the ledger title marks a profile whose credentials go over plain http', (tester) async {
+    const lan = ServerProfile(
+      id: 'p1',
+      name: 'NAS',
+      baseUrl: 'http://192.168.1.2:8000',
+      authType: AuthType.basic,
+      basicUsername: 'demo',
+      basicPassword: 'secret',
+      plainHttpAcknowledged: true,
+    );
+    await _pumpApp(tester, initial: const ProfilesState(profiles: [lan], activeId: 'p1'));
+    expect(find.byKey(const Key('ledger.plainHttp')), findsOneWidget);
+    expect(find.byTooltip('Not encrypted (http)'), findsOneWidget);
   });
 
   testWidgets('shell: tabs switch and FAB opens /transactions/new', (tester) async {
     await _pumpApp(tester, initial: const ProfilesState(profiles: [_profile], activeId: 'p1'));
     expect(find.text('Family'), findsOneWidget); // ActiveLedgerTitle in Home app bar
+    expect(find.byKey(const Key('ledger.plainHttp')), findsNothing, reason: 'http to 127.0.0.1 stays on the device');
 
     await tester.tap(find.text('Accounts'));
     await tester.pumpAndSettle();

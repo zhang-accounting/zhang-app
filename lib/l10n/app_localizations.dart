@@ -284,6 +284,24 @@ abstract class AppLocalizations {
   /// **'Remove header'**
   String get removeHeader;
 
+  /// No description provided for @customHeadersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom headers'**
+  String get customHeadersLabel;
+
+  /// No description provided for @customHeadersHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent with every request, in addition to the sign-in method. For a gateway in front of zhang, e.g. CF-Access-Client-Id and CF-Access-Client-Secret of Cloudflare Access.'**
+  String get customHeadersHelp;
+
+  /// No description provided for @headerAuthorizationReserved.
+  ///
+  /// In en, this message translates to:
+  /// **'The sign-in method sets Authorization. To send your own, choose “No sign-in”.'**
+  String get headerAuthorizationReserved;
+
   /// No description provided for @showSecret.
   ///
   /// In en, this message translates to:
@@ -307,6 +325,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only enable this for servers you trust.'**
   String get allowSelfSignedHelp;
+
+  /// No description provided for @plainHttpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not encrypted: this server uses http://'**
+  String get plainHttpTitle;
+
+  /// No description provided for @plainHttpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your password, token or headers are sent in plain text: anyone on the same network can read them. Use https:// if the server supports it.'**
+  String get plainHttpBody;
+
+  /// No description provided for @plainHttpAcknowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'Send my credentials over http anyway'**
+  String get plainHttpAcknowledge;
+
+  /// No description provided for @plainHttpContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue over http'**
+  String get plainHttpContinue;
+
+  /// No description provided for @plainHttpIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Not encrypted (http)'**
+  String get plainHttpIndicator;
 
   /// No description provided for @colorLabel.
   ///
@@ -391,6 +439,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not found (404).'**
   String get errorNotFound;
+
+  /// No description provided for @errorRedirect.
+  ///
+  /// In en, this message translates to:
+  /// **'The server redirects ({status}) to {location}. The app does not follow redirects, so your credentials stay with this address: enter the final address as the server URL.'**
+  String errorRedirect(int status, String location);
+
+  /// No description provided for @errorRedirectGateway.
+  ///
+  /// In en, this message translates to:
+  /// **'The server sends the app to a sign-in page on {host}: a gateway in front of zhang did not let the request through.'**
+  String errorRedirectGateway(String host);
 
   /// No description provided for @errorServer.
   ///
@@ -715,6 +775,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The amount must be greater than 0'**
   String get addHintAmountPositive;
+
+  /// No description provided for @addHintAmountDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'{precision, plural, =0{{commodity} has no decimals: remove them} =1{{commodity} allows 1 decimal: remove the extra digits} other{{commodity} allows {precision} decimals: remove the extra digits}}'**
+  String addHintAmountDecimals(String commodity, int precision);
 
   /// No description provided for @addHintCategory.
   ///
@@ -2498,6 +2564,12 @@ abstract class AppLocalizations {
   /// **'It is behind a sign-in gateway'**
   String get setupBehindGateway;
 
+  /// No description provided for @setupRedirectGatewayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This usually means a sign-in gateway such as Cloudflare Access in front of zhang. Continue with the credentials it gives apps (for Cloudflare Access: the service token headers).'**
+  String get setupRedirectGatewayHint;
+
   /// No description provided for @setupTooOldTitle.
   ///
   /// In en, this message translates to:
@@ -2599,6 +2671,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Something in front of zhang, such as a reverse proxy, asks for credentials. Enter them under “Reverse proxy or gateway”.'**
   String get setupGatewayBody;
+
+  /// No description provided for @setupGatewayPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'The gateway accepted the custom headers. Now sign in to zhang: the headers are sent with every request.'**
+  String get setupGatewayPassed;
 
   /// No description provided for @setupAdvancedTitle.
   ///
@@ -2755,12 +2833,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bearer token (reverse proxy)'**
   String get authBearerLong;
-
-  /// No description provided for @authHeadersLong.
-  ///
-  /// In en, this message translates to:
-  /// **'Custom headers (reverse proxy)'**
-  String get authHeadersLong;
 
   /// No description provided for @setupProxyHeaders.
   ///
