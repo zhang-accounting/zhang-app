@@ -285,7 +285,13 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
   earlier attempt of the save sent another request (the entry was changed after a timeout), the snackbar says the
   transaction was recorded by that earlier attempt and may lack the changes. A request whose own metadata has
   `idempotency-key` (typed in the advanced editor) is sent without the header. Nothing depends on the server
-  having the feature.
+  having the feature, and the answer is a bonus: a 2xx without a readable body (a proxy answering an empty body)
+  is a save without an id. The key lives only as long as the entry screen: closing it, or the OS killing the app,
+  after an attempt that may have been written and recording the entry again sends a new key and can write it twice.
+* The `idempotency-key` metadata is bookkeeping of the save: the transaction detail does not list it, and the
+  advanced editor keeps it out of the editable rows and sends it back in place, as an edit that dropped it would
+  let a late retry of the creating save write the transaction again. "Copy as text" and the `PUT` of an edit keep
+  it.
 * `POST /api/transactions/preview` (same body; `/api/transactions/{id}/preview` for edits) →
   `{"text": string|null, "field_errors": [{posting, field, kind, value, message}], "unbalanced": [Amount]|null,
   "errors": [{error_type, metas:{…}}]}`. `unbalanced` is `[]` when balanced, `null` when a field is invalid;
