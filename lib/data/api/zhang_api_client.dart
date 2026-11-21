@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 
@@ -108,6 +109,36 @@ class ZhangApiClient {
 
   Future<T> put<T>(String path, {Object? body, required DataDecoder<T> decode}) =>
       _json('PUT', path, body: body, decode: decode);
+
+  /// [method] [path] for a write whose answer only adds to it (the id a
+  /// create wrote): the envelope's `data` with the response headers (e.g.
+  /// `Idempotency-Replayed`). A 2xx whose body is empty or no JSON envelope
+  /// (a proxy in front of zhang) is still a success, with `null` data;
+  /// errors are thrown as usual.
+  Future<({Object? data, Headers headers})> write(
+    String method,
+    String path, {
+    Object? body,
+    Map<String, String>? headers,
+  }) async {
+    // Bytes, decoded here: dio JSON-decodes any other response type of a
+    // typed request, and fails on a body that is not JSON.
+    final res = await _send(method, path, body: body, headers: headers, responseType: ResponseType.bytes);
+    return (data: _lenientData(res.data), headers: res.headers);
+  }
+
+  /// The `data` of a JSON envelope in [body] (bytes), `null` when there is
+  /// none.
+  static Object? _lenientData(Object? body) {
+    final text = body is List<int> ? utf8.decode(body, allowMalformed: true) : '';
+    if (text.trim().isEmpty) return null;
+    try {
+      final json = jsonDecode(text);
+      return json is Map && json.containsKey('data') ? json['data'] : null;
+    } on FormatException {
+      return null;
+    }
+  }
 
   /// For endpoints whose result is irrelevant: `201` with empty body, or
   /// `200 {"data":"Ok"}` / `{"data":null}`. A non-JSON `200` (the server's
@@ -294,15 +325,22 @@ class ZhangApiClient {
   /// a reverse proxy), else `HTTP <status>`.
   static String errorMessageOf(Object? body, int status) {
     if (body is Map && body['message'] is String) return body['message'] as String;
-    if (body is String && body.trim().isNotEmpty) {
-      final text = body.trim();
-      return text.length > 300 ? '${text.substring(0, 300)}…' : text;
+    final text = switch (body) {
+      String() => body.trim(),
+      List<int>() => utf8.decode(body.length > 4096 ? body.sublist(0, 4096) : body, allowMalformed: true).trim(),
+      _ => '',
+    };
+    if (text.isEmpty) return 'HTTP $status';
+    // zhang's JSON error read as bytes ([write], [getBytes]).
+    if (text.startsWith('{')) {
+      try {
+        final json = jsonDecode(text);
+        if (json is Map && json['message'] is String) return json['message'] as String;
+      } on FormatException {
+        // not JSON after all
+      }
     }
-    if (body is List<int> && body.isNotEmpty) {
-      final text = String.fromCharCodes(body.take(300));
-      return text.trim().isEmpty ? 'HTTP $status' : text.trim();
-    }
-    return 'HTTP $status';
+    return text.length > 300 ? '${text.substring(0, 300)}…' : text;
   }
 }
 

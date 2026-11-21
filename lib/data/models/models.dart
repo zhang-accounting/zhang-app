@@ -20,3 +20,4 @@ export 'server_event.dart';
 export 'statistic.dart';
 export 'transaction_preview.dart';
 export 'transaction_request.dart';
+export 'written_transaction.dart';

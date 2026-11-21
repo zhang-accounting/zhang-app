@@ -420,6 +420,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get addSavedEarlierSnack => '这笔交易已由之前的一次保存写入服务器，之后的修改可能没有保存，请核对。';
+
+  @override
   String get editSavedSnack => '已保存修改';
 
   @override

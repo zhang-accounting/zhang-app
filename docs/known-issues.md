@@ -17,6 +17,7 @@
   - 插件生成的交易（posting 没有 `written`，PUT 会 400）、服务器不返回 posting `metas` / `edit_drops_text`（较旧的 zhang）、preview 本身报字段错误（无 `text`）。
 
 ## P2
+- 幂等键只在记一笔页面打开期间有效：一次可能已写入的尝试（超时、断线）之后关掉页面或 App 被系统杀掉，重新记同一笔会用新 key，可能记两笔（见 decisions.md「幂等记账」）。需要把未完成的保存持久化（离线队列）才能解决。
 - 标签过滤仍在客户端做（服务器依旧忽略百分号编码的 `tags%5B0%5D`，Dart 会重新编码 `[]`），罕见标签会把整个账本翻一遍、`total_count` 是未过滤的数。可改用内置查询 `journals.page{tags}`。
 - 报表净额线画到了未来日期；账户余额阶梯图的终点用设备时钟（`balance_history_chart.dart`）。
 - 两个 `formatAmount` helper 重复；`journal_providers` 直接 import main.dart。
@@ -29,6 +30,7 @@
 - 预算：首页还没有预算汇总条（design-research §2.9）；预算详情不能切换月份（从列表换月后再进）；月份选择和报表一样不能翻到未来月份。
 
 ## 已修（供参考）
+- 幂等记账（2026-11-21，需要 zhang ≥ 0.3，PR #831；原「zhang server 侧」的「无幂等键」）：每次新建交易都带 `Idempotency-Key`（随机 UUID），一个 key 对应用户的一次保存：超时 / 断线后重试、预览警告后「仍然保存」、被拒后修改再保存都沿用它，服务器只写一次，重放的回答（`Idempotency-Replayed: true`）当作保存成功；新开记一笔页面或「再记一笔」才换 key。时间为「现在」的记录在重试时沿用第一次可能已写入的尝试的时间。之前的尝试发过不同内容时，提示「这笔交易已由之前的一次保存写入，之后的修改可能没有保存」。旧服务器忽略这个 header（实测），不依赖它。服务器把 key 写成交易的 `idempotency-key` 元数据：App 记的每笔交易在账本文件里多这一行（见 decisions.md「幂等记账」）。
 - 明文 http 发送凭据需要显式确认（2026-11-21，原 P1，S01 的 opt-in）：`http://` 地址又带凭据时，编辑表单和配置向导都要先勾选「仍然通过 http 发送我的凭据」才会测试、登录或保存，确认按 profile 保存、改地址要重新确认；本机回环（localhost、127.0.0.0/8、::1）豁免，`*.localhost` 和局域网地址不豁免；只有自定义 Header 的 profile 也算带凭据。账本名旁和服务器列表里常驻「未加密（http）」提示。升级前已有的 http profile 照常可用，下次保存或「重新登录」时要求确认（decisions.md「明文 http」）。
 - 鉴权可叠加（2026-11-21，原 P1「鉴权类型互斥」）：登录方式（无 / Basic / 浏览器登录 / Bearer）只决定 `Authorization`，自定义 Header 与之叠加、每个请求都发（Cloudflare Access + zhang Basic、网关 Header + 浏览器登录的 session；浏览器登录的状态探测与 code 兑换也带 Header）。编辑表单的「登录」一节下方始终有「自定义 Header」；选了登录方式时拒绝自定义 `Authorization`，模型层也不会让它覆盖（decisions.md §7）。配置向导：网关 Header 通过后 zhang 仍要登录时，接着走 zhang 的登录并保留 Header。旧 profile 读取时迁移（`authType: headers` → 无需登录 + 原 Header，其余类型发出的请求头不变），有迁移测试。自定义 Header 不覆盖请求自己的头（SSE 的 `Accept`、编辑的 `If-Match`）；API 客户端不再跟随重定向（否则 dart:io 会把自定义 Header 带到重定向目标），3xx 报错：转到别的主机或网关登录页（如 Cloudflare Access 的 302）按网关处理、向导给出「前面有登录网关」，同主机内的重定向提示填最终地址。
 - 切换币种后重新校验小数位（2026-11-21，原 P2「可输入 12.34 JPY」）：金额的小数位多于当前币种的精度时，金额下方的提示行用错误色写明（「JPY 不能有小数，请删掉小数部分」「… 最多 2 位小数…」），保存 / 再记不可用，直到删掉多余的位数或换回允许的币种。不自动四舍五入（12.34 换成 JPY 多半是币种选错或要重输，悄悄变成 12 反而记错），与键盘「不接受超过精度的位数」、写入「按币种精度、从不舍入」一致；编辑 / 复制时未改动的原金额保留账本里原有的小数位，不受此限。「上次金额」chip 的金额若多于该币种允许的小数位就不显示（不让用户为没输入过的位数看到错误）。
@@ -42,5 +44,5 @@
 - 更早：标签转义（未转义会把账本文件写坏，P0）、切换账本残留数据/筛选、删除 profile 不清偏好、U+2212 负号、商品 rounding、写入按币种精度、类目名换行、FAB 遮挡最后一行、funding 默认账户跨币种、测试 retry policy、重复 accounts provider。
 
 ## zhang server 侧（见 decisions.md 末尾与 zhang-api.md §5）
-仍缺：DELETE 交易、POST 不返回 id、无幂等键、无预算写接口；`/api/journals` 的 `tags[]` 百分号编码被静默忽略；`--auth` 不带 `:` 会静默关闭鉴权；不平衡 / 未开户的交易仍会写入；源码构建的版本号仍是 `0.1.0`。
+仍缺：无预算写接口；zhang ≥ 0.3 之前的服务器没有 DELETE 交易、POST 不返回 id、没有幂等键（PR #818 / #831 已补；App 已用幂等键，DELETE 与 id 尚未使用）；`/api/journals` 的 `tags[]` 百分号编码被静默忽略；`--auth` 不带 `:` 会静默关闭鉴权；不平衡 / 未开户的交易仍会写入；源码构建的版本号仍是 `0.1.0`。
 v0.2 已修（App 已去掉对应 workaround）：`size=0` 崩溃、最早价格而非最新、无直接价格的商品算 0、`1E-8` 指数写法、未知 `/api` 路径返回 200、账户流水 `trx_id` 是 posting id、含 `/` 的 base64 文档无法下载、未知商品崩溃、预算月份 13 崩溃、for-new-transaction 混入 Balance Check / Pad、交易数含余额项、graph 忽略 interval 且用 UTC 日期、PUT 丢 cost/price/comment、失败的余额检查重置余额、reload 失败无提示、Basic scheme 大小写敏感。

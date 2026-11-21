@@ -118,6 +118,38 @@ void main() {
     expect(find.byKey(const Key('trx.refreshing')), findsNothing);
   });
 
+  testWidgets('the idempotency-key of the creating save is not listed, and an edit sends it back', (tester) async {
+    final server = FakeZhangServer(
+      journals: [
+        {
+          ...editableJson(),
+          'metas': [
+            {'key': 'receipt_no', 'value': 'A-1'},
+            {'key': 'idempotency-key', 'value': 'k-1'},
+          ],
+        },
+      ],
+    );
+    await pumpApp(tester, server);
+    await openDetail(tester, 'Uniqlo');
+    expect(find.text('receipt_no'), findsOneWidget);
+    expect(find.text('idempotency-key'), findsNothing);
+    expect(find.text('k-1'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('trx.edit')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('add.narration')), 'Blue shirt');
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    final put = server.transactionRequests.lastWhere((r) => r.$1 == 'PUT');
+    expect(put.$3['metas'], [
+      {'key': 'receipt_no', 'value': 'A-1'},
+      {'key': 'idempotency-key', 'value': 'k-1'},
+    ]);
+  });
+
   testWidgets('edit is blocked with an explanation when it would lose something', (tester) async {
     final server = FakeZhangServer(
       journals: [

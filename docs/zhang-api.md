@@ -25,7 +25,8 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
 * Base URL `http(s)://<host>:<port>`, all API paths under `/api/`. JSON bodies need `Content-Type: application/json`
   (else `415`).
 * Success: `200 {"data": <payload>}`. A few writes answer `200 {"data":"Ok"}`, `{"data":null}` or
-  `{"data":{"replaced":[]}}`; the account document upload still answers `201` with an empty body.
+  `{"data":{"replaced":[]}}`; the account document upload still answers `201` with an empty body. On zhang ≥ 0.3
+  (PR #818) `POST` and `PUT /api/transactions` answer `{"data":{"id","version"}}` (§4.3).
 * Errors are **always** JSON `{"message": "…"}` (no `origin`):
 
 | Status | When | Example `message` | App exception |
@@ -113,8 +114,9 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
 * Ids (`sha256(file-offset)` as UUID) and `sequence` change when the files change; `sequence` has gaps. Never persist
   them; refetch after a reload.
 * Writes (`POST`/`PUT /api/transactions`, balance POSTs, uploads) answer once the text is written; the server then
-  reloads and sends SSE `Reload` (~200 ms on the test ledger). `POST /api/reload` is synchronous: `200 {"data":"Ok"}` or
-  `409` with the reason.
+  reloads and sends SSE `Reload` (~200 ms on the test ledger). On zhang ≥ 0.3 (PR #818) every write reloads first and
+  answers after, so a request sent after the answer reads what it wrote (SSE `Reload` still follows). `POST
+  /api/reload` is synchronous: `200 {"data":"Ok"}` or `409` with the reason.
 * Failed reloads are reported: SSE `ReloadFailed {file, message}` and `/api/info.reload_failure` (`{file, message}` or
   `null`); the server keeps serving the version it loaded before.
 * Validation: names the ledger cannot read back are refused (400). An unbalanced transaction or an unknown / closed
@@ -137,7 +139,7 @@ requests nothing else (`ServerInfo.isSupported`, `serverGateProvider`, `AppShell
 | GET | `/api/journals?page&size&keyword&tags[i]&links[i]` | journal list, Home recent rows, transaction lookup (`JournalRepository.list`) |
 | POST | `/api/transactions/preview` | validation before saving (`JournalRepository.preview`) |
 | POST | `/api/transactions/{id}/preview` | edit check (unchanged transaction: posting flags) and validation before an edit (`JournalRepository.previewUpdate`) |
-| POST | `/api/transactions` | create (`JournalRepository.create`) |
+| POST | `/api/transactions` | create, with an `Idempotency-Key` (`JournalRepository.create`, `CreateIntent`) |
 | PUT | `/api/transactions/{id}` | edit from the transaction detail (`JournalRepository.update`) |
 | GET | `/api/accounts`, `/api/accounts/{name}` | account tree, account header |
 | GET | `/api/accounts/{name}/journals` | account postings (incl. sub-accounts) |
@@ -260,8 +262,36 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
 ### 4.3 Transactions
 
 * `POST /api/transactions` body: `{datetime (ledger wall clock), payee, narration (always send, "" for none), flag
-  ("*" / "!"), postings:[{account, unit: Amount|null}], metas:[{key,value}], tags:[], links:[]}` → `200 {"data":"Ok"}`
-  (no id). `narration`, `metas`, `tags`, `links` are required keys. At most one `unit: null` posting.
+  ("*" / "!"), postings:[{account, unit: Amount|null}], metas:[{key,value}], tags:[], links:[]}` → zhang ≥ 0.3
+  (PR #818): `200 {"data":{"id","version"}}`, the transaction in the ledger reloaded before the answer (`id` and
+  `version` are `null` when that reload failed or the load left the transaction out); older servers: `200
+  {"data":"Ok"}` (no id). `narration`, `metas`, `tags`, `links` are required keys. At most one `unit: null` posting.
+* Idempotent create (zhang ≥ 0.3, PR #831): an `Idempotency-Key` header (1–128 characters of `A-Za-z0-9._~-`, else
+  400 `invalid_idempotency_key: …`) is written into the transaction as its `idempotency-key` metadata – a line in
+  the ledger file, listed in `metas` like any other. A create whose key a transaction of the files already has writes
+  nothing and answers that transaction's `id` / `version` with the header `Idempotency-Replayed: true`, **whatever
+  its body** (the key names the action, not the payload). The key is looked up in the files while the create holds
+  the ledger for writing, so two creates sent at once write once, and a restart does not forget it. There is no
+  time window: the key lasts as long as its metadata; once that transaction is deleted (or an edit drops the
+  metadata) a create with the key writes again. A request with the header **and** its own `idempotency-key` in
+  `metas` is a 400; the previews ignore the header. Older servers ignore the header (checked live against zhang
+  `5c0755c9`, the commit before PR #818: two creates with one key wrote two transactions, both `200 {"data":"Ok"}`).
+* How the app uses it (`CreateIntent`, `features/transaction_new/create_intent.dart`): every create sends a key, a
+  random UUID v4 made once per save the user means and sent again by every attempt of it – a retry after a
+  timeout or a dropped connection, "Save anyway" after the preview's warnings, a save after fixing what the server
+  refused. A new entry screen, and each "save and add another", starts a new save; the simple form hands its save
+  to the advanced editor. An entry dated "now" keeps the time of the first attempt the server may have written (any
+  answer but a 4xx), so whichever attempt was written, the transaction is the same. A replay is a success; when an
+  earlier attempt of the save sent another request (the entry was changed after a timeout), the snackbar says the
+  transaction was recorded by that earlier attempt and may lack the changes. A request whose own metadata has
+  `idempotency-key` (typed in the advanced editor) is sent without the header. Nothing depends on the server
+  having the feature, and the answer is a bonus: a 2xx without a readable body (a proxy answering an empty body)
+  is a save without an id. The key lives only as long as the entry screen: closing it, or the OS killing the app,
+  after an attempt that may have been written and recording the entry again sends a new key and can write it twice.
+* The `idempotency-key` metadata is bookkeeping of the save: the transaction detail does not list it, and the
+  advanced editor keeps it out of the editable rows and sends it back in place, as an edit that dropped it would
+  let a late retry of the creating save write the transaction again. "Copy as text" and the `PUT` of an edit keep
+  it.
 * `POST /api/transactions/preview` (same body; `/api/transactions/{id}/preview` for edits) →
   `{"text": string|null, "field_errors": [{posting, field, kind, value, message}], "unbalanced": [Amount]|null,
   "errors": [{error_type, metas:{…}}]}`. `unbalanced` is `[]` when balanced, `null` when a field is invalid;
@@ -302,7 +332,7 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
 * Preview errors that block a save also include `TransactionCannotInferTradeAmount`,
   `TransactionExplicitPostingHaveMultipleCommodity` (an empty amount left with several commodities – written
   unbalanced otherwise) and `TransactionHasMultipleImplicitPosting`.
-* Not available: `DELETE /api/transactions/{id}` (405), an id in the create answer, idempotency keys.
+* Not used yet: `DELETE /api/transactions/{id}` and the id of a create (zhang ≥ 0.3; 405 / `"Ok"` before).
 
 ### 4.4 Statistic graph
 
@@ -327,7 +357,7 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
    `journals.page`).
 2. Unbalanced transactions and unknown / closed accounts are written anyway → preview before saving.
 3. `--auth` without `:` silently disables auth (server side).
-4. No `DELETE` for transactions, no id from `POST /api/transactions`, no idempotency key, no budget writes.
+4. No budget writes. `DELETE` for transactions, the id of a create and idempotency keys need zhang ≥ 0.3 (§4.3).
 5. A source build reports version `0.1.0`; use `format` to detect v0.2.
 6. `/openapi.json` is not behind auth.
 7. Edits: posting flags are neither reported by `/api/journals` nor accepted in requests (kept only while the

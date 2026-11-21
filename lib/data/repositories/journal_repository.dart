@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/builtin_query_client.dart';
 import '../api/endpoints.dart';
+import '../api/idempotency.dart';
 import '../api/zhang_api_client.dart';
 import '../models/for_new_transaction.dart';
 import '../models/journal.dart';
 import '../models/pageable.dart';
 import '../models/transaction_preview.dart';
 import '../models/transaction_request.dart';
+import '../models/written_transaction.dart';
 import 'ledger_revision.dart';
 
 /// Filters for `GET /api/journals`.
@@ -121,13 +123,27 @@ class JournalRepository {
     );
   }
 
-  /// `POST /api/transactions` (answers `"Ok"`, no id). Names the ledger could
-  /// not read back are refused with 400; an unbalanced transaction or an
-  /// unknown / closed account is still written (it shows up as a ledger
-  /// error) – check with [preview] first.
-  Future<void> create(CreateTransactionRequest request) async {
-    await _client.send('POST', ZhangEndpoints.transactions, body: request.toJson());
+  /// `POST /api/transactions`. Names the ledger could not read back are
+  /// refused with 400; an unbalanced transaction or an unknown / closed
+  /// account is still written (it shows up as a ledger error) – check with
+  /// [preview] first.
+  ///
+  /// With [idempotencyKey] (one per user action, the same for every retry
+  /// of it, see `CreateIntent`) a zhang ≥ 0.3 server writes the transaction
+  /// once: a create sent again answers the transaction written the first
+  /// time, [WrittenTransaction.replayed]. Older servers ignore the header
+  /// and answer `"Ok"`, and a 2xx without a readable body (a proxy) is
+  /// saved too: [WrittenTransaction.unknown], no id.
+  Future<WrittenTransaction> create(CreateTransactionRequest request, {String? idempotencyKey}) async {
+    final answer = await _client.write(
+      'POST',
+      ZhangEndpoints.transactions,
+      body: request.toJson(),
+      headers: idempotencyKey == null ? null : {Idempotency.keyHeader: idempotencyKey},
+    );
+    final replayed = answer.headers.value(Idempotency.replayedHeader)?.trim().toLowerCase() == 'true';
     _onMutated?.call();
+    return WrittenTransaction.fromJson(answer.data, replayed: replayed);
   }
 
   /// `POST /api/transactions/preview` – validates [request] without writing:

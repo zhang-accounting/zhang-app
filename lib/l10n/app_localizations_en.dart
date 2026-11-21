@@ -432,6 +432,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get addSavedEarlierSnack =>
+      'Already recorded by an earlier try of this save. Check it: changes made since then may be missing.';
+
+  @override
   String get editSavedSnack => 'Changes saved';
 
   @override

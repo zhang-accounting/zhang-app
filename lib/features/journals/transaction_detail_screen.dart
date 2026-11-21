@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/dates.dart';
 import '../../core/utils/money.dart';
 import '../../core/widgets/error_view.dart';
+import '../../data/api/idempotency.dart';
 import '../../data/models/amount.dart';
 import '../../data/models/commodity.dart';
 import '../../data/models/journal.dart';
@@ -309,6 +310,13 @@ class _DetailScaffold extends ConsumerWidget {
 
   List<Widget> _transactionDetails(BuildContext context, WidgetRef ref, JournalTransaction txn) {
     final l10n = context.l10n;
+    // The `idempotency-key` zhang writes for a create is bookkeeping of the
+    // save, not something to read: hidden here, kept in edits and in "copy
+    // as text".
+    final metas = [
+      for (final m in txn.metas)
+        if (m.key != Idempotency.metaKey) m,
+    ];
     return [
       _InfoRow(label: l10n.trxFlag, value: txn.flag),
       if (txn.tags.isNotEmpty)
@@ -331,9 +339,9 @@ class _DetailScaffold extends ConsumerWidget {
           ),
         ),
       if (txn.links.isNotEmpty) _InfoRow(label: l10n.trxLinks, value: txn.links.map((l) => '^$l').join('  ')),
-      if (txn.metas.isNotEmpty) ...[
+      if (metas.isNotEmpty) ...[
         _SectionTitle(l10n.trxMetas),
-        for (final m in txn.metas) _InfoRow(label: m.key, value: m.value, selectable: true),
+        for (final m in metas) _InfoRow(label: m.key, value: m.value, selectable: true),
       ],
     ];
   }

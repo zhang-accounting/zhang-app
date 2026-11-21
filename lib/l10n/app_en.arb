@@ -252,6 +252,7 @@
       }
     }
   },
+  "addSavedEarlierSnack": "Already recorded by an earlier try of this save. Check it: changes made since then may be missing.",
   "editSavedSnack": "Changes saved",
   "addSaveFailed": "Could not save",
   "editStale": "This transaction changed on the server since it was opened (its id is out of date or it was edited elsewhere). Go back, refresh the list and open it again.",

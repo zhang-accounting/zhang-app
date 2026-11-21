@@ -14,6 +14,7 @@ import 'package:zhang_app/data/models/for_new_transaction.dart';
 import 'package:zhang_app/data/models/options.dart';
 import 'package:zhang_app/data/models/transaction_preview.dart';
 import 'package:zhang_app/data/models/transaction_request.dart';
+import 'package:zhang_app/data/models/written_transaction.dart';
 import 'package:zhang_app/data/profiles/profile_providers.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/journal_repository.dart';
@@ -82,10 +83,18 @@ class _FakeJournalRepository extends JournalRepository {
     return previewResult;
   }
 
+  /// `Idempotency-Key` of each create that was sent.
+  final keys = <String?>[];
+
+  /// What a create answers (an older server's "Ok" by default).
+  WrittenTransaction answer = WrittenTransaction.unknown;
+
   @override
-  Future<void> create(CreateTransactionRequest request) async {
+  Future<WrittenTransaction> create(CreateTransactionRequest request, {String? idempotencyKey}) async {
+    keys.add(idempotencyKey);
     if (failWith != null) throw failWith!;
     requests.add(request);
+    return answer;
   }
 }
 
@@ -288,6 +297,60 @@ void main() {
     await tester.tap(find.byKey(const Key('add.key.save')));
     await tester.pumpAndSettle();
     expect(find.textContaining('Authentication failed (401)'), findsOneWidget);
+  });
+
+  testWidgets('a retry after a timeout sends the same Idempotency-Key; 再记 starts a new save', (tester) async {
+    final (repo, _) = await _pump(tester);
+    repo.failWith = const ApiNetworkError(NetworkErrorKind.timeout, 'timeout (receiveTimeout)');
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Clothing')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '9');
+    await tester.tap(find.byKey(const Key('add.key.again')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('add.error')), findsOneWidget);
+    expect(repo.keys, hasLength(1));
+    expect(repo.keys.single, isNotNull);
+
+    // The server may have written it: the retry is the same save.
+    repo.failWith = null;
+    await tester.tap(find.byKey(const Key('add.key.again')));
+    await tester.pumpAndSettle();
+    expect(repo.requests, hasLength(1));
+    expect(repo.keys, [repo.keys.first, repo.keys.first]);
+    expect(find.text('1 saved'), findsOneWidget);
+
+    // The next entry is another save with another key (once the snackbar,
+    // which covers the keypad, is gone).
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Clothing')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '5');
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(repo.requests, hasLength(2));
+    expect(repo.keys, hasLength(3));
+    expect(repo.keys.last, isNot(repo.keys.first));
+  });
+
+  testWidgets('a replay of an earlier, different attempt says so', (tester) async {
+    final (repo, _) = await _pump(tester);
+    repo.answer = const WrittenTransaction(id: 'id-1', version: 'v-1', replayed: true);
+    repo.failWith = const ApiNetworkError(NetworkErrorKind.timeout, 'timeout (receiveTimeout)');
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Clothing')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '9');
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('add.error')), findsOneWidget);
+
+    repo.failWith = null;
+    await _keys(tester, '9'); // ¥99 now; the ¥9 may have been written
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(repo.keys.toSet(), hasLength(1));
+    expect(find.text('open'), findsOneWidget, reason: 'treated as saved');
+    expect(find.textContaining('Already recorded by an earlier try of this save'), findsOneWidget);
   });
 
   testWidgets('preview problems block the save and are listed', (tester) async {

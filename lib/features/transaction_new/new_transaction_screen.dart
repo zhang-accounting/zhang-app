@@ -28,6 +28,7 @@ import 'advanced_draft.dart';
 import 'advanced_entry_screen.dart';
 import 'amount_expression.dart';
 import 'category_tree.dart';
+import 'create_intent.dart';
 import 'entry_form.dart';
 import 'entry_mode.dart';
 import 'payee_autofill.dart';
@@ -112,6 +113,10 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
 
   /// A prefilled form was changed (asks before discarding).
   bool _touched = false;
+
+  /// The save under way, with the `Idempotency-Key` of all its attempts
+  /// (a new one after "save and add another").
+  CreateIntent _intent = CreateIntent();
   final _payeeFocus = FocusNode();
   final _narrationFocus = FocusNode();
   bool _submitting = false;
@@ -268,7 +273,9 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       mode: r.draft.mode,
       amount: _form.amount.value,
       commodity: r.draft.commodity,
-      datetime: _form.date ?? _now(),
+      // A retry of an entry dated "now" keeps the time of the attempt the
+      // server may have written (CreateIntent.sentAt).
+      datetime: _form.date ?? _intent.sentAt ?? _now(),
       precision: r.precision,
       categoryChosen: r.draft.categoryChosen,
       categoryAccount: r.draft.categoryAccount,
@@ -293,6 +300,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     final recordPrefs = ref.read(recordPrefsProvider);
     final pickerPrefs = ref.read(accountPickerPrefsProvider);
     final category = _form.category;
+    final intent = _intent;
     FocusScope.of(context).unfocus();
     if (target != null && !acceptWarnings) {
       // The form keeps the edited postings in their order.
@@ -308,11 +316,19 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       _submitting = true;
       _error = null;
     });
+    final CreateResult? created;
     try {
       // Validate first: an unbalanced entry or an unknown / closed account
       // would still be written (and only show up as a ledger error). Other
       // ledger errors / notices (e.g. an undeclared commodity) only warn.
-      await saveEntry(repository, request, target: target, acceptWarnings: acceptWarnings, again: again);
+      created = await saveEntry(
+        repository,
+        request,
+        target: target,
+        intent: intent,
+        acceptWarnings: acceptWarnings,
+        again: again,
+      );
     } catch (e) {
       if (!mounted) return;
       HapticFeedback.heavyImpact();
@@ -341,7 +357,11 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       ..showSnackBar(
         SnackBar(
           content: Text(
-            editId != null ? l10n.editSavedSnack : l10n.addSavedSnack('$sign${r.format(draft.amount!)}', title),
+            editId != null
+                ? l10n.editSavedSnack
+                : created?.mayDiffer ?? false
+                ? l10n.addSavedEarlierSnack
+                : l10n.addSavedSnack('$sign${r.format(draft.amount!)}', title),
           ),
         ),
       );
@@ -353,6 +373,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
         _hint = null;
         _submitting = false;
         _savedCount++;
+        _intent = CreateIntent(); // the next entry is another save
         _base = null; // the next entry is a plain new one
         _touched = false;
       });
@@ -412,7 +433,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
   /// is lost). Closes this screen too once it saved.
   Future<void> _openAdvanced(_Resolved r) async {
     FocusScope.of(context).unfocus();
-    final args = AdvancedEntryArgs(draft: _carryOver(r), target: widget.prefill?.target);
+    final args = AdvancedEntryArgs(draft: _carryOver(r), target: widget.prefill?.target, intent: _intent);
     final saved = await pushAdvancedEntry(context, args);
     if (saved == null || !mounted) return;
     setState(() => _allowPop = true);

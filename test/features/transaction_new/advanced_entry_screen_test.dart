@@ -16,6 +16,7 @@ import 'package:zhang_app/data/models/journal.dart';
 import 'package:zhang_app/data/models/options.dart';
 import 'package:zhang_app/data/models/transaction_preview.dart';
 import 'package:zhang_app/data/models/transaction_request.dart';
+import 'package:zhang_app/data/models/written_transaction.dart';
 import 'package:zhang_app/data/profiles/profile_providers.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/journal_repository.dart';
@@ -91,8 +92,15 @@ class _Repo extends JournalRepository {
     return previewResult;
   }
 
+  /// `Idempotency-Key` of each create.
+  final keys = <String?>[];
+
   @override
-  Future<void> create(CreateTransactionRequest request) async => writes.add((null, request));
+  Future<WrittenTransaction> create(CreateTransactionRequest request, {String? idempotencyKey}) async {
+    keys.add(idempotencyKey);
+    writes.add((null, request));
+    return WrittenTransaction.unknown;
+  }
 
   @override
   Future<void> update(String id, CreateTransactionRequest request, {String? version}) async {
@@ -377,6 +385,30 @@ void main() {
     expect(repo.writes.single.$2.toJson(), expected);
     expect(find.text('Changes saved'), findsOneWidget);
     expect((results.single! as EntrySaved).hint, 'Supermarket');
+  });
+
+  testWidgets('edit (advanced): the idempotency-key of the creating save is no row, and is sent back in place', (
+    tester,
+  ) async {
+    final tx = _journal(
+      postings: [('Assets:Paypal', '-28', 'USD'), ('Expenses:Fees', '28', 'USD')],
+      metas: [
+        {'key': 'count', 'value': '3'},
+        {'key': 'idempotency-key', 'value': 'k-1'},
+        {'key': 'note', 'value': 'x'},
+      ],
+    );
+    final (repo, _) = await _pump(tester, () => AdvancedEntryScreen(args: AdvancedEntryArgs.edit(EditTarget(tx))));
+    repo.listed = tx;
+    expect(find.byKey(const Key('adv.metaKey.0')), findsOneWidget);
+    expect(find.byKey(const Key('adv.metaKey.1')), findsOneWidget);
+    expect(find.byKey(const Key('adv.metaKey.2')), findsNothing, reason: 'not editable, so it cannot be dropped');
+    expect(find.text('idempotency-key'), findsNothing);
+
+    await _enter(tester, 'adv.narration', 'Weekly (edited)');
+    await tester.tap(find.byKey(const Key('adv.save')));
+    await tester.pumpAndSettle();
+    expect(repo.writes.single.$2.metas, const [Meta('count', '3'), Meta('idempotency-key', 'k-1'), Meta('note', 'x')]);
   });
 
   testWidgets('edit (simple form): mode kept, hidden fields kept, unchanged amount keeps its decimals', (tester) async {

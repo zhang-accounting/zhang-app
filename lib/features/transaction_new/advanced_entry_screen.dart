@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/category_icons.dart';
 import '../../core/utils/dates.dart';
+import '../../data/api/idempotency.dart';
 import '../../data/models/account.dart';
 import '../../data/models/amount.dart';
 import '../../data/models/commodity.dart';
@@ -19,6 +22,7 @@ import '../../router.dart';
 import '../account_picker/account_picker_sheet.dart';
 import '../journals/widgets/amount_format.dart';
 import 'advanced_draft.dart';
+import 'create_intent.dart';
 import 'transaction_edit.dart';
 import 'transaction_history.dart';
 import 'widgets/edit_dialogs.dart';
@@ -134,8 +138,41 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     for (final p in _initial.postings) _PostingRow(p),
     for (var i = _initial.postings.length; i < 2; i++) _PostingRow(PostingDraft(key: 1000 + i)),
   ];
-  late final List<_MetaRow> _metas = [for (final (i, m) in _initial.metas.indexed) _MetaRow(i, m)];
+  late final List<_MetaRow> _metas = [
+    for (final (i, m) in _initial.metas.indexed)
+      if (m.key != Idempotency.metaKey) _MetaRow(i, m),
+  ];
+
+  /// The `idempotency-key` metadata of the transaction (the save that created
+  /// it), each with how many other metadata entries come before it: not
+  /// editable, written back where it was. Dropping it in an edit would let
+  /// a late retry of that save write the transaction again.
+  late final List<(int, Meta)> _keptMetas = () {
+    final kept = <(int, Meta)>[];
+    var before = 0;
+    for (final m in _initial.metas) {
+      if (m.key == Idempotency.metaKey) {
+        kept.add((before, m));
+      } else {
+        before++;
+      }
+    }
+    return kept;
+  }();
+
+  /// [edited] (the editable metadata) with [_keptMetas] back in place.
+  List<Meta> _withKeptMetas(List<Meta> edited) {
+    final out = [...edited];
+    for (final (before, meta) in _keptMetas.reversed) {
+      out.insert(min(before, out.length), meta);
+    }
+    return out;
+  }
   late int _nextKey = 2000;
+
+  /// The save under way, with the `Idempotency-Key` of all its attempts:
+  /// the simple form's when it opened this editor.
+  late final CreateIntent _intent = widget.args?.intent ?? CreateIntent();
 
   bool _submitting = false;
 
@@ -191,7 +228,7 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
       narration: _narration.text,
       tags: _tags,
       links: _links.text == _initialLinks ? _initial.links : parseLinks(_links.text),
-      metas: [for (final m in _metas) Meta(m.key.text, m.value.text)],
+      metas: _withKeptMetas([for (final m in _metas) Meta(m.key.text, m.value.text)]),
       postings: [for (final p in _postings) p.draft(fallback)],
     );
   }
@@ -275,7 +312,9 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     if (_submitting || _asking) return;
     final draft = _snapshot();
     if (validateAdvanced(draft, rules: _rules).isNotEmpty) return;
-    final request = buildAdvancedRequest(draft, now: _now(), edit: _editing, rules: _rules);
+    // A retry of an entry dated "now" keeps the time of the attempt the
+    // server may have written (CreateIntent.sentAt).
+    final request = buildAdvancedRequest(draft, now: _intent.sentAt ?? _now(), edit: _editing, rules: _rules);
     final target = widget.args?.target;
     final editId = target?.id;
     final repository = ref.read(journalRepositoryProvider);
@@ -295,8 +334,9 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
       _submitting = true;
       _error = null;
     });
+    final CreateResult? created;
     try {
-      await saveEntry(repository, request, target: target, acceptWarnings: acceptWarnings);
+      created = await saveEntry(repository, request, target: target, intent: _intent, acceptWarnings: acceptWarnings);
     } catch (e) {
       if (!mounted) return;
       HapticFeedback.heavyImpact();
@@ -312,7 +352,17 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     final l10n = context.l10n;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(editId == null ? l10n.saved : l10n.editSavedSnack)));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            editId != null
+                ? l10n.editSavedSnack
+                : created?.mayDiffer ?? false
+                ? l10n.addSavedEarlierSnack
+                : l10n.saved,
+          ),
+        ),
+      );
     final saved = EntrySaved(revision: revision, request: request, hint: EntrySaved.hintFor(request));
     setState(() {
       _submitting = false;
