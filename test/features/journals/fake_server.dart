@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
@@ -45,6 +47,14 @@ class FakeZhangServer {
   /// Answer `PUT /transactions/{id}` without changing anything (a write the
   /// journal never shows).
   bool ignoreWrites = false;
+
+  /// zhang ≥ 0.3: a create answers the id and version of the transaction it
+  /// wrote (which the journal then lists with that version) and honours its
+  /// `Idempotency-Key`. Otherwise it answers `"Ok"` as older servers do.
+  bool writesAnswerIds = false;
+
+  /// The transaction ids written by a create, by `Idempotency-Key`.
+  final idempotencyKeys = <String, String>{};
 
   /// Answer of `POST /api/transactions/preview` and
   /// `POST /api/transactions/{id}/preview` (clean by default).
@@ -133,8 +143,40 @@ extension on FakeZhangServer {
       return jsonResponse({'data': null});
     }
     if (path.endsWith('/preview')) return jsonResponse({'data': previewAnswer});
-    journals.insert(0, journalFromRequest('new-${journals.length}', journals.length + 1000, body));
-    return jsonResponse({'data': 'Ok'});
+    if (!writesAnswerIds) {
+      journals.insert(0, journalFromRequest('new-${journals.length}', journals.length + 1000, body));
+      return jsonResponse({'data': 'Ok'});
+    }
+    final key = o.headers['Idempotency-Key'] as String?;
+    final known = key == null ? null : journals.where((j) => j['id'] == idempotencyKeys[key]).firstOrNull;
+    if (known != null) {
+      return ResponseBody.fromString(
+        jsonEncode({
+          'data': {'id': known['id'], 'version': known['version']},
+        }),
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+          'Idempotency-Replayed': ['true'],
+        },
+      );
+    }
+    final id = 'new-${journals.length}';
+    final written = journalFromRequest(id, journals.length + 1000, body);
+    journals.insert(0, {
+      ...written,
+      'version': 'v-$id',
+      // zhang writes the key as the transaction's metadata
+      if (key != null)
+        'metas': [
+          ...(written['metas']! as List),
+          {'key': 'idempotency-key', 'value': key},
+        ],
+    });
+    if (key != null) idempotencyKeys[key] = id;
+    return jsonResponse({
+      'data': {'id': id, 'version': 'v-$id'},
+    });
   }
 }
 

@@ -27,6 +27,7 @@ import 'transaction_edit.dart';
 import 'transaction_history.dart';
 import 'widgets/edit_dialogs.dart';
 import 'widgets/save_error_banner.dart';
+import 'widgets/saved_snack_bar.dart';
 import 'widgets/tags_sheet.dart';
 
 /// Opens the advanced editor (on the router when there is one) and returns
@@ -350,20 +351,21 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     if (editId == null) history.addLocal(HistoryEntry.fromRequest(request));
     if (!mounted) return;
     final l10n = context.l10n;
+    final saved = EntrySaved(revision: revision, request: request, hint: EntrySaved.hintFor(request));
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(
-          content: Text(
-            editId != null
-                ? l10n.editSavedSnack
-                : created?.mayDiffer ?? false
-                ? l10n.addSavedEarlierSnack
-                : l10n.saved,
-          ),
+        savedSnackBar(
+          context,
+          editId != null
+              ? l10n.editSavedSnack
+              : created?.mayDiffer ?? false
+              ? l10n.addSavedEarlierSnack
+              : l10n.saved,
+          written: created?.written,
+          hint: saved.hint,
         ),
       );
-    final saved = EntrySaved(revision: revision, request: request, hint: EntrySaved.hintFor(request));
     setState(() {
       _submitting = false;
       _allowPop = true;

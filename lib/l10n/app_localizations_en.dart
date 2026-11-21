@@ -383,6 +383,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get addViewSaved => 'View';
+
+  @override
   String get addSavedEarlierSnack =>
       'Already recorded by an earlier try of this save. Check it: changes made since then may be missing.';
 

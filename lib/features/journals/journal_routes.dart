@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/journal.dart';
+import '../../data/models/written_transaction.dart';
+import '../../router.dart';
 import 'transaction_detail_screen.dart';
 
 /// Routes of the transaction detail screen (S08). It is registered under
@@ -45,13 +47,30 @@ void openAccountPostingDetail(
   String? hint, {
   String? version,
 }) {
+  context.push('$accountLocation/transactions/${Uri.encodeComponent(transactionId)}${_lookup(hint, version)}');
+}
+
+/// The query of a detail route without its item: `q` = [hint] to search
+/// for, `v` = the [version] it was listed with.
+String _lookup(String? hint, String? version) {
   final query = [
     if (hint != null && hint.trim().isNotEmpty) 'q=${Uri.encodeQueryComponent(hint.trim())}',
     if (version != null && version.isNotEmpty) 'v=${Uri.encodeQueryComponent(version)}',
   ];
-  context.push(
-    '$accountLocation/transactions/${Uri.encodeComponent(transactionId)}${query.isEmpty ? '' : '?${query.join('&')}'}',
-  );
+  return query.isEmpty ? '' : '?${query.join('&')}';
+}
+
+/// Opens the transaction a create just wrote, by the id the server answered
+/// ([WrittenTransaction.id], zhang ≥ 0.3): in the Home tab when [router]
+/// shows it, else in the Journal tab. [hint] (payee, narration or an
+/// account) speeds up the lookup; its version makes the screen say
+/// "changed" instead of showing another transaction once the id moved.
+void openWrittenTransaction(GoRouter router, WrittenTransaction written, {String? hint}) {
+  final id = written.id;
+  if (id == null) return;
+  final here = router.routerDelegate.currentConfiguration.uri.path;
+  final detail = here.startsWith(AppRoutes.home) ? JournalRoutes.homeDetail(id) : JournalRoutes.journalDetail(id);
+  router.push('$detail${_lookup(hint, written.version)}');
 }
 
 /// Opens the detail of [item] from the Journal tab, passing the item as
