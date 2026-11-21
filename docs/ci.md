@@ -73,4 +73,12 @@ flutter build ios --release --no-codesign   # 编译检查；签名包请走 CI
 ```
 
 ## 版本号
-`pubspec.yaml` 的 `version: x.y.z+build` 决定安装包版本；发版前先改版本再打 tag。
+- `pubspec.yaml` 的 `version: x.y.z+build`：`x.y.z` 是安装包的版本名（Android `versionName`、iOS `CFBundleShortVersionString`），CI 不覆盖它。
+- build number（Android `versionCode`、iOS `CFBundleVersion`）在 CI 里一律由 `--build-number=${{ github.run_number }}` 覆盖，所以 TestFlight / Play 上的 build 号就是 `build` 工作流的 run 号，只增不减。`pubspec.yaml` 里的 `+build` 只对不带 `--build-number` 的本地构建生效；改版本时把它设为当时最大 run 号 + 1，本地包就不会小于已上传过的 build。
+- 已上传：TestFlight `1.0.0 (11)`、`1.0.0 (13)`（`workflow_dispatch`）。CI 产出的 Android 包 versionCode 到 57 为止（1.1.0 准备时）。
+- 注意：重跑（re-run）同一个 run 时 run 号不变，TestFlight 会拒绝重复的 build，要重新上传请新开一次 `workflow_dispatch`；不要给 `build.yml` 改名，改名后 run 号从 1 重新开始。Play 要求 versionCode 严格递增，上传过的号不能再用。
+
+## 发版步骤
+1. 在一个 PR 里改 `pubspec.yaml` 的版本，在 `CHANGELOG.md` 写这一版（[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 格式，打 tag 前把标题里的 `Unreleased` 换成发版日期），并把商店说明写到 `docs/release-notes/<版本>.{en,zh}.md`（每份 ≤ 500 字符，Google Play「新功能」的上限）。
+2. 合并后在 `main` 上打 `v<版本>` tag 并推送：CI 把 ipa 上传 TestFlight，并建 GitHub Release（apk + aab，说明由 GitHub 自动生成）。
+3. 在 App Store Connect / Play Console 里粘贴 `docs/release-notes/` 的说明；aab 从 Release 下载后手动上传 Play。
