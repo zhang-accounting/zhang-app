@@ -81,4 +81,4 @@ flutter build ios --release --no-codesign   # 编译检查；签名包请走 CI
 ## 发版步骤
 1. 在一个 PR 里改 `pubspec.yaml` 的版本，在 `CHANGELOG.md` 写这一版（[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 格式，打 tag 前把标题里的 `Unreleased` 换成发版日期），并把商店说明写到 `docs/release-notes/<版本>.{en,zh}.md`（每份 ≤ 500 字符，Google Play「新功能」的上限）。
 2. 合并后在 `main` 上打 `v<版本>` tag 并推送：CI 把 ipa 上传 TestFlight，并建 GitHub Release（apk + aab，说明由 GitHub 自动生成）。
-3. 在 App Store Connect / Play Console 里粘贴 `docs/release-notes/` 的说明；aab 从 Release 下载后手动上传 Play。
+3. 在 App Store Connect / Play Console 里粘贴 `docs/release-notes/` 的说明（只与 Android 有关的行在 App Store 里可以删掉），并贴到 GitHub Release 的说明开头（侧载 apk 的用户看的是那里）；aab 从 Release 下载后手动上传 Play。
