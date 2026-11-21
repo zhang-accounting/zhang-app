@@ -274,6 +274,26 @@ void main() {
       expect(ServerProfile.fromJson(v1('none'), headerSecret).authHeaders(), isEmpty);
     });
 
+    test('only an integer v >= 2 is version 2', () {
+      for (final v in ['2', 1, 2.5, true]) {
+        final p = ServerProfile.fromJson({...v1('basic'), 'v': v}, {...headerSecret, 'basicPassword': 'pw'});
+        expect(p.customHeaders, isEmpty, reason: 'v: $v is read as version 1');
+      }
+      final future = ServerProfile.fromJson({...v1('basic'), 'v': 3}, {...headerSecret, 'basicPassword': 'pw'});
+      expect(future.customHeaders, {'CF-Access-Client-Id': 'id-1'});
+    });
+
+    test('an unknown authType fails closed: no Authorization, not even a custom one', () {
+      final p = ServerProfile.fromJson(
+        {...v1('kerberos', headerNames: ['Authorization', 'X-Gate']), 'v': 2},
+        {
+          'customHeaders': {'Authorization': 'Negotiate abc', 'X-Gate': 'open'},
+        },
+      );
+      expect(p.authType, AuthType.none);
+      expect(p.authHeaders(), {'X-Gate': 'open'});
+    });
+
     test('version 2 keeps the headers of every type', () {
       final v2 = {...v1('basic'), 'v': 2};
       final p = ServerProfile.fromJson(v2, {...headerSecret, 'basicPassword': 'pw'});

@@ -98,6 +98,17 @@ final class ApiRateLimited extends ApiServerError {
   }
 }
 
+/// 3xx: the address redirects somewhere else (a reverse proxy sending http
+/// to https, a login page, a moved server). The client does not follow
+/// redirects, so the profile's headers never go to [location]; use the
+/// final address as the server URL instead.
+final class ApiRedirect extends ApiServerError {
+  const ApiRedirect(int status, this.location) : super(status, 'redirected to ${location ?? 'another address'}');
+
+  /// The `Location` header, if any.
+  final String? location;
+}
+
 enum NetworkErrorKind {
   /// DNS failure, connection refused, connection reset/closed (zhang closes
   /// the connection without a response when a handler panics).

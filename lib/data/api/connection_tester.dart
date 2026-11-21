@@ -84,7 +84,8 @@ class ConnectionTester {
 
   /// Step 1 of the setup wizard: what is at [baseUrl] (already normalised)
   /// and how to sign in. No credentials are sent, only the [headers] of a
-  /// gateway in front of zhang (once they got through it, step 2).
+  /// gateway in front of zhang (once they got through it, step 2), without
+  /// any `Authorization` among them.
   ///
   /// 1. `GET /api/auth/status` (zhang ≥ 0.2, no credentials needed); a
   ///    network failure ends the probe here.
@@ -103,7 +104,10 @@ class ConnectionTester {
         name: '',
         baseUrl: baseUrl,
         allowSelfSigned: allowSelfSigned,
-        customHeaders: headers,
+        customHeaders: {
+          for (final e in headers.entries)
+            if (!ServerProfile.isAuthorizationHeader(e.key)) e.key: e.value,
+        },
       ),
     );
     try {

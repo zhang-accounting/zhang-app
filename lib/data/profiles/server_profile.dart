@@ -21,13 +21,19 @@ enum AuthType {
   /// `Authorization: Bearer <token>` (see `BrowserSignIn`, zhang-api.md §1.3).
   session;
 
-  /// Unknown names fall back to [none]. The stored name `headers` (the
-  /// former "custom headers only" type) is migrated in
-  /// [ServerProfile.fromJson].
-  static AuthType fromName(String? name) => AuthType.values.firstWhere(
-    (t) => t.name == name,
-    orElse: () => AuthType.none,
-  );
+  /// Unknown names fall back to [none] (and [ServerProfile.fromJson] then
+  /// drops a custom `Authorization`, so nothing authenticates: fail closed).
+  /// The stored name `headers` (the former "custom headers only" type) is
+  /// migrated in [ServerProfile.fromJson].
+  static AuthType fromName(String? name) => tryName(name) ?? AuthType.none;
+
+  /// The type called [name], or `null` when there is none.
+  static AuthType? tryName(String? name) {
+    for (final t in AuthType.values) {
+      if (t.name == name) return t;
+    }
+    return null;
+  }
 }
 
 /// A configured zhang server ("ledger") the app can connect to.
@@ -181,11 +187,14 @@ class ServerProfile {
   /// Rebuilds a profile from [toPublicJson] output plus optional
   /// [toSecretJson] output.
   ///
-  /// Version 1 entries (no `v`) are migrated so that they send exactly the
-  /// headers they sent before: `authType: headers` becomes [AuthType.none]
-  /// with its custom headers (a custom `Authorization` keeps working); any
-  /// other type drops the custom headers it may still have stored, because
-  /// version 1 never sent them. Saving writes version 2.
+  /// Version 1 entries (no integer `v` ≥ 2) are migrated so that they send
+  /// exactly the headers they sent before: `authType: headers` becomes
+  /// [AuthType.none] with its custom headers (a custom `Authorization` keeps
+  /// working); any other type drops the custom headers it may still have
+  /// stored, because version 1 never sent them. Saving writes version 2.
+  ///
+  /// An `authType` this version does not know (written by a newer app) fails
+  /// closed: [AuthType.none] without any `Authorization`, custom or not.
   factory ServerProfile.fromJson(
     Map<String, Object?> public, [
     Map<String, Object?>? secret,
@@ -209,12 +218,19 @@ class ServerProfile {
     final color = public['color'];
     final expires = secret?['sessionExpiresAt'];
     final storedType = public['authType'] as String?;
-    if (public['v'] == null && storedType != 'headers') headers.clear();
+    final version = public['v'];
+    final legacy = !(version is int && version >= storageVersion);
+    final legacyHeaders = legacy && storedType == 'headers';
+    if (legacy && !legacyHeaders) headers.clear();
+    final authType = AuthType.tryName(storedType);
+    if (storedType != null && authType == null && !legacyHeaders) {
+      headers.removeWhere((name, _) => isAuthorizationHeader(name));
+    }
     return ServerProfile(
       id: public['id'] as String,
       name: (public['name'] as String?) ?? '',
       baseUrl: (public['baseUrl'] as String?) ?? '',
-      authType: AuthType.fromName(storedType),
+      authType: authType ?? AuthType.none,
       basicUsername: public['basicUsername'] as String?,
       basicPassword: secret?['basicPassword'] as String?,
       bearerToken: secret?['bearerToken'] as String?,

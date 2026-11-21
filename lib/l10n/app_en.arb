@@ -82,6 +82,17 @@
   "retry": "Retry",
   "errorUnauthorized": "Authentication failed (401). Check your credentials.",
   "errorNotFound": "Not found (404).",
+  "errorRedirect": "The server redirects ({status}) to {location}. The app does not follow redirects, so your credentials stay with this address: enter the final address as the server URL.",
+  "@errorRedirect": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
   "errorServer": "Server error {status}: {message}",
   "@errorServer": {
     "placeholders": {

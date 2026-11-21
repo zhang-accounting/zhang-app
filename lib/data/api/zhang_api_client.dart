@@ -47,6 +47,11 @@ class ZhangApiClient {
 
   /// Builds the dio instance for [profile]: base URL, timeouts, auth
   /// interceptor and (on IO platforms) the self-signed certificate policy.
+  ///
+  /// Redirects are not followed: dart:io copies custom headers (a gateway's
+  /// `CF-Access-Client-Secret`…) to any redirect target, other hosts and
+  /// plain http included, and zhang's API never redirects. A 3xx is an
+  /// [ApiRedirect].
   static Dio createDio(ServerProfile profile) {
     final dio = Dio(
       BaseOptions(
@@ -56,6 +61,7 @@ class ZhangApiClient {
         sendTimeout: receiveTimeout,
         responseType: ResponseType.json,
         headers: {'Accept': 'application/json'},
+        followRedirects: false,
       ),
     );
     if (profile.allowSelfSigned && !kIsWeb) {
@@ -242,6 +248,9 @@ class ZhangApiClient {
           return ApiUnauthorized(status: status, message: message);
         }
         if (status == 404) return ApiNotFound(message);
+        if (status >= 300 && status < 400) {
+          return ApiRedirect(status, e.response?.headers.value('location'));
+        }
         if (status == 429) {
           return ApiRateLimited(
             message: message,

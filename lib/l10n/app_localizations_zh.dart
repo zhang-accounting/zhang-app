@@ -174,6 +174,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get errorNotFound => '未找到（404）。';
 
   @override
+  String errorRedirect(int status, String location) {
+    return '服务器重定向（$status）到 $location。App 不跟随重定向，凭据只发往这个地址：请把最终地址填为服务器地址。';
+  }
+
+  @override
   String errorServer(int status, String message) {
     return '服务器错误 $status：$message';
   }

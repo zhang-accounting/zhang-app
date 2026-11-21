@@ -410,6 +410,12 @@ abstract class AppLocalizations {
   /// **'Not found (404).'**
   String get errorNotFound;
 
+  /// No description provided for @errorRedirect.
+  ///
+  /// In en, this message translates to:
+  /// **'The server redirects ({status}) to {location}. The app does not follow redirects, so your credentials stay with this address: enter the final address as the server URL.'**
+  String errorRedirect(int status, String location);
+
   /// No description provided for @errorServer.
   ///
   /// In en, this message translates to:

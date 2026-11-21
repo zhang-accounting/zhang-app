@@ -176,6 +176,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNotFound => 'Not found (404).';
 
   @override
+  String errorRedirect(int status, String location) {
+    return 'The server redirects ($status) to $location. The app does not follow redirects, so your credentials stay with this address: enter the final address as the server URL.';
+  }
+
+  @override
   String errorServer(int status, String message) {
     return 'Server error $status: $message';
   }
