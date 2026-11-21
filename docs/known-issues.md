@@ -11,7 +11,6 @@
 - 只有 passkey 且 server 早于 PR #786（无 `app_login`）时仍用不了：连接测试提示开启密码登录；有 `app_login` 的 server 提示改用「浏览器登录」。
 - 浏览器登录的 iOS `ASWebAuthenticationSession` / Android Custom Tabs 不认 `allowSelfSigned`：自签名证书的 server 在浏览器里会被拦（App 内的 API 请求仍按 profile 放行）。
 - 明文 http 发送凭据没有提示（S01 要求显式 opt-in）。
-- 收入模式不能选 Liabilities 作为入账账户。
 - 账本时钟：`ledger.now` 与设备时钟的差值每个 profile 只取一次（取整到 15 分钟）。App 运行期间账本时区或设备时区切换夏令时，「今天 / 本月」会差一小时，直到重启或切换 profile。
 - 从账户页打开交易：`trx_id` 是真实交易 id，但没有按 id 取交易的接口，App 用 `/api/journals?keyword=<payee>` 最多翻 5 页（每页 100）去找；同名 payee 极多的老交易可能显示「找不到」。可改用 `journals.page` + `journals.postings{ids}`。
 - 编辑交易（S08）在以下情况被拦下并说明原因（仍可「复制为新交易」），需要 server 配合才能放开：
@@ -33,6 +32,7 @@
 - 预算：首页还没有预算汇总条（design-research §2.9）；预算详情不能切换月份（从列表换月后再进）；月份选择和报表一样不能翻到未来月份。
 
 ## 已修（供参考）
+- 收入模式可选 Liabilities 作为入账账户（2026-11-21，原 P1）：例如退款 / 返现直接打到信用卡（`Income:… −` / `Liabilities:… +`）。账户选择器、按 payee 自动填表、分类的入账记忆和历史、「编辑交易」用普通表单的判断都放开了 Liabilities；没有记忆和历史时默认的入账账户仍只选 Assets（最近用过的、再是第一个开立的）。
 - 键盘 `=` 之后的输入（2026-11-21，原 P2「`3−5=` 之后再输数字会变成 −20」）：`=` 之后的结果像计算器一样处理——数字或 `.` 开始一个新数，运算符接着用结果计算（`3−5=` 再 `+1` 是 −1），退格删结果的最后一位、之后的数字接在它后面；表达式行里负的结果也用 U+2212 负号（`−2 + 1`）。
 - 切换 profile 的隔离（2026-11-20）：每个 active profile 一个账本会话（独立的 `ProviderContainer`，`LedgerSessionHost`，见 architecture.md「账本会话」）。切换 / 编辑 / 删除 active profile 时整个会话换新，任何 provider（含以后新增的）都不会在加载期间显示或保存上一个账本的数据（原「必须先修」第 1 条）；版本门禁下沉到 client（`gatedClient`）：切到 zhang < 0.2 的服务器只会收到 `/api/info`、`/api/auth/status`，其它请求不发出、直接 `ApiServerTooOld`（原 P1「版本门禁挡不住 provider」）。另：widget 测试不再依赖运行日期（假服务器的 `ledger.now` 用设备时钟，`--dart-define=ZHANG_TEST_NOW=…` 可整体换日期跑），SSE 测试改用 fake time。
 - 浏览器登录加上 PKCE（RFC 7636，仅 `S256`）与 `state`（2026-11-20，zhang PR #819）：每次登录生成随机 `code_verifier` / `state`，登录 URL 带 `code_challenge` 与 `state`，回调的 `state` 必须一致（server 有 `app_login_pkce` 时缺失也算失败），`app/exchange` 带 `code_verifier`。同一设备上截获 `zhang-app://` 回调的 App 拿不到 verifier，无法兑换。旧 server（无 `app_login_pkce`）仍可登录，但没有这层保护。

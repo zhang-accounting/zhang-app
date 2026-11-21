@@ -328,7 +328,8 @@ class SimpleFit {
 /// changing anything**: exactly two postings with explicit, opposite
 /// amounts in one commodity, no cost or price, accounts of the types a mode
 /// writes (expense: Expenses + / Assets|Liabilities −, income: Income − /
-/// Assets +, transfer: Assets|Liabilities on both sides) that are open, and
+/// Assets|Liabilities +, transfer: Assets|Liabilities on both sides) that are
+/// open, and
 /// a category the grid can show. Everything else opens the advanced
 /// editor. [accounts] are the ledger's accounts (`GET /api/accounts`).
 SimpleFit? simpleFitFor(JournalTransaction tx, List<Account> accounts) {
