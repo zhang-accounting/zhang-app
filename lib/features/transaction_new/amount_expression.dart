@@ -18,9 +18,14 @@ enum AmountOperator {
 /// Immutable: every input method returns a new expression, or `this` when the
 /// key is rejected (too many decimals, a leading operator, …) so callers can
 /// detect rejections with `identical(next, current)` and give feedback.
+///
+/// After `=` ([evaluate]) the expression holds a result like a calculator: a
+/// digit or `.` starts a new number, an operator continues the calculation
+/// with the result, and backspace edits the result (it is then an ordinary
+/// number, so further digits are appended).
 @immutable
 class AmountExpression {
-  const AmountExpression._(this.tokens);
+  const AmountExpression._(this.tokens, {this.isResult = false});
 
   static const empty = AmountExpression._([]);
 
@@ -34,6 +39,9 @@ class AmountExpression {
   /// end with `.` while typing; only the first number can be negative (the
   /// result of evaluating `3 − 5`). Operators are [AmountOperator.symbol]s.
   final List<String> tokens;
+
+  /// The single number is the result of `=`: the next digit replaces it.
+  final bool isResult;
 
   bool get isEmpty => tokens.isEmpty;
 
@@ -59,9 +67,11 @@ class AmountExpression {
 
   /// Appends digit [digit] (0–9). Rejected when the current number already
   /// has [precision] decimals or [maxIntegerDigits] integer digits. A lone
-  /// leading `0` is replaced (`0` then `5` → `5`).
+  /// leading `0` is replaced (`0` then `5` → `5`). After `=` the digit starts
+  /// a new number (`3 − 5 =` then `2` → `2`, not `−22`).
   AmountExpression inputDigit(int digit, {required int precision}) {
     assert(digit >= 0 && digit <= 9);
+    if (isResult) return AmountExpression._(List.unmodifiable(['$digit']));
     final current = _current;
     final dot = current.indexOf('.');
     if (dot >= 0) {
@@ -79,8 +89,10 @@ class AmountExpression {
 
   /// Appends the decimal point (`.` on an empty number becomes `0.`).
   /// Rejected for zero-precision commodities or when there already is one.
+  /// After `=` it starts a new number (`0.`).
   AmountExpression inputDot({required int precision}) {
     if (precision <= 0) return this;
+    if (isResult) return AmountExpression._(List.unmodifiable(['0.']));
     final current = _current;
     if (current.contains('.')) return this;
     return _withCurrent(current.isEmpty || current == '-' ? '${current}0.' : '$current.');
@@ -88,6 +100,7 @@ class AmountExpression {
 
   /// Appends an operator; replaces a trailing one. Rejected on an empty
   /// expression (amounts are typed as positives, the mode gives the sign).
+  /// After `=` the calculation continues with the result (`−2 +`).
   AmountExpression inputOperator(AmountOperator op) {
     if (tokens.isEmpty) return this;
     final next = [...tokens];
@@ -99,7 +112,9 @@ class AmountExpression {
     return AmountExpression._(List.unmodifiable(next));
   }
 
-  /// Deletes the last character (or the trailing operator).
+  /// Deletes the last character (or the trailing operator). After `=` it
+  /// deletes the last character of the result, which is then an ordinary
+  /// number again (`15.5 =` → `15.`, then `2` → `15.2`).
   AmountExpression backspace() {
     if (tokens.isEmpty) return this;
     final next = [...tokens];
@@ -137,17 +152,22 @@ class AmountExpression {
   AmountExpression evaluate() {
     final v = value;
     if (v == null || !hasOperator) return this;
-    return AmountExpression._(List.unmodifiable([v.toString()]));
+    return AmountExpression._(List.unmodifiable([v.toString()]), isResult: true);
   }
 
-  /// Human-readable expression, e.g. `12 + 3.5`.
-  String get display => tokens.join(' ');
+  /// Human-readable expression, e.g. `12 + 3.5`; a negative first number
+  /// (the result of `3 − 5`) uses the U+2212 minus like the operator:
+  /// `−2 + 1`.
+  String get display => [
+    for (final t in tokens) t.startsWith('-') ? '${AmountOperator.minus.symbol}${t.substring(1)}' : t,
+  ].join(' ');
 
   @override
-  bool operator ==(Object other) => other is AmountExpression && listEquals(other.tokens, tokens);
+  bool operator ==(Object other) =>
+      other is AmountExpression && other.isResult == isResult && listEquals(other.tokens, tokens);
 
   @override
-  int get hashCode => Object.hashAll(tokens);
+  int get hashCode => Object.hash(isResult, Object.hashAll(tokens));
 
   @override
   String toString() => 'AmountExpression($display)';

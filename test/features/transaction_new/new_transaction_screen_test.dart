@@ -147,6 +147,8 @@ Future<void> _keys(WidgetTester tester, String keys) async {
       '+' => 'plus',
       '-' => 'minus',
       '.' => 'dot',
+      '=' => 'save',
+      '<' => 'backspace',
       _ => k,
     };
     await tester.tap(find.byKey(Key('add.key.$name')));
@@ -160,6 +162,24 @@ bool _enabled(WidgetTester tester, String key) =>
     tester.widget<InkWell>(find.descendant(of: find.byKey(Key(key)), matching: find.byType(InkWell))).onTap != null;
 
 void main() {
+  testWidgets('keypad: after "=" a digit starts a new amount, an operator continues, backspace edits', (tester) async {
+    await _pump(tester);
+    await _keys(tester, '3-5=');
+    expect(_amountText(tester), '\u2212¥2');
+    await _keys(tester, '20');
+    expect(_amountText(tester), '¥20', reason: 'not −20');
+
+    await _keys(tester, '-25=+');
+    expect(tester.widget<Text>(find.byKey(const Key('add.expression'))).data, '\u22125 +');
+    await _keys(tester, '7=');
+    expect(_amountText(tester), '¥2');
+
+    await _keys(tester, '+10.5=<');
+    expect(_amountText(tester), '¥12.');
+    await _keys(tester, '4');
+    expect(_amountText(tester), '¥12.4');
+  });
+
   testWidgets('expense: category + sub-category, keypad 12+3.5, "=" then save → two explicit postings', (tester) async {
     final (repo, prefs) = await _pump(tester);
 

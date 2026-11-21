@@ -5,7 +5,8 @@ import 'package:zhang_app/features/transaction_new/amount_expression.dart';
 const _plus = AmountOperator.plus;
 const _minus = AmountOperator.minus;
 
-/// Types [keys] ('0'-'9', '.', '+', '-') with [precision] decimals allowed.
+/// Types [keys] ('0'-'9', '.', '+', '-', '=' and '<' for backspace) with
+/// [precision] decimals allowed.
 AmountExpression _type(String keys, {int precision = 2, AmountExpression start = AmountExpression.empty}) {
   var e = start;
   for (final k in keys.split('')) {
@@ -13,6 +14,8 @@ AmountExpression _type(String keys, {int precision = 2, AmountExpression start =
       '.' => e.inputDot(precision: precision),
       '+' => e.inputOperator(_plus),
       '-' => e.inputOperator(_minus),
+      '=' => e.evaluate(),
+      '<' => e.backspace(),
       _ => e.inputDigit(int.parse(k), precision: precision),
     };
   }
@@ -103,6 +106,61 @@ void main() {
       expect(_type('1+2'), _type('1+2'));
       expect(_type('1+2').hashCode, _type('1+2').hashCode);
       expect(_type('1+2') == _type('1-2'), isFalse);
+      expect(_type('1+2='), _type('3+0='));
+      expect(_type('1+2=') == _type('3'), isFalse, reason: 'a result is replaced by the next digit, 3 is not');
+    });
+  });
+
+  group('after "="', () {
+    test('a digit starts a new number (3−5= then 20 is 20, not −20)', () {
+      final result = _type('3-5=');
+      expect(result.tokens, ['-2']);
+      expect(result.isResult, isTrue);
+      expect(result.hasOperator, isFalse);
+      expect(_type('3-5=2').tokens, ['2']);
+      expect(_type('3-5=20').value, d('20'));
+      expect(_type('3-5=20').isResult, isFalse, reason: 'the new number is being typed');
+      expect(_type('12+3.5=7').value, d('7'));
+      expect(_type('1+2=0').tokens, ['0']);
+      expect(_type('1+2=05').tokens, ['5'], reason: 'the leading-zero rule applies to the new number');
+    });
+
+    test('"." starts a new number too; rejected without decimals', () {
+      expect(_type('3-5=.5').tokens, ['0.5']);
+      final noDecimals = _type('3-5=', precision: 0);
+      expect(identical(noDecimals.inputDot(precision: 0), noDecimals), isTrue);
+    });
+
+    test('an operator continues the calculation with the result', () {
+      final e = _type('3-5=+');
+      expect(e.tokens, ['-2', '+']);
+      expect(e.isResult, isFalse);
+      expect(_type('3-5=+10').value, d('8'));
+      expect(_type('3-5=-1').value, d('-3'));
+      expect(_type('3-5=-1=').tokens, ['-3']);
+      expect(_type('1+2=+4=').value, d('7'));
+    });
+
+    test('backspace edits the result, then digits are appended to it', () {
+      expect(_type('12+3.5=<').tokens, ['15.']);
+      expect(_type('12+3.5=<2').value, d('15.2'));
+      expect(_type('20-35=<').tokens, ['-1']);
+      expect(_type('20-35=<0').value, d('-10'));
+      expect(_type('3-5=<').isEmpty, isTrue, reason: '"−2" without the 2 is nothing');
+      expect(_type('3-5=<7').tokens, ['7']);
+    });
+
+    test('a seeded number is not a result: digits are appended', () {
+      expect(AmountExpression.number(d('98.5')).isResult, isFalse);
+      expect(_type('1', start: AmountExpression.number(d('98.5'))).value, d('98.51'));
+    });
+
+    test('display uses the U+2212 minus for a negative result and the operator', () {
+      expect(AmountOperator.minus.symbol, '\u2212');
+      expect(_type('3-5=').display, '\u22122');
+      expect(_type('3-5=+1').display, '\u22122 + 1');
+      expect(_type('3-5=-1').display, '\u22122 \u2212 1');
+      expect(_type('3-5=-1').display, isNot(contains('-')), reason: 'no ASCII hyphen-minus');
     });
   });
 }
