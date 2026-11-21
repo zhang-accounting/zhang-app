@@ -44,10 +44,18 @@
   "headerValueLabel": "Value",
   "addHeader": "Add header",
   "removeHeader": "Remove header",
+  "customHeadersLabel": "Custom headers",
+  "customHeadersHelp": "Sent with every request, in addition to the sign-in method. For a gateway in front of zhang, e.g. CF-Access-Client-Id and CF-Access-Client-Secret of Cloudflare Access.",
+  "headerAuthorizationReserved": "The sign-in method sets Authorization. To send your own, choose “No sign-in”.",
   "showSecret": "Show",
   "hideSecret": "Hide",
   "allowSelfSignedLabel": "Allow self-signed certificate",
   "allowSelfSignedHelp": "Only enable this for servers you trust.",
+  "plainHttpTitle": "Not encrypted: this server uses http://",
+  "plainHttpBody": "Your password, token or headers are sent in plain text: anyone on the same network can read them. Use https:// if the server supports it.",
+  "plainHttpAcknowledge": "Send my credentials over http anyway",
+  "plainHttpContinue": "Continue over http",
+  "plainHttpIndicator": "Not encrypted (http)",
   "colorLabel": "Colour",
   "colorDefault": "Default",
   "testConnection": "Test connection",
@@ -79,6 +87,25 @@
   "retry": "Retry",
   "errorUnauthorized": "Authentication failed (401). Check your credentials.",
   "errorNotFound": "Not found (404).",
+  "errorRedirect": "The server redirects ({status}) to {location}. The app does not follow redirects, so your credentials stay with this address: enter the final address as the server URL.",
+  "@errorRedirect": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "errorRedirectGateway": "The server sends the app to a sign-in page on {host}: a gateway in front of zhang did not let the request through.",
+  "@errorRedirectGateway": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
   "errorServer": "Server error {status}: {message}",
   "@errorServer": {
     "placeholders": {
@@ -188,6 +215,17 @@
   "addDecimalPoint": "Decimal point",
   "addHintAmount": "Enter an amount",
   "addHintAmountPositive": "The amount must be greater than 0",
+  "addHintAmountDecimals": "{precision, plural, =0{{commodity} has no decimals: remove them} =1{{commodity} allows 1 decimal: remove the extra digits} other{{commodity} allows {precision} decimals: remove the extra digits}}",
+  "@addHintAmountDecimals": {
+    "placeholders": {
+      "commodity": {
+        "type": "String"
+      },
+      "precision": {
+        "type": "int"
+      }
+    }
+  },
   "addHintCategory": "Choose a category",
   "addHintSubcategory": "Choose a sub-category",
   "addHintFunding": "Choose an account",
@@ -848,6 +886,7 @@
   },
   "setupNotZhang": "It answered, but not like a zhang server. Use the address of the zhang web UI, without /api.",
   "setupBehindGateway": "It is behind a sign-in gateway",
+  "setupRedirectGatewayHint": "This usually means a sign-in gateway such as Cloudflare Access in front of zhang. Continue with the credentials it gives apps (for Cloudflare Access: the service token headers).",
   "setupTooOldTitle": "This server needs an update",
   "setupTooOldBody": "It runs zhang {version} without the API this app uses. Upgrade the server to zhang 0.2 or newer, then try again.",
   "@setupTooOldBody": {
@@ -886,6 +925,7 @@
   "setupCheckAgain": "Check again",
   "setupCredentialsUnknown": "The server asks for credentials.",
   "setupGatewayBody": "Something in front of zhang, such as a reverse proxy, asks for credentials. Enter them under “Reverse proxy or gateway”.",
+  "setupGatewayPassed": "The gateway accepted the custom headers. Now sign in to zhang: the headers are sent with every request.",
   "setupAdvancedTitle": "Reverse proxy or gateway",
   "setupAdvancedSubtitle": "Bearer token or custom headers",
   "setupConnect": "Connect",
@@ -926,7 +966,6 @@
   "authBasicLong": "Username and password",
   "authSessionLong": "Browser sign-in (passkey or password)",
   "authBearerLong": "Bearer token (reverse proxy)",
-  "authHeadersLong": "Custom headers (reverse proxy)",
   "setupProxyHeaders": "Custom headers",
   "setupUnreachable": "Cannot reach the server"
 }

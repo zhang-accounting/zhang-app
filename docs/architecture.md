@@ -19,14 +19,17 @@
 ```
 ServerProfile {
   id, name, baseUrl,            // baseUrl 形如 https://ledger.example.com（无尾部 /api）
-  authType: none | basic | bearer | headers,
+  authType: none | basic | bearer | session, // 只决定 Authorization
   basicUsername, basicPassword, // basic
   bearerToken,                  // bearer -> Authorization: Bearer <token>
-  customHeaders: Map<String,String>, // headers -> 原样附加（如 CF-Access-Client-Id）
-  allowSelfSigned: bool          // 可选，默认 false
+  sessionToken, sessionExpiresAt, sessionUser, // session（浏览器登录）-> Authorization: Bearer <token>
+  customHeaders: Map<String,String>, // 与 authType 叠加，每个请求原样附加（如 CF-Access-Client-Id）
+  allowSelfSigned: bool,         // 可选，默认 false
+  plainHttpAcknowledged: bool    // 同意经明文 http 发送凭据（decisions.md「明文 http」）
 }
 ```
 - 支持多个 profile，可切换；敏感字段只进 secure storage。
+- 自定义 Header 不能覆盖登录方式的 `Authorization`（decisions.md §7）；存储格式 `v: 2`，旧的 `authType: headers` 在读取时迁移。
 - 「测试连接」= GET `/api/info`，成功显示 server 版本与 ledger 标题；没有 `format` 字段（zhang < 0.2）提示「服务器版本过旧」；401 时查 `/api/auth/status`，只开 passkey 的服务器单独提示，否则提示鉴权失败。
 - 所有请求相对 `baseUrl` 拼接 `/api/...`；报表、错误、表单建议、预算、文档走内置查询 `POST /api/query/builtins`；SSE `/api/sse` 的 `Reload` 驱动刷新，`ReloadFailed` 在首页显示横幅。
 

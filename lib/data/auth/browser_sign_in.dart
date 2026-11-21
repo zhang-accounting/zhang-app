@@ -156,6 +156,10 @@ Future<String> systemBrowserLauncher(String url, String callbackScheme) => Flutt
 ///    without `app_login_pkce` ignores the extra parameters and echoes none),
 /// 4. `POST /api/auth/app/exchange {"code","code_verifier"}` → [SessionGrant].
 ///
+/// The API calls (steps 1 and 4) carry the profile's custom headers
+/// (`headers`, e.g. a Cloudflare Access service token) so they pass a gateway
+/// in front of zhang, but never an `Authorization` header.
+///
 /// Tests inject [launch] (no browser), [createClient] (fake adapter),
 /// [newSecrets] and [pkceServers]. Never logs codes, verifiers, states or
 /// tokens.
@@ -247,10 +251,14 @@ class BrowserSignIn {
     return diff == 0;
   }
 
-  /// `GET /api/auth/status` of [baseUrl] (no credentials); remembers
-  /// `app_login_pkce: true` in [pkceServers].
-  Future<AuthStatus> status(String baseUrl, {bool allowSelfSigned = false}) async {
-    final status = await _withClient(baseUrl, allowSelfSigned, (client) => client.authStatus());
+  /// `GET /api/auth/status` of [baseUrl] (no credentials, only the gateway
+  /// [headers]); remembers `app_login_pkce: true` in [pkceServers].
+  Future<AuthStatus> status(
+    String baseUrl, {
+    bool allowSelfSigned = false,
+    Map<String, String> headers = const {},
+  }) async {
+    final status = await _withClient(baseUrl, allowSelfSigned, headers, (client) => client.authStatus());
     if (status.appLoginPkce) await pkceServers.remember(baseUrl);
     return status;
   }
@@ -258,11 +266,15 @@ class BrowserSignIn {
   /// The whole flow: checks `/api/auth/status` first (throws
   /// [BrowserSignInFailure.notNeeded] / [BrowserSignInFailure.notSupported]),
   /// then [startBrowserSignIn].
-  Future<SessionGrant> signIn(String baseUrl, {bool allowSelfSigned = false}) async {
-    final status = await this.status(baseUrl, allowSelfSigned: allowSelfSigned);
+  Future<SessionGrant> signIn(
+    String baseUrl, {
+    bool allowSelfSigned = false,
+    Map<String, String> headers = const {},
+  }) async {
+    final status = await this.status(baseUrl, allowSelfSigned: allowSelfSigned, headers: headers);
     if (!status.enabled) throw const BrowserSignInException(BrowserSignInFailure.notNeeded);
     if (!status.supportsAppLogin) throw const BrowserSignInException(BrowserSignInFailure.notSupported);
-    return startBrowserSignIn(baseUrl, pkce: status.appLoginPkce, allowSelfSigned: allowSelfSigned);
+    return startBrowserSignIn(baseUrl, pkce: status.appLoginPkce, allowSelfSigned: allowSelfSigned, headers: headers);
   }
 
   /// Opens the login page in the system browser and exchanges the returned
@@ -270,7 +282,12 @@ class BrowserSignIn {
   /// `app_login_pkce` (`AuthStatus.appLoginPkce`): then, and whenever
   /// [pkceServers] saw it before for [baseUrl], the callback must echo the
   /// state.
-  Future<SessionGrant> startBrowserSignIn(String baseUrl, {required bool pkce, bool allowSelfSigned = false}) async {
+  Future<SessionGrant> startBrowserSignIn(
+    String baseUrl, {
+    required bool pkce,
+    bool allowSelfSigned = false,
+    Map<String, String> headers = const {},
+  }) async {
     if (pkce) await pkceServers.remember(baseUrl);
     final stateRequired = pkce || pkceServers.contains(baseUrl);
     final secrets = newSecrets();
@@ -285,7 +302,14 @@ class BrowserSignIn {
     } catch (e) {
       throw BrowserSignInException(BrowserSignInFailure.browserFailed, detail: '${e.runtimeType}');
     }
-    return completeSignIn(baseUrl, callback, secrets, pkce: stateRequired, allowSelfSigned: allowSelfSigned);
+    return completeSignIn(
+      baseUrl,
+      callback,
+      secrets,
+      pkce: stateRequired,
+      allowSelfSigned: allowSelfSigned,
+      headers: headers,
+    );
   }
 
   /// Steps 3–4 for a callback URL the browser returned to the sign-in of
@@ -298,15 +322,18 @@ class BrowserSignIn {
     SignInSecrets secrets, {
     required bool pkce,
     bool allowSelfSigned = false,
+    Map<String, String> headers = const {},
   }) async => exchange(
     baseUrl,
     codeFromCallback(callback, state: secrets.state, stateRequired: pkce),
     codeVerifier: secrets.codeVerifier,
     allowSelfSigned: allowSelfSigned,
+    headers: headers,
   );
 
   /// `POST /api/auth/app/exchange {"code","code_verifier"}` (no credentials:
-  /// the code and the verifier are). A server without `app_login_pkce`
+  /// the code and the verifier are; only the gateway [headers]). A server
+  /// without `app_login_pkce`
   /// ignores the verifier. `401` → [BrowserSignInFailure.codeRejected]
   /// (also a wrong verifier, which uses the code up), `429` →
   /// [BrowserSignInFailure.rateLimited]; anything else is a
@@ -316,11 +343,13 @@ class BrowserSignIn {
     String code, {
     required String? codeVerifier,
     bool allowSelfSigned = false,
+    Map<String, String> headers = const {},
   }) async {
     try {
       final grant = await _withClient(
         baseUrl,
         allowSelfSigned,
+        headers,
         (client) => client.post(
           ZhangEndpoints.authAppExchange,
           body: {'code': code, 'code_verifier': ?codeVerifier},
@@ -355,9 +384,25 @@ class BrowserSignIn {
     }
   }
 
-  Future<T> _withClient<T>(String baseUrl, bool allowSelfSigned, Future<T> Function(ZhangApiClient) run) async {
+  /// A client for [baseUrl] that sends the gateway [headers] but no
+  /// `Authorization` (not even a custom one).
+  Future<T> _withClient<T>(
+    String baseUrl,
+    bool allowSelfSigned,
+    Map<String, String> headers,
+    Future<T> Function(ZhangApiClient) run,
+  ) async {
     final client = createClient(
-      ServerProfile(id: 'browser-sign-in', name: '', baseUrl: baseUrl, allowSelfSigned: allowSelfSigned),
+      ServerProfile(
+        id: 'browser-sign-in',
+        name: '',
+        baseUrl: baseUrl,
+        allowSelfSigned: allowSelfSigned,
+        customHeaders: {
+          for (final e in headers.entries)
+            if (!ServerProfile.isAuthorizationHeader(e.key)) e.key: e.value,
+        },
+      ),
     );
     try {
       return await run(client);

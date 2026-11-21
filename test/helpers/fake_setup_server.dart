@@ -32,6 +32,14 @@ class FakeSetupServer {
   /// `Authorization: Bearer proxy-token` or `X-Gate: open`.
   bool gateway = false;
 
+  /// With [gateway]: zhang behind it has its own sign-in too ([enabled]…),
+  /// like Cloudflare Access + zhang's Basic; the gateway then only takes
+  /// `X-Gate: open` and `Authorization` is zhang's.
+  bool signInBehindGateway = false;
+
+  /// Every request is answered `302 Location: <redirectTo>`, while set.
+  String? redirectTo;
+
   /// `false`: zhang 0.1 (text page for `/api/auth/status`, no `format`).
   bool v02 = true;
 
@@ -51,9 +59,15 @@ class FakeSetupServer {
 
   static final basicOk = 'Basic ${base64Encode(utf8.encode('demo:secret'))}';
 
+  bool _throughGateway(RequestOptions o) {
+    if (!gateway) return true;
+    if (signInBehindGateway) return o.headers['X-Gate'] == 'open';
+    return o.headers['Authorization'] == 'Bearer proxy-token' || o.headers['X-Gate'] == 'open';
+  }
+
   bool _authorized(RequestOptions o) {
     final header = o.headers['Authorization'];
-    if (gateway) return header == 'Bearer proxy-token' || o.headers['X-Gate'] == 'open';
+    if (gateway && !signInBehindGateway) return _throughGateway(o);
     if (!enabled) return true;
     if (header is! String) return false;
     if (password && header == basicOk) return true;
@@ -66,7 +80,13 @@ class FakeSetupServer {
     final f = fail;
     if (f != null) throw f(o);
     final path = o.uri.path;
-    if (gateway && !_authorized(o)) return textResponse('<html>Sign in to the gateway</html>', status: 401);
+    final redirect = redirectTo;
+    if (redirect != null) {
+      return emptyResponse(302, headers: {
+        'location': [redirect],
+      });
+    }
+    if (!_throughGateway(o)) return textResponse('<html>Sign in to the gateway</html>', status: 401);
     if (path == '/api/auth/status') {
       if (!v02) return textResponse('hello zhang, the frontend is not enabled');
       return jsonResponse({

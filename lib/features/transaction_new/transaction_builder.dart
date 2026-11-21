@@ -15,6 +15,11 @@ enum EntryIssue {
   sameAccount,
   amountMissing,
   amountNotPositive,
+
+  /// The amount has more decimals than the currency allows
+  /// ([EntryDraft.maxDecimals]), e.g. `12.34` typed in CNY, then switched to
+  /// JPY. Listed first: it is a mistake in what was entered, not a next step.
+  amountTooPrecise,
   commodityMissing,
 }
 
@@ -28,6 +33,7 @@ class EntryDraft {
     required this.commodity,
     required this.datetime,
     this.precision,
+    this.maxDecimals,
     this.categoryChosen = false,
     this.categoryAccount,
     this.funding,
@@ -47,6 +53,12 @@ class EntryDraft {
 
   /// Decimals of [commodity]; amounts are written with at least this many.
   final int? precision;
+
+  /// Most decimals [amount] may have: the precision of [commodity] (the
+  /// keypad never accepts more, so this only trips after a currency switch),
+  /// or more for an unchanged prefilled amount that the ledger already
+  /// writes with more. Amounts are never rounded. `null` = not checked.
+  final int? maxDecimals;
 
   /// A category tile is selected (expense / income).
   final bool categoryChosen;
@@ -89,6 +101,10 @@ List<EntryIssue> validateEntry(EntryDraft draft) {
     issues.add(EntryIssue.amountMissing);
   } else if (amount <= Decimal.zero) {
     issues.add(EntryIssue.amountNotPositive);
+  }
+  final maxDecimals = draft.maxDecimals;
+  if (amount != null && maxDecimals != null && amount.scale > maxDecimals) {
+    issues.insert(0, EntryIssue.amountTooPrecise);
   }
   if (draft.commodity == null || draft.commodity!.isEmpty) issues.add(EntryIssue.commodityMissing);
   return issues;

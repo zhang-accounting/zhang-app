@@ -166,11 +166,15 @@ credentials (network error / too old / not zhang stay on step 1 with hints; the 
 appears for certificate errors) → **2** sign-in, only what `/api/auth/status` offers: `app_login` → "Sign in
 with browser" first (+ "Use username and password" when `methods.password`), password only → fields,
 passkey only without `app_login` → upgrade explanation, no zhang sign-in but a 401 → reverse-proxy Bearer
-token / custom headers (also under "Reverse proxy or gateway" on every sign-in page); each sign-in is
+token / custom headers (also under "Reverse proxy or gateway" on every sign-in page; custom headers that get
+through a gateway to a zhang with its own sign-in lead on to that sign-in and stay in the profile); each sign-in is
 verified at once with `ConnectionTester.test` → **3** summary (`ConnectionTester.overview`: operating
 currency, open accounts; zhang version, user), name (pre-filled with the ledger title) and colour → "Start"
 saves with `activate: true` and lands on Home. Open servers skip step 2. Editing a saved server uses the
-compact `ProfileForm` (sections Server / Sign-in / Appearance, sign-in method `DropdownMenu`).
+compact `ProfileForm` (sections Server / Sign-in / Appearance, sign-in method `DropdownMenu`, custom headers sent
+in addition to the method). Credentials over plain `http://` to anything but this device's loopback need the "Send
+my credentials over http anyway" checkbox in step 2 / the form first (`ServerProfile.plainHttpAcknowledged`,
+decisions.md); `127.0.0.1` keeps the test servers exempt.
 
 Builds:
 

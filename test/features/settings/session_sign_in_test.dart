@@ -29,11 +29,13 @@ class _FakeAuthServer {
   int exchanges = 0;
   final launched = <String>[];
   final logouts = <String?>[];
+  final requests = <RequestOptions>[];
 
   /// Tokens the ledger accepts (see [_ledgerAdapter]).
   final valid = <String>{};
 
   ResponseBody handle(RequestOptions o) {
+    requests.add(o);
     final path = o.uri.path;
     if (path.endsWith('/auth/status')) {
       return jsonResponse({
@@ -217,6 +219,38 @@ void main() {
     expect(active.basicPassword, isNull);
   });
 
+  testWidgets('edit server: browser sign-in with custom headers → session + headers', (tester) async {
+    final auth = _FakeAuthServer();
+    const open = ServerProfile(id: 'p1', name: 'Passkey ledger', baseUrl: _base);
+    final container = await _pump(tester, auth: auth, initial: const ProfilesState(profiles: [open], activeId: 'p1'));
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    await _tapVisible(tester, find.byKey(const Key('profileForm.authType')));
+    await tester.tap(find.text('Browser sign-in (passkey or password)').last);
+    await tester.pumpAndSettle();
+    await _tapVisible(tester, find.byKey(const Key('profileForm.addHeader')));
+    await tester.enterText(find.byKey(const Key('profileForm.headerName.0')), 'CF-Access-Client-Id');
+    await tester.enterText(find.byKey(const Key('profileForm.headerValue.0')), 'cf-id');
+
+    await _tapVisible(tester, find.byKey(const Key('profileForm.signIn')));
+    expect(find.byKey(const Key('profileForm.signedIn')), findsOneWidget);
+    expect(auth.requests.map((o) => o.uri.path), ['/api/auth/status', '/api/auth/app/exchange']);
+    for (final o in auth.requests) {
+      expect(o.headers['CF-Access-Client-Id'], 'cf-id', reason: '${o.uri.path} passes the gateway');
+      expect(o.headers.containsKey('Authorization'), isFalse, reason: '${o.uri.path} carries no credentials');
+    }
+
+    await _tapVisible(tester, find.byKey(const Key('profileForm.submit')));
+    final active = container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.session);
+    expect(active.authHeaders(), {'CF-Access-Client-Id': 'cf-id', 'Authorization': 'Bearer tok1.sig'});
+  });
+
   testWidgets('home: 401 on a session profile → "Sign in again" stores a new session and reloads', (tester) async {
     final auth = _FakeAuthServer();
     final ledger = FakeZhangServer(journals: [expenseJson('a', '2023-09-01T10:00:00', payee: 'Bakery')]);
@@ -237,6 +271,36 @@ void main() {
     expect(find.text('Signed in as demo'), findsOneWidget);
     expect(find.byKey(const Key('home.authBanner')), findsNothing);
     expect(find.text('Bakery'), findsOneWidget);
+  });
+
+  testWidgets('home: "Sign in again" on an http profile saved without the acknowledgement asks first', (
+    tester,
+  ) async {
+    final auth = _FakeAuthServer();
+    final ledger = FakeZhangServer(journals: [expenseJson('a', '2023-09-01T10:00:00', payee: 'Bakery')]);
+    final old = _session('expired.sig').copyWith(baseUrl: 'http://192.168.1.2:8000');
+    final container = await _pump(
+      tester,
+      auth: auth,
+      ledger: ledger,
+      initial: ProfilesState(profiles: [old], activeId: 'p1'),
+    );
+    await tester.tap(find.byKey(const Key('home.signInAgain')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('plainHttp.confirm')), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(auth.launched, isEmpty, reason: 'nothing sent without the acknowledgement');
+    expect(auth.requests, isEmpty);
+
+    await tester.tap(find.byKey(const Key('home.signInAgain')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('plainHttp.continue')));
+    await tester.pumpAndSettle();
+    expect(auth.launched, hasLength(1));
+    final active = container.read(activeProfileProvider)!;
+    expect(active.sessionToken, 'tok1.sig');
+    expect(active.plainHttpAcknowledged, isTrue, reason: 'stored with the new session');
   });
 
   testWidgets('home: warns when the session ends within 3 days', (tester) async {

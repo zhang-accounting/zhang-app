@@ -195,9 +195,13 @@ class _SignInAgainButtonState extends ConsumerState<_SignInAgainButton> {
   bool _busy = false;
 
   Future<void> _run() async {
+    // Ask before the spinner: the dialog is not part of the sign-in.
+    final ask = needsPlainHttpConfirmation(widget.profile);
+    if (ask && !await confirmPlainHttp(context)) return;
+    if (!mounted) return;
     setState(() => _busy = true);
     try {
-      await signInAgain(context, ref, widget.profile);
+      await signInAgain(context, ref, widget.profile, plainHttpConfirmed: ask);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
