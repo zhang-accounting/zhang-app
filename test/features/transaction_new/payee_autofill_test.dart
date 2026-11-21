@@ -63,7 +63,9 @@ void main() {
       expect(asExpense.funding, 'Assets:Bank');
       final incomeFromExpense = autofillFromEntry(lunchOnCard, EntryMode.income);
       expect(incomeFromExpense.category, isNull);
-      expect(incomeFromExpense.funding, isNull, reason: 'income mode only allows Assets');
+      expect(incomeFromExpense.funding, 'Liabilities:Card', reason: 'income may be received on a liability');
+      final incomeFromTax = autofillFromEntry(entry({'Expenses:Tax': '5', 'Equity:Opening': '-5'}), EntryMode.income);
+      expect(incomeFromTax.funding, isNull, reason: 'Equity / Expenses are never the receiving account');
       final transferFromExpense = autofillFromEntry(lunchOnCard, EntryMode.transfer);
       expect(transferFromExpense.from, isNull);
       expect(transferFromExpense.narration, 'Eating Lunch');
@@ -141,13 +143,13 @@ void main() {
       expect(form.withSubcategory('Expenses:Food:Dining').withSubcategory('Expenses:Food:Dining').categoryAccount, 'Expenses:Food');
     });
 
-    test('switching mode clears the category and incompatible funding', () {
+    test('switching mode clears the category, keeps an allowed funding account', () {
       final form = const EntryForm()
           .withCategory(_expenseTree.byName('Expenses:Clothing')!)
           .withFunding('Liabilities:Card');
       final income = form.withMode(EntryMode.income);
       expect(income.category, isNull);
-      expect(income.funding, isNull, reason: 'income mode only allows Assets');
+      expect(income.funding, 'Liabilities:Card', reason: 'income may be received on a credit card');
       final bank = form.withFunding('Assets:Bank').withMode(EntryMode.income);
       expect(bank.funding, 'Assets:Bank');
     });
@@ -197,15 +199,21 @@ void main() {
       expect(resolve(const EntryForm(mode: EntryMode.transfer)), isNull);
     });
 
-    test('income mode never resolves to a liability', () {
-      final incomeIndex = SuggestionIndex.build([entry({'Liabilities:Card': '-1', 'Income:Salary': '1'})]);
+    test('income mode: a liability when chosen, remembered or in the history; defaults are assets', () {
       final form = const EntryForm(mode: EntryMode.income).withCategory(
         CategoryTree.fromAccounts(_accounts, AccountType.income).byName('Income:Salary')!,
       );
-      expect(
-        resolveFunding(form, isOpen: _isOpen, index: incomeIndex, openAccounts: open, remembered: (_) => 'Liabilities:Card'),
-        'Assets:Bank',
-      );
+      String? resolve(EntryForm f, SuggestionIndex idx, {String? memory}) =>
+          resolveFunding(f, isOpen: _isOpen, index: idx, openAccounts: open, remembered: (_) => memory);
+      final cashback = SuggestionIndex.build([entry({'Income:Salary': '-1', 'Liabilities:Card': '1'})]);
+      expect(resolve(form.withFunding('Liabilities:Card'), SuggestionIndex.empty), 'Liabilities:Card');
+      expect(resolve(form, SuggestionIndex.empty, memory: 'Liabilities:Card'), 'Liabilities:Card');
+      expect(resolve(form, cashback), 'Liabilities:Card', reason: 'the category was received on the card before');
+      // The card was used most recently, but not with this category.
+      final cardOnly = SuggestionIndex.build([entry({'Liabilities:Card': '-27', 'Expenses:Diet:Lunch': '27'})]);
+      expect(resolve(form, cardOnly), 'Assets:Bank', reason: 'fallbacks only pick asset accounts');
+      expect(resolve(form, SuggestionIndex.empty, memory: 'Expenses:Clothing'), 'Assets:Bank',
+          reason: 'other types stay out');
     });
 
     test('transfer source defaults to the most recent asset unless it is the destination', () {

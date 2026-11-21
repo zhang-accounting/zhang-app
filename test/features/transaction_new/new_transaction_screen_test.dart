@@ -353,6 +353,32 @@ void main() {
     ]);
   });
 
+  testWidgets('income can be received on a liability (a refund onto the credit card)', (tester) async {
+    final (repo, _) = await _pump(tester);
+    await tester.tap(find.byKey(const Key('add.mode.income')));
+    await tester.pumpAndSettle();
+    expect(find.text('Deposit to: WeChat'), findsOneWidget, reason: 'the default is still an asset account');
+
+    await tester.tap(find.byKey(const Key('add.funding')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('picker.account.Liabilities:Card')), findsOneWidget);
+    expect(find.byKey(const Key('picker.account.Expenses:Clothing')), findsNothing);
+    expect(find.byKey(const Key('picker.account.Income:Salary')), findsNothing);
+    await tester.tap(find.byKey(const Key('picker.account.Liabilities:Card')));
+    await tester.pumpAndSettle();
+    expect(find.text('Deposit to: Card'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('add.category.Income:Salary')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '25');
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(repo.requests.single.postings.map((p) => (p.account, p.unit!.number.toString())), [
+      ('Income:Salary', '-25'),
+      ('Liabilities:Card', '25'),
+    ]);
+  });
+
   testWidgets('closing with input asks before discarding', (tester) async {
     await _pump(tester);
     await _keys(tester, '5');

@@ -373,6 +373,8 @@ void main() {
       expect((expense.category, expense.funding, expense.amount), ('Expenses:Food:Lunch', 'Assets:Cash', d('18.5')));
       final income = simpleFitFor(tx([posting('Assets:Bank', '5000'), posting('Income:Salary', '-5000')]), accounts)!;
       expect((income.mode, income.category, income.funding), (EntryMode.income, 'Income:Salary', 'Assets:Bank'));
+      final onCard = simpleFitFor(tx([posting('Liabilities:Card', '10'), posting('Income:Salary', '-10')]), accounts)!;
+      expect((onCard.mode, onCard.category, onCard.funding), (EntryMode.income, 'Income:Salary', 'Liabilities:Card'));
       final transfer = simpleFitFor(tx([posting('Assets:Bank', '-100'), posting('Liabilities:Card', '100')]), accounts)!;
       expect((transfer.mode, transfer.from, transfer.to), (EntryMode.transfer, 'Assets:Bank', 'Liabilities:Card'));
     });
@@ -398,11 +400,10 @@ void main() {
       );
       expect(simpleFitFor(tx(pair(price: '@ 1 CNY')), accounts), isNull);
       expect(simpleFitFor(tx(pair(cost: '{1 CNY}')), accounts), isNull);
-      // a refund (Expenses −), a closed or unknown account, Liabilities as income target
+      // a refund (Expenses −), a closed or unknown account
       expect(simpleFitFor(tx([posting('Assets:Cash', '10'), posting('Expenses:Food', '-10')]), accounts), isNull);
       expect(simpleFitFor(tx([posting('Assets:Cash', '-10'), posting('Expenses:Old', '10')]), accounts), isNull);
       expect(simpleFitFor(tx([posting('Assets:Cash', '-10'), posting('Expenses:Nope', '10')]), accounts), isNull);
-      expect(simpleFitFor(tx([posting('Liabilities:Card', '10'), posting('Income:Salary', '-10')]), accounts), isNull);
     });
   });
 
