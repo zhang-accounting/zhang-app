@@ -388,8 +388,69 @@ void main() {
     await _tap(tester, 'setup.continue');
     await _tap(tester, 'setup.start');
     final active = app.container.read(activeProfileProvider)!;
-    expect(active.authType, AuthType.headers);
+    expect(active.authType, AuthType.none);
     expect(active.customHeaders, {'X-Gate': 'open'});
+    expect(active.authHeaders(), {'X-Gate': 'open'});
+  });
+
+  testWidgets('gateway headers, then zhang\'s own sign-in behind it: both are kept', (tester) async {
+    final server = FakeSetupServer()
+      ..gateway = true
+      ..signInBehindGateway = true;
+    final app = await _pump(tester, server);
+    await _toServer(tester, 'https://ledger.example.com');
+    expect(find.text('The server asks for credentials.'), findsOneWidget);
+
+    // Wrong headers: the gateway still refuses.
+    await tester.tap(find.text('Custom headers'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('setup.headerName.0')), 'X-Gate');
+    await tester.enterText(find.byKey(const Key('setup.headerValue.0')), 'closed');
+    await _tap(tester, 'setup.connect');
+    expect(find.byKey(const Key('setup.result.error')), findsOneWidget);
+    expect(find.byKey(const Key('setup.gatewayPassed')), findsNothing);
+
+    // Through the gateway, zhang asks for its sign-in: step 2 continues with it.
+    await tester.enterText(find.byKey(const Key('setup.headerValue.0')), 'open');
+    await _tap(tester, 'setup.connect');
+    expect(find.byKey(const Key('setup.result.error')), findsNothing);
+    expect(find.byKey(const Key('setup.gatewayPassed')), findsOneWidget);
+    expect(find.byKey(const Key('setup.signInBrowser')), findsOneWidget);
+
+    await _tap(tester, 'setup.usePassword');
+    await tester.enterText(find.byKey(const Key('setup.username')), 'demo');
+    await tester.enterText(find.byKey(const Key('setup.password')), 'secret');
+    await _tap(tester, 'setup.signIn');
+    expect(find.byKey(const Key('setup.result.ok')), findsOneWidget);
+    await _tap(tester, 'setup.continue');
+    await _tap(tester, 'setup.start');
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.basic);
+    expect(active.authHeaders(), {'X-Gate': 'open', 'Authorization': FakeSetupServer.basicOk});
+    expect(server.requests.last.headers['X-Gate'], 'open');
+  });
+
+  testWidgets('gateway headers, then the browser sign-in behind it: session + headers', (tester) async {
+    final server = FakeSetupServer()
+      ..gateway = true
+      ..signInBehindGateway = true;
+    final app = await _pump(tester, server);
+    await _toServer(tester, 'https://ledger.example.com');
+    await tester.tap(find.text('Custom headers'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('setup.headerName.0')), 'X-Gate');
+    await tester.enterText(find.byKey(const Key('setup.headerValue.0')), 'open');
+    await _tap(tester, 'setup.connect');
+    await _tap(tester, 'setup.signInBrowser');
+    expect(find.byKey(const Key('setup.result.ok')), findsOneWidget);
+    final exchange = server.requests.lastWhere((o) => o.uri.path == '/api/auth/app/exchange');
+    expect(exchange.headers['X-Gate'], 'open', reason: 'the exchange passes the gateway');
+    expect(exchange.headers.containsKey('Authorization'), isFalse);
+    await _tap(tester, 'setup.continue');
+    await _tap(tester, 'setup.start');
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.session);
+    expect(active.authHeaders(), {'X-Gate': 'open', 'Authorization': 'Bearer tok1.sig'});
   });
 
   testWidgets('"Reverse proxy or gateway" section on a zhang sign-in page: bearer token', (tester) async {

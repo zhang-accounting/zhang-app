@@ -77,13 +77,18 @@ class _ProfileTile extends ConsumerWidget {
   final ServerProfile profile;
   final bool active;
 
-  String _authLabel(AppLocalizations l10n) => switch (profile.authType) {
-    AuthType.none => l10n.authNone,
-    AuthType.basic => l10n.authBasic,
-    AuthType.bearer => l10n.authBearer,
-    AuthType.headers => l10n.authHeaders,
-    AuthType.session => l10n.authSession,
-  };
+  /// The sign-in method, plus "Headers" when custom headers are sent too
+  /// ("Basic + Headers"; just "Headers" without a sign-in method).
+  String _authLabel(AppLocalizations l10n) {
+    final method = switch (profile.authType) {
+      AuthType.none => l10n.authNone,
+      AuthType.basic => l10n.authBasic,
+      AuthType.bearer => l10n.authBearer,
+      AuthType.session => l10n.authSession,
+    };
+    if (profile.customHeaders.isEmpty) return method;
+    return profile.authType == AuthType.none ? l10n.authHeaders : '$method + ${l10n.authHeaders}';
+  }
 
   /// Browser sign-in profiles: who is signed in and until when.
   String? _sessionLine(AppLocalizations l10n) {

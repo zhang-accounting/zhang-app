@@ -35,7 +35,9 @@ enum SignInMode {
   unsupported,
 
   /// zhang has no sign-in but something in front of it refuses the app (or
-  /// the server could not tell): Bearer token / custom headers.
+  /// the server could not tell): Bearer token / custom headers. Custom
+  /// headers that get through the gateway to a zhang with its own sign-in
+  /// lead on to that sign-in ([ServerSetupController.gatewayHeaders]).
   proxy,
 }
 
@@ -285,6 +287,7 @@ class ServerSetupController extends ChangeNotifier {
     final key = '${result.baseUrl}|$allowSelfSigned';
     if (key != _signInFor) _resetSignIn();
     _signInFor = key;
+    gatewayHeaders = const {};
     probe = result;
     if (result.open) {
       verified = SetupVerified(profile: _baseProfile(), info: result.info!);
@@ -303,12 +306,13 @@ class ServerSetupController extends ChangeNotifier {
     return SignInMode.unsupported;
   }
 
-  /// The probed server without credentials.
+  /// The probed server without credentials (but with [gatewayHeaders]).
   ServerProfile _baseProfile() => ServerProfile(
     id: '',
     name: '',
     baseUrl: probe?.baseUrl ?? normalizedUrl,
     allowSelfSigned: allowSelfSigned,
+    customHeaders: gatewayHeaders,
   );
 
   /// Host (and port) of the probed server, for headings.
@@ -341,6 +345,12 @@ class ServerSetupController extends ChangeNotifier {
 
   /// The working credentials (and `/api/info` with them).
   SetupVerified? verified;
+
+  /// Custom headers that got through a gateway in front of zhang, after
+  /// which zhang asked for its own sign-in (decisions.md §7: e.g. Cloudflare
+  /// Access + zhang's Basic). Sent with every later request of the wizard
+  /// and kept in the profile, next to zhang's sign-in.
+  Map<String, String> gatewayHeaders = const {};
 
   /// Browser and password sign-in both work on this server.
   bool get canSwitchToPassword => mode == SignInMode.browser && (probe?.auth?.password ?? false);
@@ -382,6 +392,7 @@ class ServerSetupController extends ChangeNotifier {
 
   void _resetSignIn() {
     verified = null;
+    gatewayHeaders = const {};
     signInError = null;
     proxyError = null;
     username.clear();
@@ -405,6 +416,7 @@ class ServerSetupController extends ChangeNotifier {
         _baseProfile().baseUrl,
         pkce: probe?.auth?.appLoginPkce ?? false,
         allowSelfSigned: allowSelfSigned,
+        headers: gatewayHeaders,
       );
       final profile = grant.applyTo(_baseProfile());
       return SetupVerified(profile: profile, info: await tester.test(profile), user: grant.user);
@@ -425,18 +437,53 @@ class ServerSetupController extends ChangeNotifier {
     },
   );
 
-  /// "Connect" with the reverse proxy credentials.
+  /// "Connect" with the reverse proxy credentials. Custom headers that get
+  /// through the gateway to a zhang that asks for its own sign-in lead on to
+  /// that sign-in ([gatewayHeaders]) instead of failing.
   Future<void> connectProxy() => _verify(
     proxy: mode != SignInMode.proxy,
     run: () async {
-      final profile = proxyAuth == ProxyAuth.bearer
-          ? _baseProfile().copyWith(authType: AuthType.bearer, bearerToken: token.text.trim())
-          : _baseProfile().copyWith(authType: AuthType.headers, customHeaders: HeaderRow.toMap(headers));
-      return SetupVerified(profile: profile, info: await tester.test(profile));
+      if (proxyAuth == ProxyAuth.bearer) {
+        final profile = _baseProfile().copyWith(authType: AuthType.bearer, bearerToken: token.text.trim());
+        return SetupVerified(profile: profile, info: await tester.test(profile));
+      }
+      final op = _op;
+      final entered = HeaderRow.toMap(headers);
+      final profile = _baseProfile().copyWith(customHeaders: entered);
+      try {
+        return SetupVerified(profile: profile, info: await tester.test(profile));
+      } on ZhangApiException catch (e) {
+        if (e is! ApiUnauthorized && e is! ApiPasskeyOnly) rethrow;
+        if (!await _continueBehindGateway(entered, op)) rethrow;
+        return null;
+      }
     },
   );
 
-  Future<void> _verify({required bool proxy, required Future<SetupVerified> Function() run}) async {
+  /// After [entered] headers were refused with 401: whether they got through
+  /// the gateway to a zhang with its own sign-in, i.e. zhang's
+  /// `/api/auth/status` could not be read without them (step 1) and says
+  /// sign-in is on with them. If so, step 2 switches to that sign-in and keeps
+  /// the headers ([gatewayHeaders]). A custom `Authorization` cannot be
+  /// combined with zhang's sign-in.
+  Future<bool> _continueBehindGateway(Map<String, String> entered, int op) async {
+    if (probe?.auth != null) return false;
+    if (entered.isEmpty || entered.keys.any(ServerProfile.isAuthorizationHeader)) return false;
+    final ServerProbe result;
+    try {
+      result = await tester.probe(_baseProfile().baseUrl, allowSelfSigned: allowSelfSigned, headers: entered);
+    } on ZhangApiException {
+      return false;
+    }
+    final auth = result.auth;
+    if (auth == null || !auth.enabled || op != _op) return false;
+    gatewayHeaders = Map.unmodifiable(entered);
+    probe = result;
+    mode = _modeFor(result);
+    return true;
+  }
+
+  Future<void> _verify({required bool proxy, required Future<SetupVerified?> Function() run}) async {
     final op = ++_op;
     busy = true;
     signInError = null;
@@ -466,7 +513,11 @@ class ServerSetupController extends ChangeNotifier {
     signInError = null;
     _notify();
     try {
-      final result = await tester.probe(_baseProfile().baseUrl, allowSelfSigned: allowSelfSigned);
+      final result = await tester.probe(
+        _baseProfile().baseUrl,
+        allowSelfSigned: allowSelfSigned,
+        headers: gatewayHeaders,
+      );
       if (op != _op) return;
       probe = result;
       if (result.open) {

@@ -105,6 +105,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get removeHeader => '移除 Header';
 
   @override
+  String get customHeadersLabel => '自定义 Header';
+
+  @override
+  String get customHeadersHelp =>
+      '每个请求都会附加，与上面的登录方式叠加。用于 zhang 前面的网关，例如 Cloudflare Access 的 CF-Access-Client-Id 和 CF-Access-Client-Secret。';
+
+  @override
+  String get headerAuthorizationReserved =>
+      'Authorization 由登录方式设置。要自己发送，请把登录方式选为「无需登录」。';
+
+  @override
   String get showSecret => '显示';
 
   @override
@@ -1410,6 +1421,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get setupGatewayBody => 'zhang 前面的反向代理或网关要求提供凭据，请在「反向代理或网关」中填写。';
 
   @override
+  String get setupGatewayPassed =>
+      '网关已接受这些自定义 Header。接下来登录 zhang：这些 Header 会随每个请求一起发送。';
+
+  @override
   String get setupAdvancedTitle => '反向代理或网关';
 
   @override
@@ -1490,9 +1505,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get authBearerLong => 'Bearer 令牌（反向代理）';
-
-  @override
-  String get authHeadersLong => '自定义 Header（反向代理）';
 
   @override
   String get setupProxyHeaders => '自定义 Header';

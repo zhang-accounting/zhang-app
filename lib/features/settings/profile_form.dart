@@ -15,9 +15,12 @@ import 'session_actions.dart';
 
 /// Compact form for editing a [ServerProfile] (Settings → Edit server), in
 /// three sections: Server (name, URL, self-signed certificate), Sign-in
-/// (method chooser with matching fields, "Test connection") and Appearance
-/// (colour). New servers go through the setup wizard instead
-/// (`ServerSetupScreen`).
+/// (method chooser with matching fields, custom headers sent in addition to
+/// the method, "Test connection") and Appearance (colour). New servers go
+/// through the setup wizard instead (`ServerSetupScreen`).
+///
+/// A custom `Authorization` header is refused while a sign-in method is
+/// chosen: the method owns that header (decisions.md §7).
 ///
 /// The "Browser" auth type ([AuthType.session]) has no credential fields: a
 /// "Sign in with browser" button runs [BrowserSignIn.signIn] and the form
@@ -82,7 +85,6 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
       for (final e in (p?.customHeaders ?? const <String, String>{}).entries)
         HeaderRow(e.key, e.value),
     ];
-    if (_headers.isEmpty) _headers.add(HeaderRow());
     _authType = p?.authType ?? AuthType.none;
     _allowSelfSigned = p?.allowSelfSigned ?? false;
     _color = p?.color;
@@ -122,7 +124,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
   }
 
   /// Builds a profile from the current field values (only the secrets of the
-  /// selected auth type are kept).
+  /// selected auth type are kept; the custom headers always).
   ServerProfile _buildProfile() {
     final baseUrl = ServerProfile.normalizeBaseUrl(_url.text);
     final host = Uri.tryParse(baseUrl)?.host ?? baseUrl;
@@ -136,13 +138,19 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
       basicUsername: _authType == AuthType.basic ? _username.text.trim() : null,
       basicPassword: _authType == AuthType.basic ? _password.text : null,
       bearerToken: _authType == AuthType.bearer ? _token.text.trim() : null,
-      customHeaders: _authType == AuthType.headers ? HeaderRow.toMap(_headers) : const {},
+      customHeaders: HeaderRow.toMap(_headers),
       sessionToken: session ? _sessionToken : null,
       sessionExpiresAt: session ? _sessionExpiresAt : null,
       sessionUser: session ? _sessionUser : null,
       allowSelfSigned: _allowSelfSigned,
       color: _color,
     );
+  }
+
+  /// A custom `Authorization` would compete with the sign-in method's.
+  String? _validateHeaderName(String? value) {
+    if (_authType == AuthType.none || !ServerProfile.isAuthorizationHeader(value ?? '')) return null;
+    return context.l10n.headerAuthorizationReserved;
   }
 
   String? _validateUrl(String? value) {
@@ -154,11 +162,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
   }
 
   Future<void> _test() async {
-    final urlError = _validateUrl(_url.text);
-    if (urlError != null) {
-      _formKey.currentState?.validate();
-      return;
-    }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     FocusScope.of(context).unfocus();
     setState(() {
       _testing = true;
@@ -177,11 +181,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
 
   /// "Sign in with browser": `/api/auth/status`, then the browser handoff.
   Future<void> _signIn() async {
-    final urlError = _validateUrl(_url.text);
-    if (urlError != null) {
-      _formKey.currentState?.validate();
-      return;
-    }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     FocusScope.of(context).unfocus();
     final baseUrl = ServerProfile.normalizeBaseUrl(_url.text);
     setState(() {
@@ -193,7 +193,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     try {
       final grant = await ref
           .read(browserSignInProvider)
-          .signIn(baseUrl, allowSelfSigned: _allowSelfSigned);
+          .signIn(baseUrl, allowSelfSigned: _allowSelfSigned, headers: HeaderRow.toMap(_headers));
       if (!mounted) return;
       setState(() {
         _sessionToken = grant.token;
@@ -233,7 +233,6 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     AuthType.basic => l10n.authBasicLong,
     AuthType.session => l10n.authSessionLong,
     AuthType.bearer => l10n.authBearerLong,
-    AuthType.headers => l10n.authHeadersLong,
   };
 
   static IconData _authIcon(AuthType type) => switch (type) {
@@ -241,11 +240,10 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
     AuthType.basic => Icons.password_outlined,
     AuthType.session => Icons.open_in_browser,
     AuthType.bearer => Icons.token_outlined,
-    AuthType.headers => Icons.vpn_lock_outlined,
   };
 
-  /// Menu order: zhang's own sign-ins first, reverse proxy ones last.
-  static const _authOrder = [AuthType.none, AuthType.basic, AuthType.session, AuthType.bearer, AuthType.headers];
+  /// Menu order: zhang's own sign-ins first, the reverse proxy one last.
+  static const _authOrder = [AuthType.none, AuthType.basic, AuthType.session, AuthType.bearer];
 
   @override
   Widget build(BuildContext context) {
@@ -322,6 +320,7 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
           ),
           gap,
           ..._authFields(l10n),
+          ..._headerFields(l10n),
           OutlinedButton.icon(
             key: const Key('profileForm.test'),
             onPressed: _testing || _saving || _signingIn || _needsSignIn ? null : _test,
@@ -408,58 +407,79 @@ class _ProfileFormState extends ConsumerState<ProfileForm> {
           ),
           gap,
         ];
-      case AuthType.headers:
-        return [
-          for (var i = 0; i < _headers.length; i++) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    key: Key('profileForm.headerName.$i'),
-                    controller: _headers[i].name,
-                    autocorrect: false,
-                    decoration: InputDecoration(labelText: l10n.headerNameLabel),
-                    onChanged: (_) => _resetTest(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    key: Key('profileForm.headerValue.$i'),
-                    controller: _headers[i].value,
-                    obscureText: _obscure,
-                    autocorrect: false,
-                    enableSuggestions: false,
-                    decoration: InputDecoration(labelText: l10n.headerValueLabel),
-                    onChanged: (_) => _resetTest(),
-                  ),
-                ),
-                IconButton(
-                  tooltip: l10n.removeHeader,
-                  icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: _headers.length == 1
-                      ? null
-                      : () => setState(() => _headers.removeAt(i).dispose()),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-          ],
-          Row(
-            children: [
-              TextButton.icon(
-                onPressed: () => setState(() => _headers.add(HeaderRow())),
-                icon: const Icon(Icons.add),
-                label: Text(l10n.addHeader),
-              ),
-              const Spacer(),
-              visibility,
-            ],
-          ),
-          gap,
-        ];
     }
+  }
+
+  /// Custom headers, sent with every request in addition to the sign-in
+  /// method (e.g. a Cloudflare Access service token in front of zhang).
+  List<Widget> _headerFields(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    return [
+      Text(l10n.customHeadersLabel, style: theme.textTheme.labelLarge),
+      const SizedBox(height: 4),
+      Text(
+        l10n.customHeadersHelp,
+        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      const SizedBox(height: 8),
+      for (var i = 0; i < _headers.length; i++) ...[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: TextFormField(
+                key: Key('profileForm.headerName.$i'),
+                controller: _headers[i].name,
+                autocorrect: false,
+                decoration: InputDecoration(labelText: l10n.headerNameLabel, errorMaxLines: 3),
+                validator: _validateHeaderName,
+                onChanged: (_) => _resetTest(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                key: Key('profileForm.headerValue.$i'),
+                controller: _headers[i].value,
+                obscureText: _obscure,
+                autocorrect: false,
+                enableSuggestions: false,
+                decoration: InputDecoration(labelText: l10n.headerValueLabel),
+                onChanged: (_) => _resetTest(),
+              ),
+            ),
+            IconButton(
+              key: Key('profileForm.removeHeader.$i'),
+              tooltip: l10n.removeHeader,
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: () {
+                setState(() => _headers.removeAt(i).dispose());
+                _resetTest();
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+      ],
+      Row(
+        children: [
+          TextButton.icon(
+            key: const Key('profileForm.addHeader'),
+            onPressed: () => setState(() => _headers.add(HeaderRow())),
+            icon: const Icon(Icons.add),
+            label: Text(l10n.addHeader),
+          ),
+          const Spacer(),
+          if (_headers.isNotEmpty)
+            IconButton(
+              tooltip: _obscure ? l10n.showSecret : l10n.hideSecret,
+              icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+              onPressed: () => setState(() => _obscure = !_obscure),
+            ),
+        ],
+      ),
+      const SizedBox(height: 16),
+    ];
   }
 
   List<Widget> _sessionFields(AppLocalizations l10n) {

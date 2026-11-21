@@ -45,6 +45,16 @@ class _SignInStepState extends State<SignInStep> {
           body: l10n.setupSignInBody(c.host),
         ),
         const SizedBox(height: 28),
+        if (c.gatewayHeaders.isNotEmpty && c.mode != SignInMode.proxy) ...[
+          NoticeCard(
+            key: const Key('setup.gatewayPassed'),
+            tone: NoticeTone.success,
+            icon: Icons.vpn_lock_outlined,
+            title: l10n.setupGatewayPassed,
+            body: c.gatewayHeaders.keys.join(', '),
+          ),
+          const SizedBox(height: 16),
+        ],
         ...switch (c.mode) {
           SignInMode.browser => _browser(l10n),
           SignInMode.password => _password(l10n),

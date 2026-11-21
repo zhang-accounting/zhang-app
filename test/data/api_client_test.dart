@@ -50,14 +50,25 @@ void main() {
 
     test('custom headers', () async {
       final h = await headersFor(
-        _base.copyWith(
-          authType: AuthType.headers,
-          customHeaders: {'CF-Access-Client-Id': 'a', 'CF-Access-Client-Secret': 'b'},
-        ),
+        _base.copyWith(customHeaders: {'CF-Access-Client-Id': 'a', 'CF-Access-Client-Secret': 'b'}),
       );
       expect(h['CF-Access-Client-Id'], 'a');
       expect(h['CF-Access-Client-Secret'], 'b');
       expect(h.containsKey('Authorization'), isFalse);
+    });
+
+    test('basic + custom headers: both are sent; a custom authorization does not win', () async {
+      final h = await headersFor(
+        _base.copyWith(
+          authType: AuthType.basic,
+          basicUsername: 'demo',
+          basicPassword: 'secret',
+          customHeaders: {'CF-Access-Client-Id': 'a', 'authorization': 'Token mine'},
+        ),
+      );
+      expect(h['CF-Access-Client-Id'], 'a');
+      expect(h['Authorization'], 'Basic ${base64Encode(utf8.encode('demo:secret'))}');
+      expect(h['authorization'], 'Basic ${base64Encode(utf8.encode('demo:secret'))}', reason: 'one header, any case');
     });
 
     test('requests go to <baseUrl>/api/<path>', () async {

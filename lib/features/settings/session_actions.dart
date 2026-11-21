@@ -24,7 +24,7 @@ Future<ServerProfile?> signInAgain(BuildContext context, WidgetRef ref, ServerPr
   try {
     final grant = await ref
         .read(browserSignInProvider)
-        .signIn(profile.baseUrl, allowSelfSigned: profile.allowSelfSigned);
+        .signIn(profile.baseUrl, allowSelfSigned: profile.allowSelfSigned, headers: profile.customHeaders);
     // The profile may have been edited meanwhile; apply to the stored one.
     final current = ref.read(profilesProvider).byId(profile.id) ?? profile;
     final updated = grant.applyTo(current);

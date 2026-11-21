@@ -106,6 +106,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeHeader => 'Remove header';
 
   @override
+  String get customHeadersLabel => 'Custom headers';
+
+  @override
+  String get customHeadersHelp =>
+      'Sent with every request, in addition to the sign-in method. For a gateway in front of zhang, e.g. CF-Access-Client-Id and CF-Access-Client-Secret of Cloudflare Access.';
+
+  @override
+  String get headerAuthorizationReserved =>
+      'The sign-in method sets Authorization. To send your own, choose “No sign-in”.';
+
+  @override
   String get showSecret => 'Show';
 
   @override
@@ -1467,6 +1478,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Something in front of zhang, such as a reverse proxy, asks for credentials. Enter them under “Reverse proxy or gateway”.';
 
   @override
+  String get setupGatewayPassed =>
+      'The gateway accepted the custom headers. Now sign in to zhang: the headers are sent with every request.';
+
+  @override
   String get setupAdvancedTitle => 'Reverse proxy or gateway';
 
   @override
@@ -1556,9 +1571,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authBearerLong => 'Bearer token (reverse proxy)';
-
-  @override
-  String get authHeadersLong => 'Custom headers (reverse proxy)';
 
   @override
   String get setupProxyHeaders => 'Custom headers';

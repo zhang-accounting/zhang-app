@@ -83,7 +83,8 @@ class ConnectionTester {
   }
 
   /// Step 1 of the setup wizard: what is at [baseUrl] (already normalised)
-  /// and how to sign in. No credentials are sent.
+  /// and how to sign in. No credentials are sent, only the [headers] of a
+  /// gateway in front of zhang (once they got through it, step 2).
   ///
   /// 1. `GET /api/auth/status` (zhang ≥ 0.2, no credentials needed); a
   ///    network failure ends the probe here.
@@ -91,9 +92,19 @@ class ConnectionTester {
   ///    ([ServerProbe.info] `null`); a server without `format` throws
   ///    [ApiServerTooOld]. Other failures (a page that is not JSON, 404…)
   ///    are thrown as they are.
-  Future<ServerProbe> probe(String baseUrl, {bool allowSelfSigned = false}) async {
+  Future<ServerProbe> probe(
+    String baseUrl, {
+    bool allowSelfSigned = false,
+    Map<String, String> headers = const {},
+  }) async {
     final client = createClient(
-      ServerProfile(id: 'probe', name: '', baseUrl: baseUrl, allowSelfSigned: allowSelfSigned),
+      ServerProfile(
+        id: 'probe',
+        name: '',
+        baseUrl: baseUrl,
+        allowSelfSigned: allowSelfSigned,
+        customHeaders: headers,
+      ),
     );
     try {
       AuthStatus? status;

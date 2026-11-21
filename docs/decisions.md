@@ -12,6 +12,10 @@
 
 ## 鉴权
 7. zhang 原生只有 HTTP Basic。Bearer 与自定义 Header 是给反向代理 / 网关（如 Cloudflare Access、Caddy forward_auth）用的，可与 Basic 叠加（同时启用多种时全部附加）。
+   - 实现（2026-11-21）：「登录方式」只决定 `Authorization`（无 / Basic / 浏览器登录的 Bearer / 反向代理 Bearer 四选一）；自定义 Header 与登录方式无关，每个请求都附加（浏览器登录的 `/api/auth/status` 与 code 兑换也带上，否则过不了网关）。
+   - `Authorization` 归登录方式所有：选了登录方式时，编辑表单拒绝名为 `Authorization`（不分大小写）的自定义 Header（「测试连接」「浏览器登录」「保存」都不执行并在该行提示），模型层 `authHeaders()` 也从不让自定义 `Authorization` 覆盖登录方式的值（不分大小写，dio 的 header 也不分大小写）。只有登录方式为「无需登录」时才发送自定义 `Authorization`（给要求其他 scheme 的网关用）。浏览器登录的探测与兑换请求永远不带 `Authorization`。
+   - 旧数据迁移：存储格式加版本号 `v: 2`。旧的 `authType: headers` 读成「无需登录 + 原有 Header」（原来的自定义 `Authorization` 照常发送）；其他旧类型若还存着 Header（旧版本从不发送）就丢弃，保证迁移前后发出的请求头完全一致；下次保存写成 v2。
+   - 配置向导：网关 Header 能通过网关、而 zhang 自己还要求登录时（第 1 步读不到 `/api/auth/status`，带 Header 能读到且已开启登录），第 2 步保留这些 Header，接着走 zhang 的浏览器登录或用户名密码。
 
 ## 范围
 8. **MVP = design-research §4 的 P0 全部 12 项**，分三条并行线实现：

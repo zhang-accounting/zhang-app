@@ -284,6 +284,24 @@ abstract class AppLocalizations {
   /// **'Remove header'**
   String get removeHeader;
 
+  /// No description provided for @customHeadersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom headers'**
+  String get customHeadersLabel;
+
+  /// No description provided for @customHeadersHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent with every request, in addition to the sign-in method. For a gateway in front of zhang, e.g. CF-Access-Client-Id and CF-Access-Client-Secret of Cloudflare Access.'**
+  String get customHeadersHelp;
+
+  /// No description provided for @headerAuthorizationReserved.
+  ///
+  /// In en, this message translates to:
+  /// **'The sign-in method sets Authorization. To send your own, choose “No sign-in”.'**
+  String get headerAuthorizationReserved;
+
   /// No description provided for @showSecret.
   ///
   /// In en, this message translates to:
@@ -2588,6 +2606,12 @@ abstract class AppLocalizations {
   /// **'Something in front of zhang, such as a reverse proxy, asks for credentials. Enter them under “Reverse proxy or gateway”.'**
   String get setupGatewayBody;
 
+  /// No description provided for @setupGatewayPassed.
+  ///
+  /// In en, this message translates to:
+  /// **'The gateway accepted the custom headers. Now sign in to zhang: the headers are sent with every request.'**
+  String get setupGatewayPassed;
+
   /// No description provided for @setupAdvancedTitle.
   ///
   /// In en, this message translates to:
@@ -2743,12 +2767,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bearer token (reverse proxy)'**
   String get authBearerLong;
-
-  /// No description provided for @authHeadersLong.
-  ///
-  /// In en, this message translates to:
-  /// **'Custom headers (reverse proxy)'**
-  String get authHeadersLong;
 
   /// No description provided for @setupProxyHeaders.
   ///
