@@ -9,6 +9,7 @@ EntryDraft draft(
   EntryMode mode, {
   String? amount = '15.5',
   String? commodity = 'CNY',
+  int? maxDecimals,
   bool categoryChosen = true,
   String? category,
   String? funding,
@@ -22,6 +23,7 @@ EntryDraft draft(
   amount: amount == null ? null : Decimal.parse(amount),
   commodity: commodity,
   datetime: _when,
+  maxDecimals: maxDecimals,
   categoryChosen: categoryChosen,
   categoryAccount: category,
   funding: funding,
@@ -143,6 +145,29 @@ void main() {
         [EntryIssue.commodityMissing],
       );
       expect(validateEntry(draft(EntryMode.expense, category: 'Expenses:X', funding: 'Assets:A')), isEmpty);
+    });
+
+    test('more decimals than the currency allows: listed first, never rounded', () {
+      EntryDraft jpy(String amount, {int? maxDecimals = 0, bool categoryChosen = true}) => draft(
+        EntryMode.expense,
+        amount: amount,
+        commodity: 'JPY',
+        maxDecimals: maxDecimals,
+        categoryChosen: categoryChosen,
+        category: 'Expenses:X',
+        funding: 'Assets:A',
+      );
+      expect(validateEntry(jpy('12.34')), [EntryIssue.amountTooPrecise]);
+      expect(validateEntry(jpy('12.34', categoryChosen: false)), [
+        EntryIssue.amountTooPrecise,
+        EntryIssue.categoryMissing,
+      ], reason: 'shown before the next step');
+      expect(validateEntry(jpy('12')), isEmpty);
+      expect(validateEntry(jpy('12.00')), isEmpty, reason: 'trailing zeros are not decimals');
+      expect(validateEntry(jpy('12.34', maxDecimals: 2)), isEmpty);
+      expect(validateEntry(jpy('12.345', maxDecimals: 2)), [EntryIssue.amountTooPrecise]);
+      expect(validateEntry(jpy('12.34', maxDecimals: null)), isEmpty, reason: 'not checked');
+      expect(() => buildTransactionRequest(jpy('12.34')), throwsStateError);
     });
   });
 

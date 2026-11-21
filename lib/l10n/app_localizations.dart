@@ -716,6 +716,12 @@ abstract class AppLocalizations {
   /// **'The amount must be greater than 0'**
   String get addHintAmountPositive;
 
+  /// No description provided for @addHintAmountDecimals.
+  ///
+  /// In en, this message translates to:
+  /// **'{precision, plural, =0{{commodity} has no decimals: remove them} =1{{commodity} allows 1 decimal: remove the extra digits} other{{commodity} allows {precision} decimals: remove the extra digits}}'**
+  String addHintAmountDecimals(String commodity, int precision);
+
   /// No description provided for @addHintCategory.
   ///
   /// In en, this message translates to:
