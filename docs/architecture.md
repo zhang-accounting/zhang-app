@@ -24,7 +24,8 @@ ServerProfile {
   bearerToken,                  // bearer -> Authorization: Bearer <token>
   sessionToken, sessionExpiresAt, sessionUser, // session（浏览器登录）-> Authorization: Bearer <token>
   customHeaders: Map<String,String>, // 与 authType 叠加，每个请求原样附加（如 CF-Access-Client-Id）
-  allowSelfSigned: bool          // 可选，默认 false
+  allowSelfSigned: bool,         // 可选，默认 false
+  plainHttpAcknowledged: bool    // 同意经明文 http 发送凭据（decisions.md「明文 http」）
 }
 ```
 - 支持多个 profile，可切换；敏感字段只进 secure storage。

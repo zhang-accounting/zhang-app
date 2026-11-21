@@ -155,6 +155,7 @@ void main() {
     final active = app.container.read(activeProfileProvider)!;
     expect(active.authType, AuthType.basic);
     expect(active.basicPassword, 'secret');
+    expect(active.plainHttpAcknowledged, isFalse, reason: 'loopback: not asked');
     expect(find.text('Servers'), findsOneWidget);
   });
 
@@ -229,9 +230,90 @@ void main() {
     expect(find.text('https://ledger.example.com · Basic + Headers'), findsOneWidget);
   });
 
+  testWidgets('edit server: credentials over plain http need an acknowledgement, stored per profile', (tester) async {
+    const open = ServerProfile(id: 'p1', name: 'NAS', baseUrl: 'http://192.168.1.2:8000');
+    final app = await _pumpApp(tester, initial: const ProfilesState(profiles: [open], activeId: 'p1'));
+    expect(find.byKey(const Key('ledger.plainHttp')), findsNothing, reason: 'no credentials yet');
+    Future<void> openEdit() async {
+      await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+    }
+
+    VoidCallback? onSubmit() => tester.widget<FilledButton>(find.byKey(const Key('profileForm.submit'))).onPressed;
+    VoidCallback? onTest() => tester.widget<OutlinedButton>(find.byKey(const Key('profileForm.test'))).onPressed;
+    bool? acked() => tester.widget<CheckboxListTile>(find.byKey(const Key('profileForm.plainHttpAck'))).value;
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await openEdit();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('profileForm.authType')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Username and password').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsOneWidget);
+    expect(find.text('Not encrypted: this server uses http://'), findsOneWidget);
+    expect(onSubmit(), isNull);
+    expect(onTest(), isNull, reason: 'testing sends the credentials too');
+
+    await tester.enterText(find.byKey(const Key('profileForm.username')), 'demo');
+    await tester.enterText(find.byKey(const Key('profileForm.password')), 'secret');
+    await tester.ensureVisible(find.byKey(const Key('profileForm.plainHttpAck')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.plainHttpAck')));
+    await tester.pumpAndSettle();
+    expect(onSubmit(), isNotNull);
+    expect(onTest(), isNotNull);
+    await tester.ensureVisible(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.basic);
+    expect(active.plainHttpAcknowledged, isTrue);
+    expect(find.text('http://192.168.1.2:8000 · Basic · Not encrypted (http)'), findsOneWidget);
+
+    // Kept when editing again; another address asks again; https needs nothing.
+    await openEdit();
+    expect(acked(), isTrue);
+    await tester.enterText(find.byKey(const Key('profileForm.url')), 'http://192.168.1.3:8000');
+    await tester.pumpAndSettle();
+    expect(acked(), isFalse);
+    expect(onSubmit(), isNull);
+    await tester.enterText(find.byKey(const Key('profileForm.url')), 'https://192.168.1.3:8000');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsNothing);
+    expect(onSubmit(), isNotNull);
+    await tester.enterText(find.byKey(const Key('profileForm.url')), 'http://localhost:8000');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsNothing, reason: 'loopback is exempt');
+    await tester.enterText(find.byKey(const Key('profileForm.url')), 'http://192.168.1.2:8000');
+    await tester.pumpAndSettle();
+    expect(acked(), isTrue, reason: 'back to the acknowledged address');
+  });
+
+  testWidgets('the ledger title marks a profile whose credentials go over plain http', (tester) async {
+    const lan = ServerProfile(
+      id: 'p1',
+      name: 'NAS',
+      baseUrl: 'http://192.168.1.2:8000',
+      authType: AuthType.basic,
+      basicUsername: 'demo',
+      basicPassword: 'secret',
+      plainHttpAcknowledged: true,
+    );
+    await _pumpApp(tester, initial: const ProfilesState(profiles: [lan], activeId: 'p1'));
+    expect(find.byKey(const Key('ledger.plainHttp')), findsOneWidget);
+    expect(find.byTooltip('Not encrypted (http)'), findsOneWidget);
+  });
+
   testWidgets('shell: tabs switch and FAB opens /transactions/new', (tester) async {
     await _pumpApp(tester, initial: const ProfilesState(profiles: [_profile], activeId: 'p1'));
     expect(find.text('Family'), findsOneWidget); // ActiveLedgerTitle in Home app bar
+    expect(find.byKey(const Key('ledger.plainHttp')), findsNothing, reason: 'http to 127.0.0.1 stays on the device');
 
     await tester.tap(find.text('Accounts'));
     await tester.pumpAndSettle();

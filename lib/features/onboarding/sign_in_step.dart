@@ -45,6 +45,27 @@ class _SignInStepState extends State<SignInStep> {
           body: l10n.setupSignInBody(c.host),
         ),
         const SizedBox(height: 28),
+        if (c.plainHttpRisk && c.mode != SignInMode.unsupported) ...[
+          NoticeCard(
+            key: const Key('setup.plainHttp'),
+            tone: NoticeTone.warning,
+            icon: Icons.no_encryption_outlined,
+            title: l10n.plainHttpTitle,
+            body: l10n.plainHttpBody,
+          ),
+          CheckboxListTile(
+            key: const Key('setup.plainHttpAck'),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(l10n.plainHttpAcknowledge),
+            value: c.plainHttpAcknowledged,
+            // Locked once used: the gateway headers already went out with it.
+            onChanged: c.busy || c.verified != null || c.gatewayHeaders.isNotEmpty
+                ? null
+                : (v) => c.setPlainHttpAcknowledged(v ?? false),
+          ),
+          const SizedBox(height: 16),
+        ],
         if (c.gatewayHeaders.isNotEmpty && c.mode != SignInMode.proxy) ...[
           NoticeCard(
             key: const Key('setup.gatewayPassed'),
@@ -106,7 +127,7 @@ class _SignInStepState extends State<SignInStep> {
         FilledButton.icon(
           key: const Key('setup.signInBrowser'),
           style: setupButtonStyle,
-          onPressed: c.busy ? null : c.signInWithBrowser,
+          onPressed: c.busy || c.needsPlainHttpAck ? null : c.signInWithBrowser,
           icon: c.busy ? null : const Icon(Icons.open_in_browser),
           label: BusyLabel(busy: c.busy, label: l10n.signInWithBrowser, busyLabel: l10n.setupWaitingBrowser),
         ),
@@ -122,7 +143,7 @@ class _SignInStepState extends State<SignInStep> {
         FilledButton(
           key: const Key('setup.signIn'),
           style: setupButtonStyle,
-          onPressed: c.busy ? null : c.signInWithPassword,
+          onPressed: c.busy || c.needsPlainHttpAck ? null : c.signInWithPassword,
           child: BusyLabel(busy: c.busy, label: l10n.setupSignIn, busyLabel: l10n.signingIn),
         ),
         if (c.canSwitchToBrowser)
@@ -145,7 +166,7 @@ class _SignInStepState extends State<SignInStep> {
         FilledButton(
           key: const Key('setup.connect'),
           style: setupButtonStyle,
-          onPressed: c.busy ? null : c.connectProxy,
+          onPressed: c.busy || c.needsPlainHttpAck ? null : c.connectProxy,
           child: BusyLabel(busy: c.busy, label: l10n.setupConnect, busyLabel: l10n.setupChecking),
         ),
       ],
@@ -235,7 +256,7 @@ class _SignInStepState extends State<SignInStep> {
           const SizedBox(height: 16),
           FilledButton.tonal(
             key: const Key('setup.connectAdvanced'),
-            onPressed: c.busy ? null : c.connectProxy,
+            onPressed: c.busy || c.needsPlainHttpAck ? null : c.connectProxy,
             child: BusyLabel(busy: c.busy, label: l10n.setupConnect, busyLabel: l10n.setupChecking),
           ),
           if (c.proxyError != null) ...[

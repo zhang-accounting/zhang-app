@@ -302,6 +302,54 @@ void main() {
     });
   });
 
+  group('plain http', () {
+    const lan = ServerProfile(
+      id: 'h',
+      name: 'NAS',
+      baseUrl: 'http://192.168.1.2:8000',
+      authType: AuthType.basic,
+      basicUsername: 'demo',
+      basicPassword: 'secret',
+    );
+
+    test('credentials to a non-loopback http host are sent in clear', () {
+      expect(lan.usesPlainHttp, isTrue);
+      expect(lan.sendsCredentialsInClear, isTrue);
+      expect(lan.copyWith(baseUrl: 'https://192.168.1.2:8000').sendsCredentialsInClear, isFalse);
+      expect(lan.copyWith(authType: AuthType.none).sendsCredentialsInClear, isFalse, reason: 'nothing secret');
+      expect(lan.copyWith(authType: AuthType.session).sendsCredentialsInClear, isTrue, reason: 'even signed out');
+      for (final url in ['http://nas.local', 'http://10.0.0.8', 'http://ledger.example.com', 'http://[fe80::1]:8000']) {
+        expect(lan.copyWith(baseUrl: url).sendsCredentialsInClear, isTrue, reason: url);
+      }
+    });
+
+    test('loopback hosts are exempt', () {
+      for (final url in [
+        'http://localhost:8000',
+        'http://app.localhost',
+        'http://127.0.0.1:18011',
+        'http://127.1.2.3',
+        'http://[::1]:8000',
+      ]) {
+        expect(ServerProfile.plainHttpRiskFor(url), isFalse, reason: url);
+        expect(lan.copyWith(baseUrl: url).sendsCredentialsInClear, isFalse, reason: url);
+      }
+      expect(ServerProfile.isLoopbackHost('127.0.0.256'), isFalse);
+      expect(ServerProfile.isLoopbackHost('128.0.0.1'), isFalse);
+      expect(ServerProfile.isLoopbackHost('localhost.example.com'), isFalse);
+    });
+
+    test('the acknowledgement is stored per profile (public JSON), absent = not given', () {
+      final acked = lan.copyWith(plainHttpAcknowledged: true);
+      final public = jsonDecode(jsonEncode(acked.toPublicJson())) as Map<String, Object?>;
+      expect(public['plainHttpAcknowledged'], isTrue);
+      expect(ServerProfile.fromJson(public, acked.toSecretJson()), acked);
+      expect(lan.toPublicJson().containsKey('plainHttpAcknowledged'), isFalse);
+      expect(ServerProfile.fromJson(lan.toPublicJson()).plainHttpAcknowledged, isFalse);
+      expect(acked == lan, isFalse);
+    });
+  });
+
   group('ProfileRepository', () {
     late SharedPreferences prefs;
     late InMemorySecretStore secrets;

@@ -9,7 +9,6 @@
 - 浏览器登录的 token 是无状态 30 天 HMAC：「退出登录」只在本地删除 token，`POST /api/auth/logout` 不吊销；server 没有按 token 吊销的接口。
 - 只有 passkey 且 server 早于 PR #786（无 `app_login`）时仍用不了：连接测试提示开启密码登录；有 `app_login` 的 server 提示改用「浏览器登录」。
 - 浏览器登录的 iOS `ASWebAuthenticationSession` / Android Custom Tabs 不认 `allowSelfSigned`：自签名证书的 server 在浏览器里会被拦（App 内的 API 请求仍按 profile 放行）。
-- 明文 http 发送凭据没有提示（S01 要求显式 opt-in）。
 - 收入模式不能选 Liabilities 作为入账账户。
 - 账本时钟：`ledger.now` 与设备时钟的差值每个 profile 只取一次（取整到 15 分钟）。App 运行期间账本时区或设备时区切换夏令时，「今天 / 本月」会差一小时，直到重启或切换 profile。
 - 从账户页打开交易：`trx_id` 是真实交易 id，但没有按 id 取交易的接口，App 用 `/api/journals?keyword=<payee>` 最多翻 5 页（每页 100）去找；同名 payee 极多的老交易可能显示「找不到」。可改用 `journals.page` + `journals.postings{ids}`。
@@ -33,6 +32,7 @@
 - 预算：首页还没有预算汇总条（design-research §2.9）；预算详情不能切换月份（从列表换月后再进）；月份选择和报表一样不能翻到未来月份。
 
 ## 已修（供参考）
+- 明文 http 发送凭据需要显式确认（2026-11-21，原 P1，S01 的 opt-in）：`http://` 地址又带凭据时，编辑表单和配置向导都要先勾选「仍然通过 http 发送我的凭据」才会测试、登录或保存，确认按 profile 保存、改地址要重新确认；本机回环地址（localhost、127.0.0.0/8、::1）豁免，局域网地址不豁免。账本名旁和服务器列表里常驻「未加密（http）」提示。升级前已有的 http profile 照常可用，下次保存时要求确认（decisions.md「明文 http」）。
 - 鉴权可叠加（2026-11-21，原 P1「鉴权类型互斥」）：登录方式（无 / Basic / 浏览器登录 / Bearer）只决定 `Authorization`，自定义 Header 与之叠加、每个请求都发（Cloudflare Access + zhang Basic、网关 Header + 浏览器登录的 session；浏览器登录的状态探测与 code 兑换也带 Header）。编辑表单的「登录」一节下方始终有「自定义 Header」；选了登录方式时拒绝自定义 `Authorization`，模型层也不会让它覆盖（decisions.md §7）。配置向导：网关 Header 通过后 zhang 仍要登录时，接着走 zhang 的登录并保留 Header。旧 profile 读取时迁移（`authType: headers` → 无需登录 + 原 Header，其余类型发出的请求头不变），有迁移测试。自定义 Header 不覆盖请求自己的头（SSE 的 `Accept`、编辑的 `If-Match`）；API 客户端不再跟随重定向（否则 dart:io 会把自定义 Header 带到重定向目标），3xx 报错：转到别的主机或网关登录页（如 Cloudflare Access 的 302）按网关处理、向导给出「前面有登录网关」，同主机内的重定向提示填最终地址。
 - 切换 profile 的隔离（2026-11-20）：每个 active profile 一个账本会话（独立的 `ProviderContainer`，`LedgerSessionHost`，见 architecture.md「账本会话」）。切换 / 编辑 / 删除 active profile 时整个会话换新，任何 provider（含以后新增的）都不会在加载期间显示或保存上一个账本的数据（原「必须先修」第 1 条）；版本门禁下沉到 client（`gatedClient`）：切到 zhang < 0.2 的服务器只会收到 `/api/info`、`/api/auth/status`，其它请求不发出、直接 `ApiServerTooOld`（原 P1「版本门禁挡不住 provider」）。另：widget 测试不再依赖运行日期（假服务器的 `ledger.now` 用设备时钟，`--dart-define=ZHANG_TEST_NOW=…` 可整体换日期跑），SSE 测试改用 fake time。
 - 浏览器登录加上 PKCE（RFC 7636，仅 `S256`）与 `state`（2026-11-20，zhang PR #819）：每次登录生成随机 `code_verifier` / `state`，登录 URL 带 `code_challenge` 与 `state`，回调的 `state` 必须一致（server 有 `app_login_pkce` 时缺失也算失败），`app/exchange` 带 `code_verifier`。同一设备上截获 `zhang-app://` 回调的 App 拿不到 verifier，无法兑换。旧 server（无 `app_login_pkce`）仍可登录，但没有这层保护。

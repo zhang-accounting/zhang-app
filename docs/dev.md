@@ -172,7 +172,9 @@ verified at once with `ConnectionTester.test` → **3** summary (`ConnectionTest
 currency, open accounts; zhang version, user), name (pre-filled with the ledger title) and colour → "Start"
 saves with `activate: true` and lands on Home. Open servers skip step 2. Editing a saved server uses the
 compact `ProfileForm` (sections Server / Sign-in / Appearance, sign-in method `DropdownMenu`, custom headers sent
-in addition to the method).
+in addition to the method). Credentials over plain `http://` to anything but this device's loopback need the "Send
+my credentials over http anyway" checkbox in step 2 / the form first (`ServerProfile.plainHttpAcknowledged`,
+decisions.md); `127.0.0.1` keeps the test servers exempt.
 
 Builds:
 
