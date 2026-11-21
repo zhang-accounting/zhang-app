@@ -332,7 +332,12 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
 * Preview errors that block a save also include `TransactionCannotInferTradeAmount`,
   `TransactionExplicitPostingHaveMultipleCommodity` (an empty amount left with several commodities – written
   unbalanced otherwise) and `TransactionHasMultipleImplicitPosting`.
-* Not used yet: `DELETE /api/transactions/{id}` and the id of a create (zhang ≥ 0.3; 405 / `"Ok"` before).
+* Opening what was created: when a create answers an id, the snackbar of the save offers "View" (`savedSnackBar`,
+  `openWrittenTransaction`) for 6 s, which opens the transaction detail in the current tab when that is Home, else in
+  the Journal tab, as `…/<id>?q=<payee, narration or first account>&v=<version>`: the detail looks the id up and says
+  "changed" instead of showing another transaction if the id has moved by then. No "View" without an id (older
+  servers, a failed reload), after "Save and add another" (the entry screen stays open) or for edits.
+* Not used yet: `DELETE /api/transactions/{id}` (zhang ≥ 0.3; 405 before).
 
 ### 4.4 Statistic graph
 
@@ -357,7 +362,8 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
    `journals.page`).
 2. Unbalanced transactions and unknown / closed accounts are written anyway → preview before saving.
 3. `--auth` without `:` silently disables auth (server side).
-4. No budget writes. `DELETE` for transactions, the id of a create and idempotency keys need zhang ≥ 0.3 (§4.3).
+4. No budget writes. `DELETE` for transactions, the id of a create and idempotency keys need zhang ≥ 0.3 (§4.3;
+   the app uses the last two).
 5. A source build reports version `0.1.0`; use `format` to detect v0.2.
 6. `/openapi.json` is not behind auth.
 7. Edits: posting flags are neither reported by `/api/journals` nor accepted in requests (kept only while the

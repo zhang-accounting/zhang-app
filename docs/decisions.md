@@ -8,7 +8,7 @@
 3. **类目宫格不默认选中**；未选类目时保存键禁用并给出提示。
 4. **类目图标只存本地**：按账户名关键词（中英）映射到 Material icon，用户可在本地覆盖（P1）。不往 `open` 指令写 meta。
 5. **记一笔三种模式**（支出 / 收入 / 转账）生成两条显式金额的 posting；「高级」多 posting 编辑器属于 P1。
-6. **保存后不做乐观更新**：POST 成功后刷新 journals 第 1 页与 summary（服务器写入异步，id 不稳定）。
+6. **保存后不做乐观更新**：POST 成功后刷新 journals 第 1 页与 summary（服务器写入异步，id 不稳定）。zhang ≥ 0.3 的 POST 在重载之后才回答并给出新交易的 id 与 version：仍不做乐观更新、刷新照旧由 SSE `Reload` 驱动，id 只用于保存后 snackbar 的「查看」（2026-11-21）。
 
 ## 鉴权
 7. zhang 原生只有 HTTP Basic。Bearer 与自定义 Header 是给反向代理 / 网关（如 Cloudflare Access、Caddy forward_auth）用的，可与 Basic 叠加（同时启用多种时全部附加）。
@@ -23,7 +23,7 @@
 
 ## 上游 zhang API 缺口（需要在 zhang 仓库解决，记录给作者）
 - 缺 `DELETE /api/transactions/:id`（无法做滑动删除 / 撤销）。
-- `POST /api/transactions` 不返回新交易 id（附件上传要绕路）。
+- ~~`POST /api/transactions` 不返回新交易 id（附件上传要绕路）~~：zhang ≥ 0.3（PR #818）返回 id 与 version，App 用于保存后的「查看」；记账时附带附件仍未做。
 - ~~posting 不支持 cost / price~~：v0.2 已支持写 cost / price / comment / metas（高级编辑器与编辑交易已使用；分录 flag 仍读不到、写不了，见 known-issues）。
 - ~~无幂等键（离线重试可能重复记账）~~：zhang ≥ 0.3（PR #831）有 `Idempotency-Key`，App 已使用，见下「幂等记账」。
 - `/api/journals` 仍不支持按日期 / 账户 / 金额过滤；v0.2 可用 BQL（`POST /api/query`、`postings.between` 等内置查询）代替。
