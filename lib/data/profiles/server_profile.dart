@@ -2,9 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
-/// How requests to a server are authenticated.
+/// The sign-in method of a server: what goes into the `Authorization`
+/// header. Custom headers ([ServerProfile.customHeaders]) are independent of
+/// it and sent in addition (decisions.md §7: e.g. Cloudflare Access service
+/// token headers + zhang's Basic).
 enum AuthType {
-  /// No auth header.
+  /// No `Authorization` header.
   none,
 
   /// `Authorization: Basic base64(user:pass)` (zhang's built-in `--auth`).
@@ -13,22 +16,30 @@ enum AuthType {
   /// `Authorization: Bearer <token>` (e.g. a reverse proxy in front of zhang).
   bearer,
 
-  /// Arbitrary headers sent verbatim (e.g. `CF-Access-Client-Id` /
-  /// `CF-Access-Client-Secret` for Cloudflare Access).
-  headers,
-
   /// zhang's own session token, obtained by signing in (passkey or password)
   /// on the server's login page in the system browser and sent as
   /// `Authorization: Bearer <token>` (see `BrowserSignIn`, zhang-api.md §1.3).
   session;
 
-  static AuthType fromName(String? name) => AuthType.values.firstWhere(
-    (t) => t.name == name,
-    orElse: () => AuthType.none,
-  );
+  /// Unknown names fall back to [none] (and [ServerProfile.fromJson] then
+  /// drops a custom `Authorization`, so nothing authenticates: fail closed).
+  /// The stored name `headers` (the former "custom headers only" type) is
+  /// migrated in [ServerProfile.fromJson].
+  static AuthType fromName(String? name) => tryName(name) ?? AuthType.none;
+
+  /// The type called [name], or `null` when there is none.
+  static AuthType? tryName(String? name) {
+    for (final t in AuthType.values) {
+      if (t.name == name) return t;
+    }
+    return null;
+  }
 }
 
 /// A configured zhang server ("ledger") the app can connect to.
+///
+/// Requests carry the `Authorization` of [authType] plus every one of
+/// [customHeaders] (see [authHeaders]).
 ///
 /// Non-secret fields are persisted in shared_preferences via [toPublicJson];
 /// secrets ([basicPassword], [bearerToken], the *values* of [customHeaders],
@@ -64,7 +75,10 @@ class ServerProfile {
   final String? basicPassword;
   final String? bearerToken;
 
-  /// Header name → value, sent verbatim when [authType] is [AuthType.headers].
+  /// Header name → value, sent verbatim with every request, whatever the
+  /// [authType] (a gateway's headers next to zhang's own sign-in). An
+  /// `Authorization` among them is only sent with [AuthType.none]: the
+  /// sign-in method owns that header ([authHeaders]).
   final Map<String, String> customHeaders;
 
   /// zhang session token from the browser sign-in ([AuthType.session]);
@@ -139,10 +153,16 @@ class ServerProfile {
     );
   }
 
+  /// Version of the stored format written by [toPublicJson]. Entries
+  /// without it are version 1, where `authType` could be `headers` and
+  /// custom headers were only sent with that type ([fromJson] migrates).
+  static const storageVersion = 2;
+
   /// Non-secret JSON (safe for shared_preferences and logs).
   ///
   /// Custom header *names* are stored here (ordered); their values are secret.
   Map<String, Object?> toPublicJson() => {
+    'v': storageVersion,
     'id': id,
     'name': name,
     'baseUrl': baseUrl,
@@ -166,6 +186,15 @@ class ServerProfile {
 
   /// Rebuilds a profile from [toPublicJson] output plus optional
   /// [toSecretJson] output.
+  ///
+  /// Version 1 entries (no integer `v` ≥ 2) are migrated so that they send
+  /// exactly the headers they sent before: `authType: headers` becomes
+  /// [AuthType.none] with its custom headers (a custom `Authorization` keeps
+  /// working); any other type drops the custom headers it may still have
+  /// stored, because version 1 never sent them. Saving writes version 2.
+  ///
+  /// An `authType` this version does not know (written by a newer app) fails
+  /// closed: [AuthType.none] without any `Authorization`, custom or not.
   factory ServerProfile.fromJson(
     Map<String, Object?> public, [
     Map<String, Object?>? secret,
@@ -188,11 +217,20 @@ class ServerProfile {
     }
     final color = public['color'];
     final expires = secret?['sessionExpiresAt'];
+    final storedType = public['authType'] as String?;
+    final version = public['v'];
+    final legacy = !(version is int && version >= storageVersion);
+    final legacyHeaders = legacy && storedType == 'headers';
+    if (legacy && !legacyHeaders) headers.clear();
+    final authType = AuthType.tryName(storedType);
+    if (storedType != null && authType == null && !legacyHeaders) {
+      headers.removeWhere((name, _) => isAuthorizationHeader(name));
+    }
     return ServerProfile(
       id: public['id'] as String,
       name: (public['name'] as String?) ?? '',
       baseUrl: (public['baseUrl'] as String?) ?? '',
-      authType: AuthType.fromName(public['authType'] as String?),
+      authType: authType ?? AuthType.none,
       basicUsername: public['basicUsername'] as String?,
       basicPassword: secret?['basicPassword'] as String?,
       bearerToken: secret?['bearerToken'] as String?,
@@ -205,29 +243,46 @@ class ServerProfile {
     );
   }
 
-  /// HTTP headers that authenticate requests for this profile.
+  /// Whether [name] is the `Authorization` header (names are
+  /// case-insensitive in HTTP, and dio merges them case-insensitively).
+  static bool isAuthorizationHeader(String name) => name.trim().toLowerCase() == 'authorization';
+
+  /// A custom `Authorization` header is only sent without a sign-in method.
+  bool get allowsCustomAuthorization => authType == AuthType.none;
+
+  /// HTTP headers that authenticate requests for this profile: the custom
+  /// headers (blank names dropped), then the sign-in method's
+  /// `Authorization`. With a sign-in method a custom `Authorization` is never
+  /// sent, so it cannot replace the method's header (the profile form refuses
+  /// it, decisions.md §7).
   Map<String, String> authHeaders() {
+    final authorization = _authorization();
+    return {
+      for (final e in customHeaders.entries)
+        if (e.key.trim().isNotEmpty && (allowsCustomAuthorization || !isAuthorizationHeader(e.key)))
+          e.key.trim(): e.value,
+      'Authorization': ?authorization,
+    };
+  }
+
+  /// The value of the sign-in method's `Authorization` header, if any.
+  String? _authorization() {
     switch (authType) {
       case AuthType.none:
-        return const {};
+        return null;
       case AuthType.basic:
         final user = basicUsername ?? '';
         final pass = basicPassword ?? '';
         final token = base64Encode(utf8.encode('$user:$pass'));
         // zhang >= 0.2 accepts any case of the scheme; "Basic" works everywhere.
-        return {'Authorization': 'Basic $token'};
+        return 'Basic $token';
       case AuthType.bearer:
-        return {'Authorization': 'Bearer ${bearerToken ?? ''}'};
-      case AuthType.headers:
-        return {
-          for (final e in customHeaders.entries)
-            if (e.key.trim().isNotEmpty) e.key.trim(): e.value,
-        };
+        return 'Bearer ${bearerToken ?? ''}';
       case AuthType.session:
-        // Signed out: send nothing, the server answers 401 → "Sign in again".
+        // Signed out: no header, the server answers 401 → "Sign in again".
         final token = sessionToken;
-        if (token == null || token.isEmpty) return const {};
-        return {'Authorization': 'Bearer $token'};
+        if (token == null || token.isEmpty) return null;
+        return 'Bearer $token';
     }
   }
 

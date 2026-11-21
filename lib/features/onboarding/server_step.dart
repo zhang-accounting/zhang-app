@@ -129,11 +129,17 @@ class _ProbeErrorCard extends StatelessWidget {
     final alternative = c.schemeAlternative;
     final network = error is ApiNetworkError;
     final notZhang = error is ApiParseError || error is ApiNotFound;
+    // A redirect to a login page elsewhere (Cloudflare Access…): a gateway.
+    final gatewayRedirect = switch (error) {
+      ApiRedirect(toGateway: true) => true,
+      _ => false,
+    };
     final hints = <String>[
       if (network && !c.certificateRejected) l10n.setupHintReach,
       if (network && alternative != null)
         alternative.startsWith('https://') ? l10n.setupSchemeHintHttp : l10n.setupSchemeHintHttps,
       if (notZhang) l10n.setupNotZhang,
+      if (gatewayRedirect) l10n.setupRedirectGatewayHint,
     ];
     return NoticeCard(
       key: const Key('setup.probeError'),
@@ -152,7 +158,7 @@ class _ProbeErrorCard extends StatelessWidget {
             onPressed: c.useSchemeAlternative,
             child: Text(l10n.setupTryUrl(alternative), overflow: TextOverflow.ellipsis),
           ),
-        if (notZhang || error is ApiUnauthorized)
+        if (notZhang || gatewayRedirect || error is ApiUnauthorized)
           TextButton(
             key: const Key('setup.gateway'),
             onPressed: c.useGateway,

@@ -29,11 +29,13 @@ class _FakeAuthServer {
   int exchanges = 0;
   final launched = <String>[];
   final logouts = <String?>[];
+  final requests = <RequestOptions>[];
 
   /// Tokens the ledger accepts (see [_ledgerAdapter]).
   final valid = <String>{};
 
   ResponseBody handle(RequestOptions o) {
+    requests.add(o);
     final path = o.uri.path;
     if (path.endsWith('/auth/status')) {
       return jsonResponse({
@@ -215,6 +217,38 @@ void main() {
     expect(active.sessionExpiresAt, DateTime.utc(2026, 11, 9, 3, 7, 29));
     expect(active.authHeaders(), {'Authorization': 'Bearer tok1.sig'});
     expect(active.basicPassword, isNull);
+  });
+
+  testWidgets('edit server: browser sign-in with custom headers → session + headers', (tester) async {
+    final auth = _FakeAuthServer();
+    const open = ServerProfile(id: 'p1', name: 'Passkey ledger', baseUrl: _base);
+    final container = await _pump(tester, auth: auth, initial: const ProfilesState(profiles: [open], activeId: 'p1'));
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    await _tapVisible(tester, find.byKey(const Key('profileForm.authType')));
+    await tester.tap(find.text('Browser sign-in (passkey or password)').last);
+    await tester.pumpAndSettle();
+    await _tapVisible(tester, find.byKey(const Key('profileForm.addHeader')));
+    await tester.enterText(find.byKey(const Key('profileForm.headerName.0')), 'CF-Access-Client-Id');
+    await tester.enterText(find.byKey(const Key('profileForm.headerValue.0')), 'cf-id');
+
+    await _tapVisible(tester, find.byKey(const Key('profileForm.signIn')));
+    expect(find.byKey(const Key('profileForm.signedIn')), findsOneWidget);
+    expect(auth.requests.map((o) => o.uri.path), ['/api/auth/status', '/api/auth/app/exchange']);
+    for (final o in auth.requests) {
+      expect(o.headers['CF-Access-Client-Id'], 'cf-id', reason: '${o.uri.path} passes the gateway');
+      expect(o.headers.containsKey('Authorization'), isFalse, reason: '${o.uri.path} carries no credentials');
+    }
+
+    await _tapVisible(tester, find.byKey(const Key('profileForm.submit')));
+    final active = container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.session);
+    expect(active.authHeaders(), {'CF-Access-Client-Id': 'cf-id', 'Authorization': 'Bearer tok1.sig'});
   });
 
   testWidgets('home: 401 on a session profile → "Sign in again" stores a new session and reloads', (tester) async {

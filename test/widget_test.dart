@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -124,10 +126,10 @@ void main() {
       'Username and password',
       'Browser sign-in (passkey or password)',
       'Bearer token (reverse proxy)',
-      'Custom headers (reverse proxy)',
     ]) {
       expect(find.text(label), findsWidgets);
     }
+    expect(find.text('Custom headers (reverse proxy)'), findsNothing, reason: 'headers are not a method any more');
     await tester.tap(find.text('Username and password').last);
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('profileForm.username')), 'demo');
@@ -154,6 +156,77 @@ void main() {
     expect(active.authType, AuthType.basic);
     expect(active.basicPassword, 'secret');
     expect(find.text('Servers'), findsOneWidget);
+  });
+
+  testWidgets('edit server: Basic + custom headers are saved and tested together', (tester) async {
+    final fake = _FakeTester(
+      (p) async => const ServerInfo(title: 'My Accounting', version: '0.2.0', buildDate: '2026-11-21', format: 'zhang'),
+    );
+    const open = ServerProfile(id: 'p1', name: 'Family', baseUrl: 'https://ledger.example.com');
+    final app = await _pumpApp(
+      tester,
+      initial: const ProfilesState(profiles: [open], activeId: 'p1'),
+      connectionTester: fake,
+    );
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Custom headers'), findsOneWidget, reason: 'shown for every sign-in method');
+    expect(find.byKey(const Key('profileForm.headerName.0')), findsNothing, reason: 'no empty row by default');
+
+    await tester.tap(find.byKey(const Key('profileForm.authType')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Username and password').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('profileForm.username')), 'demo');
+    await tester.enterText(find.byKey(const Key('profileForm.password')), 'secret');
+    for (final (i, name, value) in [(0, 'CF-Access-Client-Id', 'cf-id'), (1, 'Authorization', 'Token mine')]) {
+      await tester.ensureVisible(find.byKey(const Key('profileForm.addHeader')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('profileForm.addHeader')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(Key('profileForm.headerName.$i')), name);
+      await tester.enterText(find.byKey(Key('profileForm.headerValue.$i')), value);
+    }
+
+    // A custom Authorization would compete with Basic: refused, nothing sent.
+    await tester.ensureVisible(find.byKey(const Key('profileForm.test')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.test')));
+    await tester.pumpAndSettle();
+    expect(find.text('The sign-in method sets Authorization. To send your own, choose “No sign-in”.'), findsOneWidget);
+    expect(fake.tested, isEmpty);
+    await tester.ensureVisible(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    expect(app.container.read(activeProfileProvider)!.authType, AuthType.none, reason: 'not saved');
+
+    await tester.ensureVisible(find.byKey(const Key('profileForm.removeHeader.1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.removeHeader.1')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('profileForm.test')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.test')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.testOk')), findsOneWidget);
+    expect(fake.tested.single.authHeaders(), {
+      'CF-Access-Client-Id': 'cf-id',
+      'Authorization': 'Basic ${base64Encode(utf8.encode('demo:secret'))}',
+    });
+
+    await tester.ensureVisible(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.basic);
+    expect(active.customHeaders, {'CF-Access-Client-Id': 'cf-id'});
+    expect(find.text('https://ledger.example.com · Basic + Headers'), findsOneWidget);
   });
 
   testWidgets('shell: tabs switch and FAB opens /transactions/new', (tester) async {

@@ -6,7 +6,6 @@
 1. **账本请放在 git 下**：v0.2 会拒绝写不回去的名字（400），记一笔 / 编辑前会先调 `POST /api/transactions/preview` / `POST /api/transactions/{id}/preview`，但服务器本身仍会写入不平衡 / 账户不存在或已关闭的交易（其他客户端不一定 preview）。
 
 ## P1
-- 鉴权类型互斥：decisions.md §7 要求 Basic 可与自定义 Header 叠加（Cloudflare Access + zhang Basic），现在 `authHeaders()` 只按单一类型发（lib/data/profiles/server_profile.dart）。需要改表单与模型。
 - 浏览器登录的 token 是无状态 30 天 HMAC：「退出登录」只在本地删除 token，`POST /api/auth/logout` 不吊销；server 没有按 token 吊销的接口。
 - 只有 passkey 且 server 早于 PR #786（无 `app_login`）时仍用不了：连接测试提示开启密码登录；有 `app_login` 的 server 提示改用「浏览器登录」。
 - 浏览器登录的 iOS `ASWebAuthenticationSession` / Android Custom Tabs 不认 `allowSelfSigned`：自签名证书的 server 在浏览器里会被拦（App 内的 API 请求仍按 profile 放行）。
@@ -31,6 +30,7 @@
 - 预算：首页还没有预算汇总条（design-research §2.9）；预算详情不能切换月份（从列表换月后再进）；月份选择和报表一样不能翻到未来月份。
 
 ## 已修（供参考）
+- 鉴权可叠加（2026-11-21，原 P1「鉴权类型互斥」）：登录方式（无 / Basic / 浏览器登录 / Bearer）只决定 `Authorization`，自定义 Header 与之叠加、每个请求都发（Cloudflare Access + zhang Basic、网关 Header + 浏览器登录的 session；浏览器登录的状态探测与 code 兑换也带 Header）。编辑表单的「登录」一节下方始终有「自定义 Header」；选了登录方式时拒绝自定义 `Authorization`，模型层也不会让它覆盖（decisions.md §7）。配置向导：网关 Header 通过后 zhang 仍要登录时，接着走 zhang 的登录并保留 Header。旧 profile 读取时迁移（`authType: headers` → 无需登录 + 原 Header，其余类型发出的请求头不变），有迁移测试。自定义 Header 不覆盖请求自己的头（SSE 的 `Accept`、编辑的 `If-Match`）；API 客户端不再跟随重定向（否则 dart:io 会把自定义 Header 带到重定向目标），3xx 报错：转到别的主机或网关登录页（如 Cloudflare Access 的 302）按网关处理、向导给出「前面有登录网关」，同主机内的重定向提示填最终地址。
 - 切换币种后重新校验小数位（2026-11-21，原 P2「可输入 12.34 JPY」）：金额的小数位多于当前币种的精度时，金额下方的提示行用错误色写明（「JPY 不能有小数，请删掉小数部分」「… 最多 2 位小数…」），保存 / 再记不可用，直到删掉多余的位数或换回允许的币种。不自动四舍五入（12.34 换成 JPY 多半是币种选错或要重输，悄悄变成 12 反而记错），与键盘「不接受超过精度的位数」、写入「按币种精度、从不舍入」一致；编辑 / 复制时未改动的原金额保留账本里原有的小数位，不受此限。「上次金额」chip 的金额若多于该币种允许的小数位就不显示（不让用户为没输入过的位数看到错误）。
 - 收入模式可选 Liabilities 作为入账账户（2026-11-21，原 P1）：例如退款 / 返现直接打到信用卡（`Income:… −` / `Liabilities:… +`）。账户选择器、按 payee 自动填表、分类的入账记忆和历史、「编辑交易」用普通表单的判断都放开了 Liabilities；没有记忆和历史时默认的入账账户仍只选 Assets（最近用过的、再是第一个开立的）。
 - 键盘 `=` 之后的输入（2026-11-21，原 P2「`3−5=` 之后再输数字会变成 −20」）：`=` 之后的结果像计算器一样处理——数字或 `.` 开始一个新数，运算符接着用结果计算（`3−5=` 再 `+1` 是 −1），退格删结果的最后一位、之后的数字接在它后面；表达式行里负的结果也用 U+2212 负号（`−2 + 1`）。

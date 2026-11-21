@@ -98,6 +98,52 @@ final class ApiRateLimited extends ApiServerError {
   }
 }
 
+/// 3xx: the address redirects somewhere else. The client does not follow
+/// redirects, so the profile's headers never go to [location].
+///
+/// * [toGateway]: to another host or a known gateway login path, e.g.
+///   Cloudflare Access sending an unauthenticated request to its login
+///   page: a sign-in gateway in front of zhang, which wants its own
+///   credentials (service token headers).
+/// * otherwise (http → https on the same host, a moved path): use the final
+///   address as the server URL.
+final class ApiRedirect extends ApiServerError {
+  const ApiRedirect(int status, this.location, {this.from})
+    : super(status, 'redirected to ${location ?? 'another address'}');
+
+  /// The `Location` header, if any.
+  final String? location;
+
+  /// The request that was redirected.
+  final Uri? from;
+
+  /// Login paths of common gateways (Cloudflare Access, oauth2-proxy,
+  /// authentik, Pomerium), also when they stay on the same host.
+  static const gatewayLoginPaths = ['/cdn-cgi/access/', '/oauth2/', '/outpost.goauthentik.io/', '/.pomerium/'];
+
+  /// [location] resolved against [from] (it may be relative).
+  Uri? get target {
+    final l = location;
+    if (l == null || l.trim().isEmpty) return null;
+    try {
+      return from?.resolve(l.trim()) ?? Uri.parse(l.trim());
+    } on FormatException {
+      return null;
+    }
+  }
+
+  /// The redirect leads to a sign-in gateway rather than to zhang at another
+  /// address: another host, or a known gateway login path.
+  bool get toGateway {
+    final t = target;
+    if (t == null) return false;
+    final f = from;
+    if (f != null && t.host.isNotEmpty && t.host.toLowerCase() != f.host.toLowerCase()) return true;
+    final path = t.path.toLowerCase();
+    return gatewayLoginPaths.any(path.startsWith);
+  }
+}
+
 enum NetworkErrorKind {
   /// DNS failure, connection refused, connection reset/closed (zhang closes
   /// the connection without a response when a handler panics).
