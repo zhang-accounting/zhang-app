@@ -54,6 +54,7 @@
   "plainHttpTitle": "Not encrypted: this server uses http://",
   "plainHttpBody": "Your password, token or headers are sent in plain text: anyone on the same network can read them. Use https:// if the server supports it.",
   "plainHttpAcknowledge": "Send my credentials over http anyway",
+  "plainHttpContinue": "Continue over http",
   "plainHttpIndicator": "Not encrypted (http)",
   "colorLabel": "Colour",
   "colorDefault": "Default",

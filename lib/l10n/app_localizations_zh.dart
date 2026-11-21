@@ -138,6 +138,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get plainHttpAcknowledge => '仍然通过 http 发送我的凭据';
 
   @override
+  String get plainHttpContinue => '仍用 http 继续';
+
+  @override
   String get plainHttpIndicator => '未加密（http）';
 
   @override

@@ -318,7 +318,13 @@ void main() {
       expect(lan.copyWith(baseUrl: 'https://192.168.1.2:8000').sendsCredentialsInClear, isFalse);
       expect(lan.copyWith(authType: AuthType.none).sendsCredentialsInClear, isFalse, reason: 'nothing secret');
       expect(lan.copyWith(authType: AuthType.session).sendsCredentialsInClear, isTrue, reason: 'even signed out');
-      for (final url in ['http://nas.local', 'http://10.0.0.8', 'http://ledger.example.com', 'http://[fe80::1]:8000']) {
+      for (final url in [
+        'http://nas.local',
+        'http://10.0.0.8',
+        'http://ledger.example.com',
+        'http://[fe80::1]:8000',
+        'http://app.localhost', // resolvers on phones need not map *.localhost to loopback
+      ]) {
         expect(lan.copyWith(baseUrl: url).sendsCredentialsInClear, isTrue, reason: url);
       }
     });
@@ -326,7 +332,7 @@ void main() {
     test('loopback hosts are exempt', () {
       for (final url in [
         'http://localhost:8000',
-        'http://app.localhost',
+        'http://LOCALHOST.',
         'http://127.0.0.1:18011',
         'http://127.1.2.3',
         'http://[::1]:8000',
@@ -337,6 +343,7 @@ void main() {
       expect(ServerProfile.isLoopbackHost('127.0.0.256'), isFalse);
       expect(ServerProfile.isLoopbackHost('128.0.0.1'), isFalse);
       expect(ServerProfile.isLoopbackHost('localhost.example.com'), isFalse);
+      expect(ServerProfile.isLoopbackHost('app.localhost'), isFalse);
     });
 
     test('the acknowledgement is stored per profile (public JSON), absent = not given', () {

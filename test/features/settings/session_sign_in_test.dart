@@ -273,6 +273,36 @@ void main() {
     expect(find.text('Bakery'), findsOneWidget);
   });
 
+  testWidgets('home: "Sign in again" on an http profile saved without the acknowledgement asks first', (
+    tester,
+  ) async {
+    final auth = _FakeAuthServer();
+    final ledger = FakeZhangServer(journals: [expenseJson('a', '2023-09-01T10:00:00', payee: 'Bakery')]);
+    final old = _session('expired.sig').copyWith(baseUrl: 'http://192.168.1.2:8000');
+    final container = await _pump(
+      tester,
+      auth: auth,
+      ledger: ledger,
+      initial: ProfilesState(profiles: [old], activeId: 'p1'),
+    );
+    await tester.tap(find.byKey(const Key('home.signInAgain')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('plainHttp.confirm')), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(auth.launched, isEmpty, reason: 'nothing sent without the acknowledgement');
+    expect(auth.requests, isEmpty);
+
+    await tester.tap(find.byKey(const Key('home.signInAgain')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('plainHttp.continue')));
+    await tester.pumpAndSettle();
+    expect(auth.launched, hasLength(1));
+    final active = container.read(activeProfileProvider)!;
+    expect(active.sessionToken, 'tok1.sig');
+    expect(active.plainHttpAcknowledged, isTrue, reason: 'stored with the new session');
+  });
+
   testWidgets('home: warns when the session ends within 3 days', (tester) async {
     final auth = _FakeAuthServer()..valid.add('ok.sig');
     final ledger = FakeZhangServer(journals: []);

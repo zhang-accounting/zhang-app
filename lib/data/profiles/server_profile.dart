@@ -129,15 +129,16 @@ class ServerProfile {
     return uri != null && uri.scheme == 'http' && !isLoopbackHost(uri.host);
   }
 
-  /// `localhost` (and `*.localhost`), `127.0.0.0/8` and `::1`: traffic to them
-  /// never leaves the device (e.g. an SSH tunnel), so plain http is exempt
-  /// from the acknowledgement. Private LAN addresses are not exempt (shared
-  /// Wi-Fi can be read).
+  /// `localhost`, `127.0.0.0/8` and `::1`: traffic to them never leaves the
+  /// device (e.g. an SSH tunnel), so plain http is exempt from the
+  /// acknowledgement. `*.localhost` is not (Android / iOS resolvers need not
+  /// map it to loopback), nor are private LAN addresses (shared Wi-Fi can be
+  /// read).
   static bool isLoopbackHost(String host) {
     var h = host.toLowerCase();
     if (h.startsWith('[') && h.endsWith(']')) h = h.substring(1, h.length - 1);
     if (h.endsWith('.')) h = h.substring(0, h.length - 1);
-    if (h == 'localhost' || h.endsWith('.localhost')) return true;
+    if (h == 'localhost') return true;
     if (h == '::1' || h == '0:0:0:0:0:0:0:1') return true;
     final ipv4 = RegExp(r'^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$').firstMatch(h);
     if (ipv4 == null) return false;

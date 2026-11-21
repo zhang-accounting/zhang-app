@@ -344,6 +344,12 @@ abstract class AppLocalizations {
   /// **'Send my credentials over http anyway'**
   String get plainHttpAcknowledge;
 
+  /// No description provided for @plainHttpContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue over http'**
+  String get plainHttpContinue;
+
   /// No description provided for @plainHttpIndicator.
   ///
   /// In en, this message translates to:

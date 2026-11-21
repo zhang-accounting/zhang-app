@@ -295,6 +295,43 @@ void main() {
     expect(acked(), isTrue, reason: 'back to the acknowledged address');
   });
 
+  testWidgets('edit server: custom headers alone over plain http need the acknowledgement too', (tester) async {
+    const open = ServerProfile(id: 'p1', name: 'NAS', baseUrl: 'http://192.168.1.2:8000');
+    final app = await _pumpApp(tester, initial: const ProfilesState(profiles: [open], activeId: 'p1'));
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings.profileMenu.p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    VoidCallback? onSubmit() => tester.widget<FilledButton>(find.byKey(const Key('profileForm.submit'))).onPressed;
+
+    await tester.ensureVisible(find.byKey(const Key('profileForm.addHeader')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.addHeader')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsNothing, reason: 'an empty row sends nothing');
+    await tester.enterText(find.byKey(const Key('profileForm.headerName.0')), 'CF-Access-Client-Secret');
+    await tester.enterText(find.byKey(const Key('profileForm.headerValue.0')), 'cf-secret');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profileForm.plainHttp')), findsOneWidget);
+    expect(onSubmit(), isNull);
+
+    await tester.ensureVisible(find.byKey(const Key('profileForm.plainHttpAck')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.plainHttpAck')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profileForm.submit')));
+    await tester.pumpAndSettle();
+    final active = app.container.read(activeProfileProvider)!;
+    expect(active.authType, AuthType.none);
+    expect(active.customHeaders, {'CF-Access-Client-Secret': 'cf-secret'});
+    expect(active.plainHttpAcknowledged, isTrue);
+    expect(find.text('http://192.168.1.2:8000 · Headers · Not encrypted (http)'), findsOneWidget);
+  });
+
   testWidgets('the ledger title marks a profile whose credentials go over plain http', (tester) async {
     const lan = ServerProfile(
       id: 'p1',

@@ -41,6 +41,7 @@
   "plainHttpTitle": "未加密：这个服务器用的是 http://",
   "plainHttpBody": "密码、令牌或 Header 会以明文发送，同一网络里的任何人都能读到。服务器支持的话请改用 https://。",
   "plainHttpAcknowledge": "仍然通过 http 发送我的凭据",
+  "plainHttpContinue": "仍用 http 继续",
   "plainHttpIndicator": "未加密（http）",
   "colorLabel": "颜色",
   "colorDefault": "默认",

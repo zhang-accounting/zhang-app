@@ -139,6 +139,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get plainHttpAcknowledge => 'Send my credentials over http anyway';
 
   @override
+  String get plainHttpContinue => 'Continue over http';
+
+  @override
   String get plainHttpIndicator => 'Not encrypted (http)';
 
   @override
