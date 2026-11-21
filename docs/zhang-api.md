@@ -333,10 +333,12 @@ parent without its own `open` → 404 (read as "no postings"); invalid name → 
   `TransactionExplicitPostingHaveMultipleCommodity` (an empty amount left with several commodities – written
   unbalanced otherwise) and `TransactionHasMultipleImplicitPosting`.
 * Opening what was created: when a create answers an id, the snackbar of the save offers "View" (`savedSnackBar`,
-  `openWrittenTransaction`) for 6 s, which opens the transaction detail in the current tab when that is Home, else in
-  the Journal tab, as `…/<id>?q=<payee, narration or first account>&v=<version>`: the detail looks the id up and says
-  "changed" instead of showing another transaction if the id has moved by then. No "View" without an id (older
-  servers, a failed reload), after "Save and add another" (the entry screen stays open) or for edits.
+  `openWrittenTransaction`) for 6 s, which opens the transaction detail in the Home tab when the entry was recorded
+  from Home, else in the Journal tab (also from Accounts and Reports, whose detail routes hang under an account), as
+  `…/<id>?q=<payee, narration or first account>&v=<version>`: the detail looks the id up and says "changed" instead
+  of showing another transaction if the id has moved by then. The id belongs to the ledger it was saved to: a profile
+  switch hides the snackbar, and the action does nothing once that ledger session has ended. No "View" without an id
+  (older servers, a failed reload), after "Save and add another" (the entry screen stays open) or for edits.
 * Not used yet: `DELETE /api/transactions/{id}` (zhang ≥ 0.3; 405 before).
 
 ### 4.4 Statistic graph
