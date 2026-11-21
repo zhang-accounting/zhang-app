@@ -993,7 +993,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Text(commodity ?? '…', style: theme.textTheme.titleSmall),
             ),
-          if (hint != null && expr.isEmpty && hint.amount != null)
+          if (hint != null && expr.isEmpty && _hintFits(hint, r))
             ActionChip(
               key: const Key('add.lastAmount'),
               visualDensity: VisualDensity.compact,
@@ -1049,6 +1049,17 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
   }
 
   /// The number being typed, grouped but not padded (`12.` stays `12.`).
+  /// The "last amount" chip only offers an amount the currency it fills in
+  /// allows: a history amount with more decimals would show an error for
+  /// digits the user never typed.
+  static bool _hintFits(PayeeAutofill hint, _Resolved r) {
+    final amount = hint.amount;
+    if (amount == null) return false;
+    final code = hint.commodity;
+    final commodity = code == null ? null : r.commodities[code];
+    return amount.scale <= (commodity?.precision ?? r.precision);
+  }
+
   static String _typed(String token, Commodity? c, String? code) {
     final negative = token.startsWith('-');
     final unsigned = negative ? token.substring(1) : token;

@@ -19,8 +19,10 @@ import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/journal_repository.dart';
 import 'package:zhang_app/data/repositories/ledger_data_providers.dart';
 import 'package:zhang_app/features/account_picker/account_picker_data.dart';
+import 'package:zhang_app/features/transaction_new/entry_mode.dart';
 import 'package:zhang_app/features/transaction_new/new_transaction_screen.dart';
 import 'package:zhang_app/features/transaction_new/record_prefs.dart';
+import 'package:zhang_app/features/transaction_new/transaction_edit.dart';
 import 'package:zhang_app/features/transaction_new/transaction_history.dart';
 import 'package:zhang_app/l10n/l10n.dart';
 
@@ -55,6 +57,8 @@ HistoryEntry _entry(int daysAgo, String payee, Map<String, String> postings, {St
 final _history = [
   _entry(1, 'Uniqlo', {'Assets:WeChat': '-99', 'Expenses:Clothing': '99'}),
   _entry(2, '隆江猪脚饭', {'Liabilities:Card': '-27', 'Expenses:PersonalDiet:Lunch': '27'}, narration: 'Eating Lunch'),
+  // Written with more decimals than CNY's precision (2).
+  _entry(3, 'Fancy Cafe', {'Assets:WeChat': '-27.505', 'Expenses:Clothing': '27.505'}),
 ];
 
 class _FakeHistory extends TransactionHistory {
@@ -85,7 +89,10 @@ class _FakeJournalRepository extends JournalRepository {
   }
 }
 
-Future<(_FakeJournalRepository, SharedPreferences)> _pump(WidgetTester tester) async {
+Future<(_FakeJournalRepository, SharedPreferences)> _pump(
+  WidgetTester tester, {
+  NewTransactionScreen Function()? screen,
+}) async {
   tester.view.physicalSize = const Size(1179, 2556);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -127,7 +134,7 @@ Future<(_FakeJournalRepository, SharedPreferences)> _pump(WidgetTester tester) a
             body: Center(
               child: FilledButton(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const NewTransactionScreen()),
+                  MaterialPageRoute<void>(builder: (_) => screen?.call() ?? const NewTransactionScreen()),
                 ),
                 child: const Text('open'),
               ),
@@ -396,6 +403,61 @@ void main() {
       ('-12', 'JPY'),
       ('12', 'JPY'),
     ]);
+  });
+
+  testWidgets('an unchanged prefilled amount keeps the ledger\'s decimals; a currency switch checks them', (
+    tester,
+  ) async {
+    final prefill = EntryPrefill(
+      fit: SimpleFit(
+        mode: EntryMode.expense,
+        amount: Decimal.parse('12.345'),
+        commodity: 'CNY',
+        source: 'Assets:WeChat',
+        target: 'Expenses:Clothing',
+      ),
+      base: CreateTransactionRequest(datetime: DateTime(2026, 10, 1, 12), payee: 'Market', postings: const []),
+      payee: 'Market',
+    );
+    await _pump(tester, screen: () => NewTransactionScreen(prefill: prefill));
+    String? hint() => tester.widgetList<Text>(find.byKey(const Key('add.hint'))).singleOrNull?.data;
+
+    expect(_amountText(tester), '¥12.345');
+    expect(hint(), isNull, reason: 'the ledger already has 12.345 CNY: not the user\'s mistake');
+    expect(_enabled(tester, 'add.key.save'), isTrue);
+
+    await tester.tap(find.byKey(const Key('add.commodity')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.commodity.USD')).last);
+    await tester.pumpAndSettle();
+    expect(hint(), 'USD allows 2 decimals: remove the extra digits');
+    expect(_enabled(tester, 'add.key.save'), isFalse);
+
+    await tester.tap(find.byKey(const Key('add.commodity')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.commodity.CNY')).last);
+    await tester.pumpAndSettle();
+    expect(hint(), isNull, reason: 'back to the unchanged prefill');
+
+    await tester.tap(find.byKey(const Key('add.key.backspace')));
+    await tester.pump();
+    expect(_amountText(tester), '¥12.34');
+    await tester.tap(find.byKey(const Key('add.key.5')));
+    await tester.pump();
+    expect(_amountText(tester), '¥12.34', reason: 'once changed, the keypad keeps to the precision');
+    expect(hint(), isNull);
+  });
+
+  testWidgets('the "last amount" chip is not offered with more decimals than the currency allows', (tester) async {
+    await _pump(tester);
+    await tester.enterText(find.byKey(const Key('add.payee')), 'Fancy');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.payeeSuggestion.Fancy Cafe')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(find.byKey(const Key('add.payee'))).controller!.text, 'Fancy Cafe');
+    expect(find.byKey(const Key('add.lastAmount')), findsNothing, reason: '27.505 does not fit CNY (2 decimals)');
+    expect(find.textContaining('remove the extra digits'), findsNothing);
+    expect(_amountText(tester), '¥0');
   });
 
   testWidgets('closing with input asks before discarding', (tester) async {
