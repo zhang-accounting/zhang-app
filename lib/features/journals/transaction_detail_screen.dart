@@ -13,6 +13,7 @@ import '../../data/api/idempotency.dart';
 import '../../data/models/amount.dart';
 import '../../data/models/commodity.dart';
 import '../../data/models/journal.dart';
+import '../../data/repositories/journal_repository.dart';
 import '../../data/repositories/ledger_data_providers.dart';
 import '../../data/repositories/ledger_revision.dart';
 import '../../l10n/l10n.dart';
@@ -30,10 +31,12 @@ import 'widgets/journal_tile.dart';
 const _mono = TextStyle(fontFamily: 'monospace', fontFamilyFallback: ['Menlo', 'Courier']);
 
 /// S08: header, postings with running balances, details, and the actions
-/// edit, copy as a new transaction and copy as text. The item comes from the
-/// route `extra`; deep links fall back to [journalItemByIdProvider]. After
-/// an edit the transaction is read again once the ledger has reloaded (ids
-/// stay with the edited transaction, see docs/zhang-api.md §1.6).
+/// edit, copy as a new transaction, copy as text and (zhang ≥ 0.3) delete.
+/// The item comes from the route `extra`; deep links fall back to
+/// [journalItemByIdProvider]. After an edit the transaction is read again
+/// once the ledger has reloaded (ids stay with the edited transaction, see
+/// docs/zhang-api.md §1.6); after a delete the screen closes and the lists
+/// refresh on the reload.
 class TransactionDetailScreen extends ConsumerStatefulWidget {
   const TransactionDetailScreen({super.key, required this.id, this.initial, this.searchHint, this.expectedVersion});
 
@@ -74,8 +77,11 @@ class _TransactionDetailScreenState extends ConsumerState<TransactionDetailScree
   /// Checking whether the transaction can be edited (spinner on the button).
   bool _checking = false;
 
-  /// An edit or a copy is under way: a second tap opens nothing.
+  /// An edit, a copy or a delete is under way: a second tap opens nothing.
   bool _busy = false;
+
+  /// The delete request is under way.
+  bool _deleting = false;
 
   @override
   void dispose() {
@@ -122,12 +128,76 @@ class _TransactionDetailScreenState extends ConsumerState<TransactionDetailScree
     }
   }
 
+  /// Asks, then deletes [tx] by its id with `If-Match: <version>` (only
+  /// offered with a version, [canDelete]). A 412 / 404 means it is no longer
+  /// the transaction opened: nothing was deleted, and the list can be
+  /// refreshed. Once deleted the screen closes; the lists refresh on the
+  /// ledger's reload, as after an edit.
+  Future<void> _delete(JournalTransaction tx) async {
+    final version = tx.version;
+    if (_busy || version == null) return;
+    _busy = true;
+    try {
+      if (!await confirmDelete(context, _summary(tx)) || !mounted) return;
+      final l10n = context.l10n;
+      final messenger = ScaffoldMessenger.of(context);
+      final repository = ref.read(journalRepositoryProvider);
+      setState(() => _deleting = true);
+      try {
+        await repository.delete(tx.id, version: version);
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _deleting = false);
+        if (!isStaleEdit(e)) {
+          messenger.showSnackBar(SnackBar(content: Text(describeApiError(l10n, e))));
+          return;
+        }
+        if (await showDeleteStale(context) && mounted) {
+          ref.read(ledgerRevisionProvider.notifier).bump();
+          _leave();
+        }
+        return;
+      }
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.trxDeletedSnack)));
+      if (mounted) _leave();
+    } finally {
+      _busy = false;
+    }
+  }
+
+  /// What the delete confirmation names: date, payee, narration, amount.
+  String _summary(JournalTransaction tx) {
+    final c = classify(tx, operatingCurrency: ref.read(operatingCurrencyProvider));
+    final narration = tx.narration?.trim() ?? '';
+    return [
+      ZhangDates.toIsoDate(tx.datetime),
+      if (tx.payee.isNotEmpty) tx.payee,
+      if (narration.isNotEmpty) narration,
+      if (c.amounts.isNotEmpty)
+        formatAmount(c.amounts.first, ref.read(commoditiesProvider).value, signed: c.isDirectional),
+    ].join(' · ');
+  }
+
+  /// Back to the list the transaction was opened from.
+  void _leave() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.journals);
+    }
+  }
+
   Widget _scaffold(JournalItem item, {bool refreshing = false}) => _DetailScaffold(
     item: item,
     refreshing: refreshing,
+    deleting: _deleting,
     checking: _checking,
-    onEdit: item is JournalTransaction && !refreshing ? () => _edit(item) : null,
+    onEdit: item is JournalTransaction && !refreshing && !_deleting ? () => _edit(item) : null,
     onCopy: item is JournalTransaction ? () => _copy(item) : null,
+    deletable: canDelete(item),
+    onDelete: item is JournalTransaction && !refreshing && !_deleting ? () => _delete(item) : null,
   );
 
   @override
@@ -216,8 +286,11 @@ class _DetailScaffold extends ConsumerWidget {
     required this.item,
     this.onEdit,
     this.onCopy,
+    this.onDelete,
+    this.deletable = false,
     this.checking = false,
     this.refreshing = false,
+    this.deleting = false,
   });
 
   final JournalItem item;
@@ -225,6 +298,14 @@ class _DetailScaffold extends ConsumerWidget {
   /// Edit / copy as a new transaction (transactions only).
   final VoidCallback? onEdit;
   final VoidCallback? onCopy;
+
+  /// The overflow menu offers delete ([canDelete]); [onDelete] `null` =
+  /// not now (refreshing, deleting).
+  final bool deletable;
+  final VoidCallback? onDelete;
+
+  /// The delete request is under way.
+  final bool deleting;
 
   /// The edit check is running.
   final bool checking;
@@ -271,13 +352,32 @@ class _DetailScaffold extends ConsumerWidget {
             icon: const Icon(Icons.content_copy_outlined),
             onPressed: () => _copy(context),
           ),
+          // Destructive and rare: behind the overflow menu, then a
+          // confirmation.
+          if (deletable)
+            MenuAnchor(
+              builder: (context, controller, _) => IconButton(
+                key: const Key('trx.more'),
+                tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+                icon: const Icon(Icons.more_vert),
+                onPressed: deleting ? null : () => controller.isOpen ? controller.close() : controller.open(),
+              ),
+              menuChildren: [
+                MenuItemButton(
+                  key: const Key('trx.delete'),
+                  leadingIcon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+                  onPressed: onDelete,
+                  child: Text(l10n.delete, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                ),
+              ],
+            ),
         ],
-        bottom: refreshing
+        bottom: refreshing || deleting
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(4),
                 child: Semantics(
-                  label: l10n.trxRefreshing,
-                  child: const LinearProgressIndicator(key: Key('trx.refreshing')),
+                  label: deleting ? l10n.trxDeleting : l10n.trxRefreshing,
+                  child: LinearProgressIndicator(key: Key(deleting ? 'trx.deleting' : 'trx.refreshing')),
                 ),
               )
             : null,

@@ -1574,6 +1574,48 @@ abstract class AppLocalizations {
   /// **'You can still copy it as a new transaction.'**
   String get trxEditCopyHint;
 
+  /// No description provided for @trxDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this transaction?'**
+  String get trxDeleteTitle;
+
+  /// No description provided for @trxDeleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'It is removed from its ledger file: {summary}. The app cannot undo this.'**
+  String trxDeleteMessage(String summary);
+
+  /// No description provided for @trxDeleting.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting…'**
+  String get trxDeleting;
+
+  /// No description provided for @trxDeletedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction deleted'**
+  String get trxDeletedSnack;
+
+  /// No description provided for @trxDeleteStaleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed on the server'**
+  String get trxDeleteStaleTitle;
+
+  /// No description provided for @trxDeleteStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Since it was opened, this transaction was changed or deleted on the server, or another transaction took its id. Nothing was deleted. Refresh the list and open it again.'**
+  String get trxDeleteStale;
+
+  /// No description provided for @trxRefreshList.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get trxRefreshList;
+
   /// No description provided for @trxRefreshing.
   ///
   /// In en, this message translates to:

@@ -174,6 +174,20 @@ class JournalRepository {
     _onMutated?.call();
   }
 
+  /// `DELETE /api/transactions/{id}` (zhang ≥ 0.3, PR #818) with
+  /// `If-Match: <version>`, which the server requires (428 without it): ids are places
+  /// in a file, so after a delete the next transaction of the file can take
+  /// the deleted one's id, and only the version tells them apart. 412 when
+  /// the transaction at [id] has another version (it changed, or another
+  /// one took the id, or the server deleted this one lately), 404 for an
+  /// unknown id, 400 for a transaction a plugin made, 409 when its file
+  /// changed since the load: nothing is deleted then. The server reloads
+  /// the ledger before it answers.
+  Future<void> delete(String id, {required String version}) async {
+    await _client.send('DELETE', ZhangEndpoints.transaction(id), headers: _ifMatch(version));
+    _onMutated?.call();
+  }
+
   static Map<String, String>? _ifMatch(String? version) => version == null ? null : {'If-Match': version};
 
   /// The journal item [id] as the server lists it now: searched by

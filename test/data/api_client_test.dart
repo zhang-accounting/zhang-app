@@ -321,6 +321,22 @@ void main() {
       await expectLater(repo.create(_cafe), throwsA(isA<ApiServerError>().having((e) => e.statusCode, 'status', 502)));
     });
 
+    test('delete sends DELETE with If-Match: <version> and bumps the revision callback', () async {
+      var mutated = 0;
+      final (client, adapter) = _client(_base, (_) => jsonResponse({'data': null}));
+      await JournalRepository(client, onMutated: () => mutated++).delete('id/1', version: 'v-1');
+      expect(adapter.last.method, 'DELETE');
+      expect(adapter.last.uri.path, '/api/transactions/id%2F1');
+      expect(adapter.last.headers['If-Match'], 'v-1');
+      expect(mutated, 1);
+
+      adapter.handler = (_) => jsonResponse({'message': 'the transaction … is not the version'}, status: 412);
+      await expectLater(
+        JournalRepository(client).delete('id-1', version: 'stale'),
+        throwsA(isA<ApiServerError>().having((e) => e.statusCode, 'status', 412)),
+      );
+    });
+
     test('idempotency keys are random UUIDs zhang accepts', () {
       final keys = {for (var i = 0; i < 50; i++) Idempotency.newKey()};
       expect(keys, hasLength(50));

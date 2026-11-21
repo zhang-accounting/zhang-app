@@ -116,12 +116,13 @@ class FakeZhangServer {
 
 extension on FakeZhangServer {
   /// `POST /transactions[/preview]`, `POST /transactions/{id}/preview`,
-  /// `PUT /transactions/{id}`: an edit replaces the item in place, keeping
-  /// its id (as zhang does: the transaction keeps its place in the file);
-  /// an unknown id is a 404.
+  /// `PUT /transactions/{id}`, `DELETE /transactions/{id}`: an edit replaces
+  /// the item in place, keeping its id (as zhang does: the transaction keeps
+  /// its place in the file); a delete needs `If-Match` (428) with the
+  /// current version (412); an unknown id is a 404.
   ResponseBody _transactions(RequestOptions o) {
     final path = o.uri.path;
-    final body = (o.data as Map).cast<String, Object?>();
+    final body = (o.data as Map?)?.cast<String, Object?>() ?? const <String, Object?>{};
     transactionRequests.add((o.method, path, body));
     final byId = RegExp(r'/transactions/([^/]+?)(/preview)?$').firstMatch(path);
     if (byId != null && byId.group(1) != 'preview') {
@@ -131,8 +132,15 @@ extension on FakeZhangServer {
       // zhang PR #818: `If-Match` must name the current `version`.
       final ifMatch = o.headers['If-Match'];
       final version = journals[index]['version'];
+      if (o.method == 'DELETE' && ifMatch == null) {
+        return jsonResponse({'message': 'the request needs an If-Match header'}, status: 428);
+      }
       if (ifMatch != null && ifMatch != version) {
         return jsonResponse({'message': 'the transaction changed since version $ifMatch'}, status: 412);
+      }
+      if (o.method == 'DELETE') {
+        journals.removeAt(index);
+        return jsonResponse({'data': null});
       }
       if (byId.group(2) != null) return jsonResponse({'data': previewAnswer});
       if (ignoreWrites) return jsonResponse({'data': null});

@@ -844,6 +844,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trxEditCopyHint => 'You can still copy it as a new transaction.';
 
   @override
+  String get trxDeleteTitle => 'Delete this transaction?';
+
+  @override
+  String trxDeleteMessage(String summary) {
+    return 'It is removed from its ledger file: $summary. The app cannot undo this.';
+  }
+
+  @override
+  String get trxDeleting => 'Deleting…';
+
+  @override
+  String get trxDeletedSnack => 'Transaction deleted';
+
+  @override
+  String get trxDeleteStaleTitle => 'Changed on the server';
+
+  @override
+  String get trxDeleteStale =>
+      'Since it was opened, this transaction was changed or deleted on the server, or another transaction took its id. Nothing was deleted. Refresh the list and open it again.';
+
+  @override
+  String get trxRefreshList => 'Refresh';
+
+  @override
   String get trxRefreshing => 'Updating…';
 
   @override
