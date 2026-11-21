@@ -19,8 +19,6 @@
   - 插件生成的交易（posting 没有 `written`，PUT 会 400）、服务器不返回 posting `metas` / `edit_drops_text`（较旧的 zhang）、preview 本身报字段错误（无 `text`）。
 
 ## P2
-- 键盘：`3−5=` 之后再输数字会变成 −20。
-- 切换币种后不重新校验已输入的小数位（可输入 12.34 JPY）。
 - 标签过滤仍在客户端做（服务器依旧忽略百分号编码的 `tags%5B0%5D`，Dart 会重新编码 `[]`），罕见标签会把整个账本翻一遍、`total_count` 是未过滤的数。可改用内置查询 `journals.page{tags}`。
 - 报表净额线画到了未来日期；账户余额阶梯图的终点用设备时钟（`balance_history_chart.dart`）。
 - 两个 `formatAmount` helper 重复；`journal_providers` 直接 import main.dart。
