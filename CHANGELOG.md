@@ -13,13 +13,27 @@ To ship with zhang 0.3.0. Replace "Unreleased" with the date when `v1.1.0` is ta
 
 ### Server compatibility
 
-- Needs a zhang server with the v0.2 API (built-in queries, `format` in `/api/info`): zhang 0.3.0 or later, or a
-  build of zhang's `main` branch from 2026-10-10 on. The zhang 0.2.0 release (2026-10-02) predates that API, so the
-  app refuses it as too old, as 1.0.0 did.
+- Needs zhang 0.3.0 or newer, or a build of zhang's `main` branch from 2026-10-10 on: the app uses the v0.2 API
+  (built-in queries, `format` in `/api/info`). The zhang 0.2.0 release (2026-10-02) predates that API, so the app
+  refuses it as too old, as 1.0.0 did.
 - With zhang 0.3.0 (or `main` from 2026-11-20 on) browser sign-in uses PKCE and `state`, and edits are checked
-  against the transaction's `version` with `If-Match`. Older v0.2 API builds still work: sign-in runs without PKCE,
-  and an edit re-reads the transaction by id before it is saved.
+  against the transaction's `version` with `If-Match`. `main` builds from 2026-10-10 to 2026-11-20 still work:
+  sign-in runs without PKCE, and an edit re-reads the transaction by id before it is saved.
 - zhang 0.3.0 can also delete transactions and replay a create with an `Idempotency-Key`; this release uses neither.
+
+### Upgrading from the 1.0.0 APK on Android
+
+1.1.0 is a **separate app** on Android. Its application id is now `com.zhangaccounting.app` (1.0.0 was
+`me.kilerd.zhang_app`) and it is signed with the release upload key instead of the debug key (#2), so it does not
+update the 1.0.0 APK: it installs next to it, under the same name "Zhang", and starts with no servers. Server
+profiles, passwords and tokens stay in the old app, and 1.0.0 cannot export them. To move over:
+
+1. In the old app, note each server's address and how you sign in (Settings).
+2. Uninstall the old app (its Settings › App version shows 1.0.0). Do this first: while both apps are installed,
+   both answer the `zhang-app://` browser sign-in callback.
+3. Install 1.1.0 and add your servers again.
+
+iOS (TestFlight) updates in place. Later APKs from GitHub Releases update 1.1.0 in place.
 
 ### Added
 
@@ -47,8 +61,7 @@ To ship with zhang 0.3.0. Replace "Unreleased" with the date when `v1.1.0` is ta
 - On servers that version transactions, a transaction changed on the server since you opened it is reported as
   changed instead of being overwritten (`If-Match`, 412). (#5)
 - Android: the application id is now `com.zhangaccounting.app`, as on iOS, and release builds are signed with the
-  upload key. The 1.0.0 APK had another id and the debug key, so 1.1.0 installs as a separate app: add your servers
-  again, then remove the old app. (#2)
+  upload key, so 1.1.0 installs as a separate app (see "Upgrading from the 1.0.0 APK on Android"). (#2)
 
 ### Fixed
 
@@ -56,6 +69,8 @@ To ship with zhang 0.3.0. Replace "Unreleased" with the date when `v1.1.0` is ta
   ledger's accounts or entries while the new one loads. (#7)
 - A server that is too old receives only the version check; every other request is stopped with "server too old"
   instead of being sent. (#7)
+- The "server too old" messages ask for zhang 0.3 or newer. They asked for zhang 0.2, but the 0.2.0 release lacks
+  the API the app needs.
 
 ## [1.0.0] - 2026-10-13
 
