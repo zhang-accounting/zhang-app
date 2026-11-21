@@ -416,6 +416,12 @@ abstract class AppLocalizations {
   /// **'The server redirects ({status}) to {location}. The app does not follow redirects, so your credentials stay with this address: enter the final address as the server URL.'**
   String errorRedirect(int status, String location);
 
+  /// No description provided for @errorRedirectGateway.
+  ///
+  /// In en, this message translates to:
+  /// **'The server sends the app to a sign-in page on {host}: a gateway in front of zhang did not let the request through.'**
+  String errorRedirectGateway(String host);
+
   /// No description provided for @errorServer.
   ///
   /// In en, this message translates to:
@@ -2509,6 +2515,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'It is behind a sign-in gateway'**
   String get setupBehindGateway;
+
+  /// No description provided for @setupRedirectGatewayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This usually means a sign-in gateway such as Cloudflare Access in front of zhang. Continue with the credentials it gives apps (for Cloudflare Access: the service token headers).'**
+  String get setupRedirectGatewayHint;
 
   /// No description provided for @setupTooOldTitle.
   ///

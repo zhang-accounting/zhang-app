@@ -93,6 +93,14 @@
       }
     }
   },
+  "errorRedirectGateway": "The server sends the app to a sign-in page on {host}: a gateway in front of zhang did not let the request through.",
+  "@errorRedirectGateway": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
   "errorServer": "Server error {status}: {message}",
   "@errorServer": {
     "placeholders": {
@@ -861,6 +869,7 @@
   },
   "setupNotZhang": "It answered, but not like a zhang server. Use the address of the zhang web UI, without /api.",
   "setupBehindGateway": "It is behind a sign-in gateway",
+  "setupRedirectGatewayHint": "This usually means a sign-in gateway such as Cloudflare Access in front of zhang. Continue with the credentials it gives apps (for Cloudflare Access: the service token headers).",
   "setupTooOldTitle": "This server needs an update",
   "setupTooOldBody": "It runs zhang {version} without the API this app uses. Upgrade the server to zhang 0.2 or newer, then try again.",
   "@setupTooOldBody": {

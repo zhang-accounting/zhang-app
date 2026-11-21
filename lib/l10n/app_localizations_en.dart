@@ -181,6 +181,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String errorRedirectGateway(String host) {
+    return 'The server sends the app to a sign-in page on $host: a gateway in front of zhang did not let the request through.';
+  }
+
+  @override
   String errorServer(int status, String message) {
     return 'Server error $status: $message';
   }
@@ -1420,6 +1425,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setupBehindGateway => 'It is behind a sign-in gateway';
+
+  @override
+  String get setupRedirectGatewayHint =>
+      'This usually means a sign-in gateway such as Cloudflare Access in front of zhang. Continue with the credentials it gives apps (for Cloudflare Access: the service token headers).';
 
   @override
   String get setupTooOldTitle => 'This server needs an update';

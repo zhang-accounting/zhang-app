@@ -179,6 +179,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String errorRedirectGateway(String host) {
+    return '服务器把 App 转到 $host 上的登录页：zhang 前面的网关没有放行这个请求。';
+  }
+
+  @override
   String errorServer(int status, String message) {
     return '服务器错误 $status：$message';
   }
@@ -1366,6 +1371,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get setupBehindGateway => '前面有登录网关';
+
+  @override
+  String get setupRedirectGatewayHint =>
+      '这通常表示 zhang 前面有 Cloudflare Access 之类的登录网关。请用它给 App 的凭据继续（Cloudflare Access：服务令牌 Header）。';
 
   @override
   String get setupTooOldTitle => '这台服务器需要升级';

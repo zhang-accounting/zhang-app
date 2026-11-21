@@ -164,6 +164,43 @@ void main() {
     expect(app.container.read(activeProfileProvider)!.baseUrl, 'http://ledger.example.com:8000');
   });
 
+  testWidgets('a redirect to a login page on another host (Cloudflare Access): the gateway path', (tester) async {
+    final server = FakeSetupServer()
+      ..redirectTo = 'https://team.cloudflareaccess.com/cdn-cgi/access/login/ledger.example.com?kid=1';
+    final app = await _pump(tester, server);
+    await _toServer(tester, 'https://ledger.example.com');
+    expect(find.byKey(const Key('setup.probeError')), findsOneWidget);
+    expect(find.textContaining('sign-in page on team.cloudflareaccess.com'), findsOneWidget);
+    expect(find.textContaining('Cloudflare Access'), findsWidgets);
+    expect(find.textContaining('enter the final address'), findsNothing);
+    expect(server.requests.where((o) => o.uri.host != 'ledger.example.com'), isEmpty, reason: 'not followed');
+
+    // With the service token headers the gateway lets the app through.
+    server
+      ..redirectTo = null
+      ..gateway = true;
+    await _tap(tester, 'setup.gateway');
+    expect(find.text('Step 2 of 3'), findsOneWidget);
+    await tester.tap(find.text('Custom headers'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('setup.headerName.0')), 'X-Gate');
+    await tester.enterText(find.byKey(const Key('setup.headerValue.0')), 'open');
+    await _tap(tester, 'setup.connect');
+    await _tap(tester, 'setup.continue');
+    await _tap(tester, 'setup.start');
+    expect(app.container.read(activeProfileProvider)!.customHeaders, {'X-Gate': 'open'});
+  });
+
+  testWidgets('a redirect on the same host (http → https): use the final address, no gateway button', (tester) async {
+    final server = FakeSetupServer()..redirectTo = 'https://ledger.example.com/api/info';
+    await _pump(tester, server);
+    await _toServer(tester, 'http://ledger.example.com');
+    expect(find.byKey(const Key('setup.probeError')), findsOneWidget);
+    expect(find.textContaining('redirects (302) to https://ledger.example.com/api/info'), findsOneWidget);
+    expect(find.textContaining('enter the final address'), findsOneWidget);
+    expect(find.byKey(const Key('setup.gateway')), findsNothing);
+  });
+
   testWidgets('unreachable local address (http by default): "Use https://…"', (tester) async {
     final server = FakeSetupServer()
       ..fail = _error(DioExceptionType.connectionError, const SocketException('Connection refused'));

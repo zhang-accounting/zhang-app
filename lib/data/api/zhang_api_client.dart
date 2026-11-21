@@ -249,7 +249,7 @@ class ZhangApiClient {
         }
         if (status == 404) return ApiNotFound(message);
         if (status >= 300 && status < 400) {
-          return ApiRedirect(status, e.response?.headers.value('location'));
+          return ApiRedirect(status, e.response?.headers.value('location'), from: e.requestOptions.uri);
         }
         if (status == 429) {
           return ApiRateLimited(

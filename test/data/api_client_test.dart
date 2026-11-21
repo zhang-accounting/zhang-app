@@ -122,6 +122,25 @@ void main() {
       }
     });
 
+    test('a redirect to another host or a gateway login path is a gateway; same host is not', () {
+      final from = Uri.parse('https://ledger.example.com/api/info');
+      bool gateway(String? location) => ApiRedirect(302, location, from: from).toGateway;
+      expect(gateway('https://team.cloudflareaccess.com/cdn-cgi/access/login/ledger.example.com'), isTrue);
+      expect(gateway('https://auth.example.com/login'), isTrue, reason: 'another host');
+      expect(gateway('/cdn-cgi/access/login'), isTrue, reason: 'Cloudflare Access path on the same host');
+      expect(gateway('/oauth2/start?rd=%2Fapi%2Finfo'), isTrue, reason: 'oauth2-proxy');
+      expect(gateway('https://LEDGER.example.com/zhang/api/info'), isFalse, reason: 'same host, moved path');
+      expect(gateway('http://ledger.example.com:8080/api/info'), isFalse, reason: 'same host, other scheme / port');
+      expect(gateway('/zhang/api/info'), isFalse);
+      expect(gateway(null), isFalse);
+      expect(ApiRedirect(302, '/x', from: from).target.toString(), 'https://ledger.example.com/x');
+      final en = lookupAppLocalizations(const Locale('en'));
+      expect(
+        describeApiError(en, ApiRedirect(302, 'https://team.cloudflareaccess.com/cdn-cgi/access/login', from: from)),
+        contains('sign-in page on team.cloudflareaccess.com'),
+      );
+    });
+
     test('requests go to <baseUrl>/api/<path>', () async {
       final (client, adapter) = _client(_base, (_) => jsonResponse(fixture('info.json')));
       await client.info();
