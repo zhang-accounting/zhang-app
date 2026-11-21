@@ -341,6 +341,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get addHintAmountPositive => '金额需大于 0';
 
   @override
+  String addHintAmountDecimals(String commodity, int precision) {
+    String _temp0 = intl.Intl.pluralLogic(
+      precision,
+      locale: localeName,
+      other: '$commodity 最多 $precision 位小数，请删掉多余的位数',
+      zero: '$commodity 不能有小数，请删掉小数部分',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get addHintCategory => '请选择类目';
 
   @override

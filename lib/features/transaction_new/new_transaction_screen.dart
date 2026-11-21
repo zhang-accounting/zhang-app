@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -188,12 +190,20 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
         ? resolveTransferFrom(_form, isOpen: isOpen, index: index, commodity: commodity)
         : null;
     final to = mode == EntryMode.transfer && _form.to != null && isOpen(_form.to!) ? _form.to : null;
+    final amount = _form.amount.value;
+    // Re-checked on every build, so also after a currency switch. An
+    // unchanged prefilled amount keeps the decimals the ledger has.
+    final fit = widget.prefill?.fit;
+    final maxDecimals = fit != null && amount == fit.amount && commodity == fit.commodity
+        ? max(precision, fit.amount.scale)
+        : precision;
     final draft = EntryDraft(
       mode: mode,
-      amount: _form.amount.value,
+      amount: amount,
       commodity: commodity,
       datetime: _form.date ?? _now(),
       precision: precision,
+      maxDecimals: maxDecimals,
       categoryChosen: _form.category != null,
       categoryAccount: _form.categoryAccount,
       funding: funding,
@@ -821,7 +831,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     return '$day $time';
   }
 
-  String _issueText(EntryIssue issue) {
+  String _issueText(EntryIssue issue, _Resolved r) {
     final l10n = context.l10n;
     return switch (issue) {
       EntryIssue.categoryMissing => l10n.addHintCategory,
@@ -832,6 +842,7 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
       EntryIssue.sameAccount => l10n.addHintSameAccount,
       EntryIssue.amountMissing => l10n.addHintAmount,
       EntryIssue.amountNotPositive => l10n.addHintAmountPositive,
+      EntryIssue.amountTooPrecise => l10n.addHintAmountDecimals(r.commodity ?? '', r.precision),
       EntryIssue.commodityMissing => l10n.addHintCommodity,
     };
   }
@@ -906,9 +917,11 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
                   child: valid
                       ? null
                       : Text(
-                          _issueText(r.issues.first),
+                          _issueText(r.issues.first, r),
                           key: const Key('add.hint'),
-                          style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: r.issues.first == EntryIssue.amountTooPrecise ? scheme.error : scheme.onSurfaceVariant,
+                          ),
                         ),
                 ),
               ),

@@ -346,6 +346,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addHintAmountPositive => 'The amount must be greater than 0';
 
   @override
+  String addHintAmountDecimals(String commodity, int precision) {
+    String _temp0 = intl.Intl.pluralLogic(
+      precision,
+      locale: localeName,
+      other: '$commodity allows $precision decimals: remove the extra digits',
+      one: '$commodity allows 1 decimal: remove the extra digits',
+      zero: '$commodity has no decimals: remove them',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get addHintCategory => 'Choose a category';
 
   @override

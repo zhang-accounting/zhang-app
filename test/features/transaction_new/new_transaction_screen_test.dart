@@ -105,6 +105,7 @@ Future<(_FakeJournalRepository, SharedPreferences)> _pump(WidgetTester tester) a
           (ref) async => {
             'CNY': Commodity(name: 'CNY', precision: 2, prefix: '¥', totalAmount: Decimal.zero),
             'USD': Commodity(name: 'USD', precision: 2, prefix: r'$', totalAmount: Decimal.zero),
+            'JPY': Commodity(name: 'JPY', precision: 0, totalAmount: Decimal.zero),
           },
         ),
         transactionHistoryProvider.overrideWith(_FakeHistory.new),
@@ -350,6 +351,50 @@ void main() {
     expect(repo.requests.single.postings.map((p) => (p.account, p.unit!.number.toString())), [
       ('Assets:WeChat', '-50'),
       ('Liabilities:Card', '50'),
+    ]);
+  });
+
+  testWidgets('switching the currency re-checks the decimals already typed (12.34 → JPY)', (tester) async {
+    final (repo, _) = await _pump(tester);
+    String? hint() => tester.widgetList<Text>(find.byKey(const Key('add.hint'))).singleOrNull?.data;
+    Future<void> currency(String code) async {
+      await tester.tap(find.byKey(const Key('add.commodity')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('add.commodity.$code')).last);
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Clothing')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '12.34');
+    expect(hint(), isNull);
+    expect(_enabled(tester, 'add.key.save'), isTrue);
+
+    await currency('JPY');
+    expect(_amountText(tester), '12.34 JPY', reason: 'not rounded behind the user\'s back');
+    expect(hint(), 'JPY has no decimals: remove them');
+    expect(_enabled(tester, 'add.key.save'), isFalse);
+    expect(_enabled(tester, 'add.key.again'), isFalse);
+
+    await currency('USD');
+    expect(hint(), isNull, reason: 'USD allows 2 decimals');
+    expect(_enabled(tester, 'add.key.save'), isTrue);
+
+    await currency('JPY');
+    expect(hint(), 'JPY has no decimals: remove them');
+    await tester.tap(find.byKey(const Key('add.key.backspace')));
+    await tester.pump();
+    expect(hint(), 'JPY has no decimals: remove them');
+    await tester.tap(find.byKey(const Key('add.key.backspace')));
+    await tester.pump();
+    expect(_amountText(tester), '12. JPY');
+    expect(hint(), isNull);
+
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(repo.requests.single.postings.map((p) => (p.unit!.number.toString(), p.unit!.commodity)), [
+      ('-12', 'JPY'),
+      ('12', 'JPY'),
     ]);
   });
 

@@ -188,6 +188,17 @@
   "addDecimalPoint": "Decimal point",
   "addHintAmount": "Enter an amount",
   "addHintAmountPositive": "The amount must be greater than 0",
+  "addHintAmountDecimals": "{precision, plural, =0{{commodity} has no decimals: remove them} =1{{commodity} allows 1 decimal: remove the extra digits} other{{commodity} allows {precision} decimals: remove the extra digits}}",
+  "@addHintAmountDecimals": {
+    "placeholders": {
+      "commodity": {
+        "type": "String"
+      },
+      "precision": {
+        "type": "int"
+      }
+    }
+  },
   "addHintCategory": "Choose a category",
   "addHintSubcategory": "Choose a sub-category",
   "addHintFunding": "Choose an account",
