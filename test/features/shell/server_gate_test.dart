@@ -14,7 +14,7 @@ void main() {
       },
     );
     expect(find.byKey(const Key('shell.tooOld')), findsOneWidget);
-    expect(find.textContaining('zhang ≥ 0.2'), findsOneWidget);
+    expect(find.textContaining('zhang 0.3 or newer'), findsOneWidget);
     expect(find.textContaining('0.1.0'), findsOneWidget);
     expect(find.byKey(const Key('home.summary')), findsNothing);
     expect(find.byKey(const Key('shell.newTransaction')), findsNothing);

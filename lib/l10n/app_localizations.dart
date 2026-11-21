@@ -491,7 +491,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorServerTooOld.
   ///
   /// In en, this message translates to:
-  /// **'This zhang server is too old: zhang ≥ 0.2 with the built-in query API is required. Upgrade the server.'**
+  /// **'This zhang server is too old: the app needs zhang 0.3 or newer (a build of zhang\'s main branch from 2026-10-10 on also works). Upgrade the server.'**
   String get errorServerTooOld;
 
   /// No description provided for @errorPasskeyOnly.
@@ -503,7 +503,7 @@ abstract class AppLocalizations {
   /// No description provided for @errorApiMismatch.
   ///
   /// In en, this message translates to:
-  /// **'The server does not offer this API ({message}). The app needs zhang ≥ 0.2.'**
+  /// **'The server does not offer this API ({message}). The app needs zhang 0.3 or newer.'**
   String errorApiMismatch(String message);
 
   /// No description provided for @serverTooOldTitle.
@@ -2471,7 +2471,7 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeAboutBody.
   ///
   /// In en, this message translates to:
-  /// **'zhang is open-source, self-hosted accounting that keeps your books as plain-text files you own. You run the server yourself, with Docker or a single binary, and this app connects to it. The app needs zhang 0.2 or newer.'**
+  /// **'zhang is open-source, self-hosted accounting that keeps your books as plain-text files you own. You run the server yourself, with Docker or a single binary, and this app connects to it. The app needs zhang 0.3 or newer.'**
   String get welcomeAboutBody;
 
   /// No description provided for @welcomeReadDocs.
@@ -2621,7 +2621,7 @@ abstract class AppLocalizations {
   /// No description provided for @setupTooOldBody.
   ///
   /// In en, this message translates to:
-  /// **'It runs zhang {version} without the API this app uses. Upgrade the server to zhang 0.2 or newer, then try again.'**
+  /// **'It runs zhang {version} without the API this app uses. Upgrade the server to zhang 0.3 or newer (a build of zhang\'s main branch from 2026-10-10 on also works), then try again.'**
   String setupTooOldBody(String version);
 
   /// No description provided for @setupHowToUpgrade.

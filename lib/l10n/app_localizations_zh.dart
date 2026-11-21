@@ -223,7 +223,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get errorServerTooOld =>
-      '该 zhang 服务器版本过旧：需要 zhang ≥ 0.2（带内置查询 API）。请升级服务器。';
+      '该 zhang 服务器版本过旧：App 需要 zhang 0.3 或更新版本（2026-10-10 之后从 main 分支构建的 zhang 也可以）。请升级服务器。';
 
   @override
   String get errorPasskeyOnly =>
@@ -231,7 +231,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String errorApiMismatch(String message) {
-    return '服务器没有这个 API（$message）。App 需要 zhang ≥ 0.2。';
+    return '服务器没有这个 API（$message）。App 需要 zhang 0.3 或更新版本。';
   }
 
   @override
@@ -1353,7 +1353,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get welcomeAboutBody =>
-      'zhang 是开源、自托管的记账工具，账本是你自己持有的纯文本文件。服务器由你自己运行（Docker 或单个可执行文件），App 连接到它使用。App 需要 zhang 0.2 或更新版本。';
+      'zhang 是开源、自托管的记账工具，账本是你自己持有的纯文本文件。服务器由你自己运行（Docker 或单个可执行文件），App 连接到它使用。App 需要 zhang 0.3 或更新版本。';
 
   @override
   String get welcomeReadDocs => '查看文档';
@@ -1438,7 +1438,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String setupTooOldBody(String version) {
-    return '它运行的 zhang $version 缺少 App 需要的 API。请把服务器升级到 zhang 0.2 或更新版本，然后重试。';
+    return '它运行的 zhang $version 缺少 App 需要的 API。请把服务器升级到 zhang 0.3 或更新版本（2026-10-10 之后从 main 分支构建的也可以），然后重试。';
   }
 
   @override
