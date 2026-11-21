@@ -14,6 +14,7 @@ import 'package:zhang_app/data/models/for_new_transaction.dart';
 import 'package:zhang_app/data/models/options.dart';
 import 'package:zhang_app/data/models/transaction_preview.dart';
 import 'package:zhang_app/data/models/transaction_request.dart';
+import 'package:zhang_app/data/models/written_transaction.dart';
 import 'package:zhang_app/data/profiles/profile_providers.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/journal_repository.dart';
@@ -78,10 +79,18 @@ class _FakeJournalRepository extends JournalRepository {
     return previewResult;
   }
 
+  /// `Idempotency-Key` of each create that was sent.
+  final keys = <String?>[];
+
+  /// What a create answers (an older server's "Ok" by default).
+  WrittenTransaction answer = WrittenTransaction.unknown;
+
   @override
-  Future<void> create(CreateTransactionRequest request) async {
+  Future<WrittenTransaction> create(CreateTransactionRequest request, {String? idempotencyKey}) async {
+    keys.add(idempotencyKey);
     if (failWith != null) throw failWith!;
     requests.add(request);
+    return answer;
   }
 }
 

@@ -103,6 +103,19 @@ class ZhangApiClient {
   Future<T> put<T>(String path, {Object? body, required DataDecoder<T> decode}) =>
       _json('PUT', path, body: body, decode: decode);
 
+  /// [method] [path] like [get] / [post], answering the decoded `data`
+  /// together with the response headers (e.g. `Idempotency-Replayed`).
+  Future<({T data, Headers headers})> exchange<T>(
+    String method,
+    String path, {
+    Object? body,
+    Map<String, String>? headers,
+    required DataDecoder<T> decode,
+  }) async {
+    final res = await _send(method, path, body: body, headers: headers);
+    return (data: _decode(res, decode), headers: res.headers);
+  }
+
   /// For endpoints whose result is irrelevant: `201` with empty body, or
   /// `200 {"data":"Ok"}` / `{"data":null}`. A non-JSON `200` (the server's
   /// text fallback for unknown paths) is still an [ApiParseError].
@@ -172,6 +185,10 @@ class ZhangApiClient {
     required DataDecoder<T> decode,
   }) async {
     final res = await _send(method, path, body: body, query: query, headers: headers);
+    return _decode(res, decode);
+  }
+
+  T _decode<T>(Response<Object?> res, DataDecoder<T> decode) {
     final inner = unwrapEnvelope(res);
     try {
       return decode(inner);

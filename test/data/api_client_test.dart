@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:decimal/decimal.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zhang_app/core/utils/dates.dart';
 import 'package:zhang_app/data/api/api_exception.dart';
+import 'package:zhang_app/data/api/idempotency.dart';
 import 'package:zhang_app/data/api/zhang_api_client.dart';
 import 'package:zhang_app/data/models/models.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
@@ -15,6 +17,15 @@ import '../helpers/fake_adapter.dart';
 import '../helpers/fixtures.dart';
 
 const _base = ServerProfile(id: 'p', name: 'Test', baseUrl: 'http://127.0.0.1:18010');
+
+final _cafe = CreateTransactionRequest(
+  datetime: DateTime(2026, 10, 2, 9, 30),
+  payee: 'Cafe',
+  postings: [
+    PostingRequest(account: 'Assets:WeChat', unit: Amount(Decimal.parse('-32.50'), 'CNY')),
+    const PostingRequest(account: 'Expenses:Food'),
+  ],
+);
 
 (ZhangApiClient, FakeAdapter) _client(ServerProfile profile, FakeHandler handler) {
   final client = ZhangApiClient(profile);
@@ -242,6 +253,55 @@ void main() {
         'unit': {'number': '-32.5', 'commodity': 'CNY'},
       });
       expect(mutated, 1);
+      expect(adapter.last.headers.containsKey('Idempotency-Key'), isFalse);
+    });
+
+    test('create: older servers answer "Ok", no id', () async {
+      final (client, _) = _client(_base, (_) => jsonResponse({'data': 'Ok'}));
+      final written = await JournalRepository(client).create(_cafe, idempotencyKey: 'k-1');
+      expect(written, WrittenTransaction.unknown);
+      expect(written.replayed, isFalse);
+    });
+
+    test('create sends the Idempotency-Key and reads the id, version and a replay (zhang ≥ 0.3)', () async {
+      final (client, adapter) = _client(
+        _base,
+        (_) => jsonResponse({
+          'data': {'id': 'id-1', 'version': 'v-1'},
+        }),
+      );
+      final repo = JournalRepository(client);
+      final written = await repo.create(_cafe, idempotencyKey: 'key-1');
+      expect(adapter.last.headers['Idempotency-Key'], 'key-1');
+      expect(written, const WrittenTransaction(id: 'id-1', version: 'v-1'));
+
+      adapter.handler = (_) => ResponseBody.fromString(
+        jsonEncode({
+          'data': {'id': 'id-1', 'version': 'v-1'},
+        }),
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+          'idempotency-replayed': ['true'],
+        },
+      );
+      final replayed = await repo.create(_cafe, idempotencyKey: 'key-1');
+      expect(replayed, const WrittenTransaction(id: 'id-1', version: 'v-1', replayed: true));
+
+      // The reload failed, or the load left the transaction out.
+      adapter.handler = (_) => jsonResponse({
+        'data': {'id': null, 'version': null},
+      });
+      expect(await repo.create(_cafe), WrittenTransaction.unknown);
+    });
+
+    test('idempotency keys are random UUIDs zhang accepts', () {
+      final keys = {for (var i = 0; i < 50; i++) Idempotency.newKey()};
+      expect(keys, hasLength(50));
+      for (final key in keys) {
+        expect(key, matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')));
+        expect(key, matches(RegExp(r'^[A-Za-z0-9._~-]{1,128}$')), reason: 'the characters zhang accepts');
+      }
     });
 
     test('summary: one batch of report.* queries with ledger dates', () async {
