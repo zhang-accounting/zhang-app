@@ -102,9 +102,9 @@
       }
     }
   },
-  "errorServerTooOld": "This zhang server is too old: zhang ≥ 0.2 with the built-in query API is required. Upgrade the server.",
+  "errorServerTooOld": "This zhang server is too old: the app needs zhang 0.3 or newer (a build of zhang's main branch from 2026-10-10 on also works). Upgrade the server.",
   "errorPasskeyOnly": "This server only allows passkey sign-in, which the app cannot use. Enable password sign-in on the server (ZHANG_AUTH or --auth user:pass).",
-  "errorApiMismatch": "The server does not offer this API ({message}). The app needs zhang ≥ 0.2.",
+  "errorApiMismatch": "The server does not offer this API ({message}). The app needs zhang 0.3 or newer.",
   "@errorApiMismatch": {
     "placeholders": {
       "message": {
@@ -800,7 +800,7 @@
   "welcomeTagline": "Your plain-text books, in your pocket.",
   "welcomeBody": "Connect to the zhang server you host to check balances and record spending on the go.",
   "welcomeWhatIsZhang": "What is a zhang server?",
-  "welcomeAboutBody": "zhang is open-source, self-hosted accounting that keeps your books as plain-text files you own. You run the server yourself, with Docker or a single binary, and this app connects to it. The app needs zhang 0.2 or newer.",
+  "welcomeAboutBody": "zhang is open-source, self-hosted accounting that keeps your books as plain-text files you own. You run the server yourself, with Docker or a single binary, and this app connects to it. The app needs zhang 0.3 or newer.",
   "welcomeReadDocs": "Read the docs",
   "close": "Close",
   "welcomeConnect": "Connect to your server",
@@ -848,7 +848,7 @@
   "setupNotZhang": "It answered, but not like a zhang server. Use the address of the zhang web UI, without /api.",
   "setupBehindGateway": "It is behind a sign-in gateway",
   "setupTooOldTitle": "This server needs an update",
-  "setupTooOldBody": "It runs zhang {version} without the API this app uses. Upgrade the server to zhang 0.2 or newer, then try again.",
+  "setupTooOldBody": "It runs zhang {version} without the API this app uses. Upgrade the server to zhang 0.3 or newer (a build of zhang's main branch from 2026-10-10 on also works), then try again.",
   "@setupTooOldBody": {
     "placeholders": {
       "version": {

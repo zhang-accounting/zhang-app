@@ -6,8 +6,11 @@ Source of truth: zhang `origin/main` @ `07d7fde7` (v0.2 series): routes in `zhan
 described in [`dev.md`](dev.md) (`examples/main.zhang` + the 2023-09 extras + a few 2026 entries; ledger timezone
 `Asia/Tokyo`, operating currency `CNY`). `test/fixtures/*.json` are captures from that server.
 
-The app targets **zhang ≥ 0.2 only**. The v0.1 contract this file used to describe (zhang `966c8c6`) is in git
-history (`git show b37c5b0:docs/zhang-api.md`); [`compat-v0.2.md`](compat-v0.2.md) lists every difference.
+The app targets the **v0.2 API only**: zhang **0.3.0 or newer**, or a build of zhang `main` from 2026-10-10 on. The
+zhang 0.2.0 release (2026-10-02) predates the built-in queries and `format`, so the app refuses it as too old. Here and
+in code comments, "zhang ≥ 0.2" / "v0.2" means that API, not the 0.2.0 release. The v0.1 contract this file used to
+describe (zhang `966c8c6`) is in git history (`git show b37c5b0:docs/zhang-api.md`); [`compat-v0.2.md`](compat-v0.2.md)
+lists every difference.
 
 ---
 

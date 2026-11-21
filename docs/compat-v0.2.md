@@ -6,6 +6,10 @@ Date: 2026-10-10. Audited by running the new server and the app's own tests; no 
 > `format`, built-in queries for #1–#8, balance assertions #9–#11, ledger-local graph #12, error shapes #13, preview
 > before saving #14, SSE refresh). The current contract is [`zhang-api.md`](zhang-api.md); open items are in
 > [`known-issues.md`](known-issues.md). This file is kept as the audit record.
+>
+> **Naming (2026-11-21):** "v0.2" in this file is the API on zhang `main` after the 0.2.0 tag (`v0.2.0+289` below);
+> the 0.2.0 release itself has neither the built-in queries nor `format`. The first release with that API is zhang
+> 0.3.0, so the app asks for "zhang 0.3 or newer" (or a `main` build from 2026-10-10 on).
 
 | | |
 |---|---|
