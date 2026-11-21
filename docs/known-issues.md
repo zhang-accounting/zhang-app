@@ -34,6 +34,7 @@
 - 预算：首页还没有预算汇总条（design-research §2.9）；预算详情不能切换月份（从列表换月后再进）；月份选择和报表一样不能翻到未来月份。
 
 ## 已修（供参考）
+- 幂等记账（2026-11-21，需要 zhang ≥ 0.3，PR #831；原「zhang server 侧」的「无幂等键」）：每次新建交易都带 `Idempotency-Key`（随机 UUID），一个 key 对应用户的一次保存：超时 / 断线后重试、预览警告后「仍然保存」、被拒后修改再保存都沿用它，服务器只写一次，重放的回答（`Idempotency-Replayed: true`）当作保存成功；新开记一笔页面或「再记一笔」才换 key。时间为「现在」的记录在重试时沿用第一次可能已写入的尝试的时间。之前的尝试发过不同内容时，提示「这笔交易已由之前的一次保存写入，之后的修改可能没有保存」。旧服务器忽略这个 header（实测），不依赖它。服务器把 key 写成交易的 `idempotency-key` 元数据：App 记的每笔交易在账本文件里多这一行（见 decisions.md「幂等记账」）。
 - 切换 profile 的隔离（2026-11-20）：每个 active profile 一个账本会话（独立的 `ProviderContainer`，`LedgerSessionHost`，见 architecture.md「账本会话」）。切换 / 编辑 / 删除 active profile 时整个会话换新，任何 provider（含以后新增的）都不会在加载期间显示或保存上一个账本的数据（原「必须先修」第 1 条）；版本门禁下沉到 client（`gatedClient`）：切到 zhang < 0.2 的服务器只会收到 `/api/info`、`/api/auth/status`，其它请求不发出、直接 `ApiServerTooOld`（原 P1「版本门禁挡不住 provider」）。另：widget 测试不再依赖运行日期（假服务器的 `ledger.now` 用设备时钟，`--dart-define=ZHANG_TEST_NOW=…` 可整体换日期跑），SSE 测试改用 fake time。
 - 浏览器登录加上 PKCE（RFC 7636，仅 `S256`）与 `state`（2026-11-20，zhang PR #819）：每次登录生成随机 `code_verifier` / `state`，登录 URL 带 `code_challenge` 与 `state`，回调的 `state` 必须一致（server 有 `app_login_pkce` 时缺失也算失败），`app/exchange` 带 `code_verifier`。同一设备上截获 `zhang-app://` 回调的 App 拿不到 verifier，无法兑换。旧 server（无 `app_login_pkce`）仍可登录，但没有这层保护。
 - 预算、文档界面（2026-11-20，原「只有 repository，还没有界面」）：报表页顶部「收支 / 预算」分段，预算显示报表期间所在的月份（不改动报表的周 / 年 / 自定义期间，按月时两边一起翻）；按 `category` 分组的月度列表（已分配 / 已花 / 可用、进度条、超支带 ⚠ 和文字、余量不足 20 % 用警示色、本月剩余天数与日均可用、无预算时说明 `budget` 指令并给出 zhang / beancount 写法示例）；预算详情（关联账户可点开、本月分配与计入的 posting，点 posting 打开交易）。账户详情显示该账户（含子账户）的文档，交易详情显示交易附件（`journals.documents` 按交易 id），「账户 › ⋯ › 文档」列出全部文档；图片经 API 客户端下载（鉴权生效）在 App 内缩放预览，其他文件「打开或分享」走系统分享面板（新依赖 `share_plus`；临时文件写在 `<temp>/zhang-share/`，分享结束即删，启动时和删除服务器时连同 Android 上 share_plus 的 `<temp>/share_plus/` 一起清掉（`clearSharedDocuments()`）；单个文件超过 50 MB 不下载；iOS「存储图像」需要的相册权限说明已加中英文）。
@@ -42,5 +43,5 @@
 - 更早：标签转义（未转义会把账本文件写坏，P0）、切换账本残留数据/筛选、删除 profile 不清偏好、U+2212 负号、商品 rounding、写入按币种精度、类目名换行、FAB 遮挡最后一行、funding 默认账户跨币种、测试 retry policy、重复 accounts provider。
 
 ## zhang server 侧（见 decisions.md 末尾与 zhang-api.md §5）
-仍缺：DELETE 交易、POST 不返回 id、无幂等键、无预算写接口；`/api/journals` 的 `tags[]` 百分号编码被静默忽略；`--auth` 不带 `:` 会静默关闭鉴权；不平衡 / 未开户的交易仍会写入；源码构建的版本号仍是 `0.1.0`。
+仍缺：无预算写接口；zhang ≥ 0.3 之前的服务器没有 DELETE 交易、POST 不返回 id、没有幂等键（PR #818 / #831 已补；App 已用幂等键，DELETE 与 id 尚未使用）；`/api/journals` 的 `tags[]` 百分号编码被静默忽略；`--auth` 不带 `:` 会静默关闭鉴权；不平衡 / 未开户的交易仍会写入；源码构建的版本号仍是 `0.1.0`。
 v0.2 已修（App 已去掉对应 workaround）：`size=0` 崩溃、最早价格而非最新、无直接价格的商品算 0、`1E-8` 指数写法、未知 `/api` 路径返回 200、账户流水 `trx_id` 是 posting id、含 `/` 的 base64 文档无法下载、未知商品崩溃、预算月份 13 崩溃、for-new-transaction 混入 Balance Check / Pad、交易数含余额项、graph 忽略 interval 且用 UTC 日期、PUT 丢 cost/price/comment、失败的余额检查重置余额、reload 失败无提示、Basic scheme 大小写敏感。

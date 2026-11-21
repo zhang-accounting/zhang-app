@@ -25,7 +25,7 @@
 - 缺 `DELETE /api/transactions/:id`（无法做滑动删除 / 撤销）。
 - `POST /api/transactions` 不返回新交易 id（附件上传要绕路）。
 - ~~posting 不支持 cost / price~~：v0.2 已支持写 cost / price / comment / metas（高级编辑器与编辑交易已使用；分录 flag 仍读不到、写不了，见 known-issues）。
-- 无幂等键（离线重试可能重复记账）。
+- ~~无幂等键（离线重试可能重复记账）~~：zhang ≥ 0.3（PR #831）有 `Idempotency-Key`，App 已使用，见下「幂等记账」。
 - `/api/journals` 仍不支持按日期 / 账户 / 金额过滤；v0.2 可用 BQL（`POST /api/query`、`postings.between` 等内置查询）代替。
 - 无预算写接口（budget-add / budget-transfer）。
 - 表单建议（`journals.payees`）无使用频次信号；账户不暴露允许的币种。
@@ -36,3 +36,10 @@
 - 「试用 Demo」连 zhang README 里的公开只读 Demo `https://zhang-demo.onrender.com`（无需登录，v0.2 API；Render 免费实例闲置后首个请求约 30 s，超时自动重试两次）。
 - 设置 →「添加服务器」复用向导（无欢迎页）；「编辑服务器」保留紧凑表单，分为「服务器 / 登录 / 外观」三节，登录方式改用 `DropdownMenu`。
 - 仍只用 Material 3 原生组件，配色沿用种子色与 `ZhangColors`；成功 / 失败提示改用 M3 的 primaryContainer / errorContainer，不再借用收支色（收支色将来会随红涨绿跌设置互换）。
+
+## 幂等记账（2026-11-21）
+- 每次新建交易（`POST /api/transactions`）都带 `Idempotency-Key`（随机 UUID v4），不按服务器版本区分：旧服务器忽略这个 header（实测），不需要门禁。
+- 一个 key 对应用户的「一次保存」（`CreateIntent`）：记一笔页面打开时生成（它打开的高级编辑器沿用同一个），失败后的每次重试都用它——超时、断线、5xx、预览警告后的「仍然保存」、被服务器拒绝（4xx）后修改再保存。保存成功后页面关闭；「再记一笔」和新开页面才换 key。离开页面即放弃这次保存。
+- 修改后重试也不换 key：之前的尝试可能已写入，换 key 就会记两笔。服务器按 key 重放的是之前写入的那一笔（不管这次的内容），所以 App 记下可能已写入的请求（4xx 以外的结果），重放时若其中有与本次不同的内容，就提示「之前的一次保存已写入，之后的修改可能没有保存」，而不是静默当作保存了新内容。
+- 时间为「现在」的记录在重试时沿用第一次可能已写入的尝试的时间，使重放与新写入的是同一笔交易。
+- 服务器把 key 写成交易元数据 `idempotency-key`：App 记的每笔交易在账本文件里多一行，交易详情的元数据里也看得到。编辑保留它（交易仍记得这次保存）；「复制为新交易」不带元数据，副本不会继承 key。用户在高级编辑器里自己写了 `idempotency-key` 元数据时不发 header（服务器会 400）。
