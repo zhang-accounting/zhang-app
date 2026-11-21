@@ -209,6 +209,31 @@ void main() {
       expect(probe.auth!.enabled, isFalse);
     });
 
+    test('gateway headers go along, an Authorization among them never', () async {
+      final sent = <Map<String, dynamic>>[];
+      await _tester((o) {
+        sent.add(Map.of(o.headers));
+        return o.uri.path == '/api/auth/status'
+            ? jsonResponse(fixture('auth_status.json'))
+            : jsonResponse(fixture('info.json'));
+      }, []).probe('https://ledger.example.com', headers: {'X-Gate': 'open', 'authorization': 'Basic leaked'});
+      expect(sent, hasLength(2));
+      for (final h in sent) {
+        expect(h['X-Gate'], 'open');
+        expect(h.keys.map((k) => k.toLowerCase()), isNot(contains('authorization')));
+      }
+    });
+
+    test('a redirect is not followed: ApiRedirect with the target', () async {
+      await expectLater(
+        _tester(
+          (o) => emptyResponse(301, headers: {'location': ['https://ledger.example.com/api/info']}),
+          [],
+        ).probe('http://ledger.example.com'),
+        throwsA(isA<ApiRedirect>().having((e) => e.location, 'location', 'https://ledger.example.com/api/info')),
+      );
+    });
+
     test('sign-in enabled: /api/info refused → not open, methods from auth status', () async {
       final probe = await _tester((o) {
         if (o.uri.path == '/api/auth/status') return jsonResponse(status());

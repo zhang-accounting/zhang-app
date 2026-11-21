@@ -12,6 +12,12 @@
 
 ## 鉴权
 7. zhang 原生只有 HTTP Basic。Bearer 与自定义 Header 是给反向代理 / 网关（如 Cloudflare Access、Caddy forward_auth）用的，可与 Basic 叠加（同时启用多种时全部附加）。
+   - 实现（2026-11-21）：「登录方式」只决定 `Authorization`（无 / Basic / 浏览器登录的 Bearer / 反向代理 Bearer 四选一）；自定义 Header 与登录方式无关，每个请求都附加（浏览器登录的 `/api/auth/status` 与 code 兑换也带上，否则过不了网关）。
+   - `Authorization` 归登录方式所有：选了登录方式时，编辑表单拒绝名为 `Authorization`（不分大小写）的自定义 Header（「测试连接」「浏览器登录」「保存」都不执行并在该行提示），模型层 `authHeaders()` 也从不让自定义 `Authorization` 覆盖登录方式的值（不分大小写，dio 的 header 也不分大小写）。只有登录方式为「无需登录」时才发送自定义 `Authorization`（给要求其他 scheme 的网关用）。浏览器登录的探测与兑换请求永远不带 `Authorization`。
+   - 其他请求头：请求自己的头优先。自定义 Header 只补请求和客户端都没设的头，所以自定义的 `Accept` / `Content-Type` / `If-Match` / `Idempotency-Key` 不会盖掉 SSE 的 `Accept: text/event-stream`、编辑的 `If-Match` 或 JSON 请求体的 `Content-Type`（名称不分大小写）。
+   - 不跟随重定向（`followRedirects: false`）：dart:io 跟随重定向时只去掉 `Authorization` / `Cookie`，自定义 Header（如 `CF-Access-Client-Secret`）会被带到任何目标，包括别的主机和明文 http。zhang 的 API 从不重定向，3xx 一律报错（`ApiRedirect`）：转到**别的主机**或已知网关登录路径（`/cdn-cgi/access/`、`/oauth2/`、`/outpost.goauthentik.io/`、`/.pomerium/`）按登录网关处理（Cloudflare Access 对未认证请求就是 302 到它的登录页），配置向导第 1 步给出「前面有登录网关」；同一主机内的重定向（http → https、路径变了）提示把最终地址填为服务器地址。
+   - 旧数据迁移：存储格式加版本号 `v: 2`（只有整数 `v >= 2` 算新格式）。旧的 `authType: headers` 读成「无需登录 + 原有 Header」（原来的自定义 `Authorization` 照常发送）；其他旧类型若还存着 Header（旧版本从不发送）就丢弃，保证迁移前后发出的请求头完全一致；下次保存写成 v2。不认识的 `authType`（更新版本写的）按「无需登录」读，且去掉自定义 `Authorization`：什么 `Authorization` 都不发（fail closed）。
+   - 配置向导：网关 Header 能通过网关、而 zhang 自己还要求登录时（第 1 步读不到 `/api/auth/status`，带 Header 能读到且已开启登录），第 2 步保留这些 Header，接着走 zhang 的浏览器登录或用户名密码。
 
 ## 范围
 8. **MVP = design-research §4 的 P0 全部 12 项**，分三条并行线实现：
@@ -52,3 +58,10 @@
 - 只有带 `version` 的交易（zhang ≥ 0.3）才提供删除：id 是「文件 + 偏移」，删除后下一笔交易可能占用这个 id；只有 `If-Match` 能保证过期的 id 不会删掉另一笔交易（服务器还会在 24 小时内记住刚删除 / 替换的版本，重发的删除不会删掉内容相同的「双胞胎」）。旧服务器上没有删除入口。
 - 412 / 404 →「已在服务器上变化」，没有删除任何内容，「刷新」回到列表并重新读取；其他错误（400 插件生成、409 文件已变化）显示服务器的原因。成功后关闭详情，列表随 SSE `Reload` 刷新，与编辑相同。
 - 不做撤销。后续可以考虑：用删除前的快照重新 `POST` 一笔（保留元数据，包括 `idempotency-key`，此时不发 header）——但它会写到 `directive_output_path` 指定的文件末尾、按导出格式重写，而不是回到原来的位置；服务器的 tombstone 只用来拒绝过期的写入，对撤销没有帮助。
+
+## 明文 http（2026-11-21，S01 的「允许 HTTP（不安全）」）
+- profile 的地址是 `http://`、又带凭据（选了登录方式或有自定义 Header；浏览器登录即使未登录也算，登录后就会带 token）时，必须显式确认「仍然通过 http 发送我的凭据」：编辑表单里「测试连接」「浏览器登录」「保存」在确认前不可用，配置向导第 2 步的各种登录 / 连接在确认前不发任何请求。确认按 profile 保存（`plainHttpAcknowledged`，非敏感，存在 shared_preferences），只对确认时的地址有效：改地址要重新确认，换成 https 或去掉凭据后不再保存。
+- **豁免**：只豁免本机回环 `localhost` 和回环 IP 字面量 `127.0.0.0/8`、`::1`——流量不离开设备（如 SSH 隧道）。不豁免 `*.localhost`（Android / iOS 的解析器不一定把它解析到回环）。**不豁免**局域网地址（`192.168.*`、`10.*`、`*.local` 等）：共享 Wi-Fi 上能被读到，正是 http 最常见、最需要用户知情的场景。
+- **常驻提示**：账本名旁（各标签页 app bar 的 `ActiveLedgerTitle`）显示一个警示色的「未加密」小图标（点按有说明），设置的服务器列表在地址后注明「未加密（http）」；只要该 profile 通过非回环的 http 发送凭据就一直显示，确认过也显示。
+- 升级前已存在、未确认的 http profile 不会被锁住：照常连接、显示同样的提示，下次在编辑表单保存时才要求确认；对这种浏览器登录 profile 点「重新登录」（首页 / 设置）会先弹窗确认，确认后一并保存。
+- 配置向导里网关 Header 通过后（Header 已经随确认发出），确认勾选框锁定不能再取消；「再次检查」也带网关 Header，同样要先确认。

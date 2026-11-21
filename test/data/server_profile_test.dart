@@ -6,11 +6,12 @@ import 'package:zhang_app/data/profiles/profile_repository.dart';
 import 'package:zhang_app/data/profiles/secret_store.dart';
 import 'package:zhang_app/data/profiles/server_profile.dart';
 
+/// zhang's Basic behind Cloudflare Access (decisions.md §7).
 const _full = ServerProfile(
   id: 'p1',
   name: 'Home',
   baseUrl: 'https://ledger.example.com',
-  authType: AuthType.headers,
+  authType: AuthType.basic,
   basicUsername: 'alice',
   basicPassword: 's3cret',
   bearerToken: 'tok',
@@ -102,6 +103,7 @@ void main() {
       expect(public, isNot(contains('id-1')));
       expect(public, isNot(contains('sec-2')));
       expect(public, contains('CF-Access-Client-Id')); // header names are public
+      expect(public, contains('"v":2'));
       expect(_full.toString(), isNot(contains('s3cret')));
     });
 
@@ -195,9 +197,163 @@ void main() {
       expect(_session.withoutSession().sessionExpiresWithin(const Duration(days: 365), now: now), isFalse);
     });
 
-    test('custom headers (blank names dropped)', () {
-      final p = base.copyWith(authType: AuthType.headers, customHeaders: {'X-A': '1', ' ': 'no'});
+    test('custom headers alone (blank names dropped)', () {
+      final p = base.copyWith(customHeaders: {'X-A': '1', ' ': 'no'});
       expect(p.authHeaders(), {'X-A': '1'});
+    });
+
+    const cf = {'CF-Access-Client-Id': 'id-1', 'CF-Access-Client-Secret': 'sec-2'};
+
+    test('custom headers stack with every sign-in method', () {
+      expect(_full.authHeaders(), {
+        ...cf,
+        'Authorization': 'Basic ${base64Encode(utf8.encode('alice:s3cret'))}',
+      });
+      expect(base.copyWith(authType: AuthType.bearer, bearerToken: 'abc', customHeaders: cf).authHeaders(), {
+        ...cf,
+        'Authorization': 'Bearer abc',
+      });
+      final session = _session.copyWith(customHeaders: cf);
+      expect(session.authHeaders(), {...cf, 'Authorization': 'Bearer eyJ1c2VyIjoiZGVtbyJ9.c2lnbmF0dXJl'});
+      expect(session.withoutSession().authHeaders(), cf, reason: 'signed out: the gateway headers still go');
+    });
+
+    test('a custom Authorization never replaces the sign-in method\'s', () {
+      const own = {'authorization': 'Token mine', 'X-A': '1'};
+      expect(base.copyWith(customHeaders: own).authHeaders(), own, reason: 'allowed without a sign-in method');
+      expect(base.copyWith(customHeaders: own).allowsCustomAuthorization, isTrue);
+      final basic = base.copyWith(authType: AuthType.basic, basicUsername: 'a', basicPassword: 'b', customHeaders: own);
+      expect(basic.allowsCustomAuthorization, isFalse);
+      expect(basic.authHeaders(), {'X-A': '1', 'Authorization': 'Basic ${base64Encode(utf8.encode('a:b'))}'});
+      final signedOut = _session.withoutSession().copyWith(customHeaders: {' AUTHORIZATION ': 'x'});
+      expect(signedOut.authHeaders(), isEmpty, reason: 'not even while signed out');
+      expect(ServerProfile.isAuthorizationHeader(' Authorization'), isTrue);
+      expect(ServerProfile.isAuthorizationHeader('Proxy-Authorization'), isFalse);
+    });
+  });
+
+  group('migration of version 1 profiles', () {
+    // What app versions before 2026-11-21 stored: no "v", authType could be
+    // "headers", custom headers were only sent with that type.
+    Map<String, Object?> v1(String authType, {List<String> headerNames = const ['CF-Access-Client-Id']}) => {
+      'id': 'old-$authType',
+      'name': 'Old',
+      'baseUrl': 'https://ledger.example.com',
+      'authType': authType,
+      if (authType == 'basic') 'basicUsername': 'alice',
+      'customHeaderNames': headerNames,
+      'allowSelfSigned': false,
+    };
+    const headerSecret = {
+      'customHeaders': {'CF-Access-Client-Id': 'id-1'},
+    };
+
+    test('"headers" becomes no sign-in method with the same headers', () {
+      final p = ServerProfile.fromJson(v1('headers'), headerSecret);
+      expect(p.authType, AuthType.none);
+      expect(p.customHeaders, {'CF-Access-Client-Id': 'id-1'});
+      expect(p.authHeaders(), {'CF-Access-Client-Id': 'id-1'});
+    });
+
+    test('a custom Authorization of a "headers" profile keeps working', () {
+      final p = ServerProfile.fromJson(v1('headers', headerNames: ['Authorization']), {
+        'customHeaders': {'Authorization': 'Token abc'},
+      });
+      expect(p.authHeaders(), {'Authorization': 'Token abc'});
+    });
+
+    test('other types send exactly what they sent before (leftover headers dropped)', () {
+      final basic = ServerProfile.fromJson(v1('basic'), {...headerSecret, 'basicPassword': 'pw'});
+      expect(basic.authType, AuthType.basic);
+      expect(basic.customHeaders, isEmpty);
+      expect(basic.authHeaders(), {'Authorization': 'Basic ${base64Encode(utf8.encode('alice:pw'))}'});
+      final bearer = ServerProfile.fromJson(v1('bearer'), {...headerSecret, 'bearerToken': 't'});
+      expect(bearer.authHeaders(), {'Authorization': 'Bearer t'});
+      final session = ServerProfile.fromJson(v1('session'), {...headerSecret, 'sessionToken': 'tok.sig'});
+      expect(session.authHeaders(), {'Authorization': 'Bearer tok.sig'});
+      expect(ServerProfile.fromJson(v1('none'), headerSecret).authHeaders(), isEmpty);
+    });
+
+    test('only an integer v >= 2 is version 2', () {
+      for (final v in ['2', 1, 2.5, true]) {
+        final p = ServerProfile.fromJson({...v1('basic'), 'v': v}, {...headerSecret, 'basicPassword': 'pw'});
+        expect(p.customHeaders, isEmpty, reason: 'v: $v is read as version 1');
+      }
+      final future = ServerProfile.fromJson({...v1('basic'), 'v': 3}, {...headerSecret, 'basicPassword': 'pw'});
+      expect(future.customHeaders, {'CF-Access-Client-Id': 'id-1'});
+    });
+
+    test('an unknown authType fails closed: no Authorization, not even a custom one', () {
+      final p = ServerProfile.fromJson(
+        {...v1('kerberos', headerNames: ['Authorization', 'X-Gate']), 'v': 2},
+        {
+          'customHeaders': {'Authorization': 'Negotiate abc', 'X-Gate': 'open'},
+        },
+      );
+      expect(p.authType, AuthType.none);
+      expect(p.authHeaders(), {'X-Gate': 'open'});
+    });
+
+    test('version 2 keeps the headers of every type', () {
+      final v2 = {...v1('basic'), 'v': 2};
+      final p = ServerProfile.fromJson(v2, {...headerSecret, 'basicPassword': 'pw'});
+      expect(p.customHeaders, {'CF-Access-Client-Id': 'id-1'});
+      expect(p.authHeaders().keys, ['CF-Access-Client-Id', 'Authorization']);
+    });
+  });
+
+  group('plain http', () {
+    const lan = ServerProfile(
+      id: 'h',
+      name: 'NAS',
+      baseUrl: 'http://192.168.1.2:8000',
+      authType: AuthType.basic,
+      basicUsername: 'demo',
+      basicPassword: 'secret',
+    );
+
+    test('credentials to a non-loopback http host are sent in clear', () {
+      expect(lan.usesPlainHttp, isTrue);
+      expect(lan.sendsCredentialsInClear, isTrue);
+      expect(lan.copyWith(baseUrl: 'https://192.168.1.2:8000').sendsCredentialsInClear, isFalse);
+      expect(lan.copyWith(authType: AuthType.none).sendsCredentialsInClear, isFalse, reason: 'nothing secret');
+      expect(lan.copyWith(authType: AuthType.session).sendsCredentialsInClear, isTrue, reason: 'even signed out');
+      for (final url in [
+        'http://nas.local',
+        'http://10.0.0.8',
+        'http://ledger.example.com',
+        'http://[fe80::1]:8000',
+        'http://app.localhost', // resolvers on phones need not map *.localhost to loopback
+      ]) {
+        expect(lan.copyWith(baseUrl: url).sendsCredentialsInClear, isTrue, reason: url);
+      }
+    });
+
+    test('loopback hosts are exempt', () {
+      for (final url in [
+        'http://localhost:8000',
+        'http://LOCALHOST.',
+        'http://127.0.0.1:18011',
+        'http://127.1.2.3',
+        'http://[::1]:8000',
+      ]) {
+        expect(ServerProfile.plainHttpRiskFor(url), isFalse, reason: url);
+        expect(lan.copyWith(baseUrl: url).sendsCredentialsInClear, isFalse, reason: url);
+      }
+      expect(ServerProfile.isLoopbackHost('127.0.0.256'), isFalse);
+      expect(ServerProfile.isLoopbackHost('128.0.0.1'), isFalse);
+      expect(ServerProfile.isLoopbackHost('localhost.example.com'), isFalse);
+      expect(ServerProfile.isLoopbackHost('app.localhost'), isFalse);
+    });
+
+    test('the acknowledgement is stored per profile (public JSON), absent = not given', () {
+      final acked = lan.copyWith(plainHttpAcknowledged: true);
+      final public = jsonDecode(jsonEncode(acked.toPublicJson())) as Map<String, Object?>;
+      expect(public['plainHttpAcknowledged'], isTrue);
+      expect(ServerProfile.fromJson(public, acked.toSecretJson()), acked);
+      expect(lan.toPublicJson().containsKey('plainHttpAcknowledged'), isFalse);
+      expect(ServerProfile.fromJson(lan.toPublicJson()).plainHttpAcknowledged, isFalse);
+      expect(acked == lan, isFalse);
     });
   });
 
@@ -258,6 +414,66 @@ void main() {
       await repo.upsert(_session.withoutSession());
       expect(secrets.values.containsKey(ProfileRepository.secretKey('p3')), isFalse);
       expect((await repo.load()).profiles.single.hasSession, isFalse);
+    });
+
+    test('migrates stored version 1 profiles without loss; saving writes version 2', () async {
+      await prefs.setString(
+        ProfileRepository.profilesKey,
+        jsonEncode([
+          {
+            'id': 'gw',
+            'name': 'Gateway',
+            'baseUrl': 'https://gw.example.com',
+            'authType': 'headers',
+            'customHeaderNames': ['CF-Access-Client-Id', 'CF-Access-Client-Secret'],
+            'allowSelfSigned': true,
+            'color': 0xFF3949AB,
+          },
+          {
+            'id': 'pw',
+            'name': 'Password',
+            'baseUrl': 'http://127.0.0.1:18011',
+            'authType': 'basic',
+            'basicUsername': 'demo',
+            'customHeaderNames': <String>[],
+            'allowSelfSigned': false,
+          },
+        ]),
+      );
+      await prefs.setString(ProfileRepository.activeKey, 'pw');
+      secrets.values[ProfileRepository.secretKey('gw')] = jsonEncode({
+        'customHeaders': {'CF-Access-Client-Id': 'id-1', 'CF-Access-Client-Secret': 'sec-2'},
+      });
+      secrets.values[ProfileRepository.secretKey('pw')] = jsonEncode({'basicPassword': 'secret'});
+
+      final state = await repo.load();
+      expect(state.activeId, 'pw');
+      final [gw, pw] = state.profiles;
+      expect(gw, const ServerProfile(
+        id: 'gw',
+        name: 'Gateway',
+        baseUrl: 'https://gw.example.com',
+        customHeaders: {'CF-Access-Client-Id': 'id-1', 'CF-Access-Client-Secret': 'sec-2'},
+        allowSelfSigned: true,
+        color: 0xFF3949AB,
+      ));
+      expect(gw.authHeaders(), {'CF-Access-Client-Id': 'id-1', 'CF-Access-Client-Secret': 'sec-2'});
+      expect(pw, const ServerProfile(
+        id: 'pw',
+        name: 'Password',
+        baseUrl: 'http://127.0.0.1:18011',
+        authType: AuthType.basic,
+        basicUsername: 'demo',
+        basicPassword: 'secret',
+      ));
+
+      // Stacking Basic on the migrated gateway profile and saving: version 2.
+      final stacked = gw.copyWith(authType: AuthType.basic, basicUsername: 'demo', basicPassword: 'secret');
+      await repo.upsert(stacked);
+      final stored = (jsonDecode(prefs.getString(ProfileRepository.profilesKey)!) as List).first as Map;
+      expect(stored['v'], 2);
+      expect(stored['authType'], 'basic');
+      expect((await repo.load()).profiles.first, stacked);
     });
 
     test('corrupt prefs do not crash loading', () async {
