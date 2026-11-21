@@ -13,6 +13,7 @@ import '../../data/models/transaction_request.dart';
 import '../../data/repositories/journal_repository.dart';
 import 'advanced_draft.dart';
 import 'category_tree.dart';
+import 'create_intent.dart';
 import 'entry_mode.dart';
 
 /// Why a journal item cannot be edited (`PUT /api/transactions/{id}`)
@@ -492,7 +493,7 @@ class EntryPrefill {
 /// What the advanced editor is opened with.
 @immutable
 class AdvancedEntryArgs {
-  const AdvancedEntryArgs({required this.draft, this.target});
+  const AdvancedEntryArgs({required this.draft, this.target, this.intent});
 
   /// Edit of [target] (`PUT` to its id).
   factory AdvancedEntryArgs.edit(EditTarget target) => AdvancedEntryArgs(
@@ -509,6 +510,10 @@ class AdvancedEntryArgs {
   /// Transaction replaced on save; `null` = create.
   final EditTarget? target;
 
+  /// The save of the simple form that opened the editor: a create keeps
+  /// its `Idempotency-Key` (an attempt made there may have been written).
+  final CreateIntent? intent;
+
   String? get editId => target?.id;
 
   bool get isEdit => target != null;
@@ -518,12 +523,15 @@ class AdvancedEntryArgs {
 /// `version` is first checked to still be the transaction the edit started
 /// from ([verifyUnchanged]), then previewed and replaced on its id (with
 /// `If-Match` when it has a `version`); anything else is previewed and
-/// created. Throws [TransactionRejected] / [TransactionNeedsConfirmation]
-/// (nothing written), [TransactionChanged] or the API error.
-Future<void> saveEntry(
+/// created with the `Idempotency-Key` of [intent] (a new one when `null`).
+/// Answers what a create wrote, `null` for an edit. Throws
+/// [TransactionRejected] / [TransactionNeedsConfirmation] (nothing
+/// written), [TransactionChanged] or the API error.
+Future<CreateResult?> saveEntry(
   JournalRepository repository,
   CreateTransactionRequest request, {
   EditTarget? target,
+  CreateIntent? intent,
   bool acceptWarnings = false,
   bool again = false,
 }) async {
@@ -536,9 +544,7 @@ Future<void> saveEntry(
   }
   if (preview.isBlocked) throw TransactionRejected(preview);
   if (!acceptWarnings && preview.warnings.isNotEmpty) throw TransactionNeedsConfirmation(preview, again: again);
-  if (target == null) {
-    await repository.create(request);
-  } else {
-    await repository.update(target.id, request, version: target.version);
-  }
+  if (target == null) return (intent ?? CreateIntent()).create(repository, request);
+  await repository.update(target.id, request, version: target.version);
+  return null;
 }

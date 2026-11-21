@@ -770,6 +770,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 saved} other{{count} saved}}'**
   String addSavedCount(int count);
 
+  /// No description provided for @addSavedEarlierSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Already recorded by an earlier try of this save. Check it: changes made since then may be missing.'**
+  String get addSavedEarlierSnack;
+
   /// No description provided for @editSavedSnack.
   ///
   /// In en, this message translates to:

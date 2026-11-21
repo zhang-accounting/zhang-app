@@ -112,6 +112,7 @@
   "addHintCommodity": "正在读取账本币种…",
   "addSavedSnack": "已记账 {amount} · {title}",
   "addSavedCount": "本次已记 {count} 笔",
+  "addSavedEarlierSnack": "这笔交易已由之前的一次保存写入服务器，之后的修改可能没有保存，请核对。",
   "editSavedSnack": "已保存修改",
   "addSaveFailed": "未能保存",
   "editStale": "这笔交易打开后在服务器上已变化（id 已过期或在别处被修改）。请返回、刷新列表后重新打开。",

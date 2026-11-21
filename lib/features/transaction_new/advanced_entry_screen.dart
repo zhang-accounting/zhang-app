@@ -19,6 +19,7 @@ import '../../router.dart';
 import '../account_picker/account_picker_sheet.dart';
 import '../journals/widgets/amount_format.dart';
 import 'advanced_draft.dart';
+import 'create_intent.dart';
 import 'transaction_edit.dart';
 import 'transaction_history.dart';
 import 'widgets/edit_dialogs.dart';
@@ -136,6 +137,10 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
   ];
   late final List<_MetaRow> _metas = [for (final (i, m) in _initial.metas.indexed) _MetaRow(i, m)];
   late int _nextKey = 2000;
+
+  /// The save under way, with the `Idempotency-Key` of all its attempts:
+  /// the simple form's when it opened this editor.
+  late final CreateIntent _intent = widget.args?.intent ?? CreateIntent();
 
   bool _submitting = false;
 
@@ -275,7 +280,9 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     if (_submitting || _asking) return;
     final draft = _snapshot();
     if (validateAdvanced(draft, rules: _rules).isNotEmpty) return;
-    final request = buildAdvancedRequest(draft, now: _now(), edit: _editing, rules: _rules);
+    // A retry of an entry dated "now" keeps the time of the attempt the
+    // server may have written (CreateIntent.sentAt).
+    final request = buildAdvancedRequest(draft, now: _intent.sentAt ?? _now(), edit: _editing, rules: _rules);
     final target = widget.args?.target;
     final editId = target?.id;
     final repository = ref.read(journalRepositoryProvider);
@@ -295,8 +302,9 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
       _submitting = true;
       _error = null;
     });
+    final CreateResult? created;
     try {
-      await saveEntry(repository, request, target: target, acceptWarnings: acceptWarnings);
+      created = await saveEntry(repository, request, target: target, intent: _intent, acceptWarnings: acceptWarnings);
     } catch (e) {
       if (!mounted) return;
       HapticFeedback.heavyImpact();
@@ -312,7 +320,17 @@ class _AdvancedEntryScreenState extends ConsumerState<AdvancedEntryScreen> {
     final l10n = context.l10n;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(editId == null ? l10n.saved : l10n.editSavedSnack)));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            editId != null
+                ? l10n.editSavedSnack
+                : created?.mayDiffer ?? false
+                ? l10n.addSavedEarlierSnack
+                : l10n.saved,
+          ),
+        ),
+      );
     final saved = EntrySaved(revision: revision, request: request, hint: EntrySaved.hintFor(request));
     setState(() {
       _submitting = false;
