@@ -81,7 +81,8 @@ class _Server {
     if (path == '/api/options') return jsonResponse(fixture('options.json'));
     if (path == '/api/commodities') return jsonResponse(fixture('commodities.json'));
     if (path == '/api/transactions/preview') return jsonResponse(fixture('transaction_preview.json'));
-    if (path == '/api/transactions') return emptyResponse(201);
+    // zhang ≥ 0.3: the id and version of what a create wrote.
+    if (path == '/api/transactions') return data({'id': '$payee-new', 'version': 'v-new'});
     return builtins.handle(o) ?? jsonResponse({'message': 'not found'}, status: 404);
   }
 }
@@ -284,6 +285,28 @@ void main() {
     expect(family.sse, hasLength(2), reason: 'a new event stream for the new session');
     expect(attic.adapter.requests, hasLength(atticRequests));
     expect(app.container.read(activeProfileProvider), _family);
+  });
+
+  testWidgets('"View" after a save goes with the session: a switch hides it (the id is the other ledger\'s)', (
+    tester,
+  ) async {
+    final app = await _pumpHost(tester);
+    await tester.tap(find.byKey(const Key('shell.newTransaction')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Food')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.key.9')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(_servers['p1']!.paths.where((p) => p == '/api/transactions'), hasLength(1));
+    expect(find.byKey(const Key('add.viewSaved')), findsOneWidget);
+
+    // A switch that shows no snackbar of its own (not from Settings).
+    await app.container.read(profilesProvider.notifier).activate('p2');
+    await tester.pumpAndSettle();
+    expect(find.text('Work taxi'), findsOneWidget);
+    expect(find.byKey(const Key('add.viewSaved')), findsNothing);
   });
 
   testWidgets('a session ends with its profile: editing the active profile starts a new one', (tester) async {
