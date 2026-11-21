@@ -194,8 +194,11 @@ void main() {
 
   test('EntryMode funding types and query parsing', () {
     expect(EntryMode.expense.allowsFunding('Liabilities:Card'), isTrue);
-    expect(EntryMode.income.allowsFunding('Liabilities:Card'), isFalse);
+    expect(EntryMode.income.allowsFunding('Liabilities:Card'), isTrue, reason: 'e.g. a refund onto the card');
     expect(EntryMode.income.allowsFunding('Assets:Bank'), isTrue);
+    for (final other in ['Income:Salary', 'Expenses:Food', 'Equity:Opening']) {
+      expect(EntryMode.income.allowsFunding(other), isFalse, reason: other);
+    }
     expect(EntryMode.transfer.allowsFunding('Expenses:Food'), isFalse);
     expect(EntryMode.fromQuery('income'), EntryMode.income);
     expect(EntryMode.fromQuery('advanced'), EntryMode.expense);

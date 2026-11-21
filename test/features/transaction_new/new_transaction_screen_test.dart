@@ -155,6 +155,8 @@ Future<void> _keys(WidgetTester tester, String keys) async {
       '+' => 'plus',
       '-' => 'minus',
       '.' => 'dot',
+      '=' => 'save',
+      '<' => 'backspace',
       _ => k,
     };
     await tester.tap(find.byKey(Key('add.key.$name')));
@@ -168,6 +170,24 @@ bool _enabled(WidgetTester tester, String key) =>
     tester.widget<InkWell>(find.descendant(of: find.byKey(Key(key)), matching: find.byType(InkWell))).onTap != null;
 
 void main() {
+  testWidgets('keypad: after "=" a digit starts a new amount, an operator continues, backspace edits', (tester) async {
+    await _pump(tester);
+    await _keys(tester, '3-5=');
+    expect(_amountText(tester), '\u2212¥2');
+    await _keys(tester, '20');
+    expect(_amountText(tester), '¥20', reason: 'not −20');
+
+    await _keys(tester, '-25=+');
+    expect(tester.widget<Text>(find.byKey(const Key('add.expression'))).data, '\u22125 +');
+    await _keys(tester, '7=');
+    expect(_amountText(tester), '¥2');
+
+    await _keys(tester, '+10.5=<');
+    expect(_amountText(tester), '¥12.');
+    await _keys(tester, '4');
+    expect(_amountText(tester), '¥12.4');
+  });
+
   testWidgets('expense: category + sub-category, keypad 12+3.5, "=" then save → two explicit postings', (tester) async {
     final (repo, prefs) = await _pump(tester);
 
@@ -458,6 +478,32 @@ void main() {
     expect(find.byKey(const Key('add.lastAmount')), findsNothing, reason: '27.505 does not fit CNY (2 decimals)');
     expect(find.textContaining('remove the extra digits'), findsNothing);
     expect(_amountText(tester), '¥0');
+  });
+
+  testWidgets('income can be received on a liability (a refund onto the credit card)', (tester) async {
+    final (repo, _) = await _pump(tester);
+    await tester.tap(find.byKey(const Key('add.mode.income')));
+    await tester.pumpAndSettle();
+    expect(find.text('Deposit to: WeChat'), findsOneWidget, reason: 'the default is still an asset account');
+
+    await tester.tap(find.byKey(const Key('add.funding')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('picker.account.Liabilities:Card')), findsOneWidget);
+    expect(find.byKey(const Key('picker.account.Expenses:Clothing')), findsNothing);
+    expect(find.byKey(const Key('picker.account.Income:Salary')), findsNothing);
+    await tester.tap(find.byKey(const Key('picker.account.Liabilities:Card')));
+    await tester.pumpAndSettle();
+    expect(find.text('Deposit to: Card'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('add.category.Income:Salary')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '25');
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(repo.requests.single.postings.map((p) => (p.account, p.unit!.number.toString())), [
+      ('Income:Salary', '-25'),
+      ('Liabilities:Card', '25'),
+    ]);
   });
 
   testWidgets('closing with input asks before discarding', (tester) async {

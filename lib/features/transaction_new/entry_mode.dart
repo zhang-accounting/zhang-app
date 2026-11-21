@@ -24,10 +24,12 @@ enum EntryMode {
   };
 
   /// Account types allowed for the funding account (expense / income) or for
-  /// both sides of a transfer.
+  /// both sides of a transfer. Income may be received on a liability too
+  /// (a refund or cashback paid onto a credit card); the defaults still
+  /// prefer asset accounts (`resolveFunding`).
   Set<AccountType> get fundingTypes => switch (this) {
     expense => const {AccountType.assets, AccountType.liabilities},
-    income => const {AccountType.assets},
+    income => const {AccountType.assets, AccountType.liabilities},
     transfer => const {AccountType.assets, AccountType.liabilities},
   };
 
