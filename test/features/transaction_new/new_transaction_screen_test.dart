@@ -19,8 +19,10 @@ import 'package:zhang_app/data/profiles/server_profile.dart';
 import 'package:zhang_app/data/repositories/journal_repository.dart';
 import 'package:zhang_app/data/repositories/ledger_data_providers.dart';
 import 'package:zhang_app/features/account_picker/account_picker_data.dart';
+import 'package:zhang_app/features/transaction_new/entry_mode.dart';
 import 'package:zhang_app/features/transaction_new/new_transaction_screen.dart';
 import 'package:zhang_app/features/transaction_new/record_prefs.dart';
+import 'package:zhang_app/features/transaction_new/transaction_edit.dart';
 import 'package:zhang_app/features/transaction_new/transaction_history.dart';
 import 'package:zhang_app/l10n/l10n.dart';
 
@@ -55,6 +57,8 @@ HistoryEntry _entry(int daysAgo, String payee, Map<String, String> postings, {St
 final _history = [
   _entry(1, 'Uniqlo', {'Assets:WeChat': '-99', 'Expenses:Clothing': '99'}),
   _entry(2, '隆江猪脚饭', {'Liabilities:Card': '-27', 'Expenses:PersonalDiet:Lunch': '27'}, narration: 'Eating Lunch'),
+  // Written with more decimals than CNY's precision (2).
+  _entry(3, 'Fancy Cafe', {'Assets:WeChat': '-27.505', 'Expenses:Clothing': '27.505'}),
 ];
 
 class _FakeHistory extends TransactionHistory {
@@ -85,7 +89,10 @@ class _FakeJournalRepository extends JournalRepository {
   }
 }
 
-Future<(_FakeJournalRepository, SharedPreferences)> _pump(WidgetTester tester) async {
+Future<(_FakeJournalRepository, SharedPreferences)> _pump(
+  WidgetTester tester, {
+  NewTransactionScreen Function()? screen,
+}) async {
   tester.view.physicalSize = const Size(1179, 2556);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -105,6 +112,7 @@ Future<(_FakeJournalRepository, SharedPreferences)> _pump(WidgetTester tester) a
           (ref) async => {
             'CNY': Commodity(name: 'CNY', precision: 2, prefix: '¥', totalAmount: Decimal.zero),
             'USD': Commodity(name: 'USD', precision: 2, prefix: r'$', totalAmount: Decimal.zero),
+            'JPY': Commodity(name: 'JPY', precision: 0, totalAmount: Decimal.zero),
           },
         ),
         transactionHistoryProvider.overrideWith(_FakeHistory.new),
@@ -126,7 +134,7 @@ Future<(_FakeJournalRepository, SharedPreferences)> _pump(WidgetTester tester) a
             body: Center(
               child: FilledButton(
                 onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const NewTransactionScreen()),
+                  MaterialPageRoute<void>(builder: (_) => screen?.call() ?? const NewTransactionScreen()),
                 ),
                 child: const Text('open'),
               ),
@@ -147,6 +155,8 @@ Future<void> _keys(WidgetTester tester, String keys) async {
       '+' => 'plus',
       '-' => 'minus',
       '.' => 'dot',
+      '=' => 'save',
+      '<' => 'backspace',
       _ => k,
     };
     await tester.tap(find.byKey(Key('add.key.$name')));
@@ -160,6 +170,24 @@ bool _enabled(WidgetTester tester, String key) =>
     tester.widget<InkWell>(find.descendant(of: find.byKey(Key(key)), matching: find.byType(InkWell))).onTap != null;
 
 void main() {
+  testWidgets('keypad: after "=" a digit starts a new amount, an operator continues, backspace edits', (tester) async {
+    await _pump(tester);
+    await _keys(tester, '3-5=');
+    expect(_amountText(tester), '\u2212¥2');
+    await _keys(tester, '20');
+    expect(_amountText(tester), '¥20', reason: 'not −20');
+
+    await _keys(tester, '-25=+');
+    expect(tester.widget<Text>(find.byKey(const Key('add.expression'))).data, '\u22125 +');
+    await _keys(tester, '7=');
+    expect(_amountText(tester), '¥2');
+
+    await _keys(tester, '+10.5=<');
+    expect(_amountText(tester), '¥12.');
+    await _keys(tester, '4');
+    expect(_amountText(tester), '¥12.4');
+  });
+
   testWidgets('expense: category + sub-category, keypad 12+3.5, "=" then save → two explicit postings', (tester) async {
     final (repo, prefs) = await _pump(tester);
 
@@ -350,6 +378,131 @@ void main() {
     expect(repo.requests.single.postings.map((p) => (p.account, p.unit!.number.toString())), [
       ('Assets:WeChat', '-50'),
       ('Liabilities:Card', '50'),
+    ]);
+  });
+
+  testWidgets('switching the currency re-checks the decimals already typed (12.34 → JPY)', (tester) async {
+    final (repo, _) = await _pump(tester);
+    String? hint() => tester.widgetList<Text>(find.byKey(const Key('add.hint'))).singleOrNull?.data;
+    Future<void> currency(String code) async {
+      await tester.tap(find.byKey(const Key('add.commodity')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('add.commodity.$code')).last);
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.byKey(const Key('add.category.Expenses:Clothing')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '12.34');
+    expect(hint(), isNull);
+    expect(_enabled(tester, 'add.key.save'), isTrue);
+
+    await currency('JPY');
+    expect(_amountText(tester), '12.34 JPY', reason: 'not rounded behind the user\'s back');
+    expect(hint(), 'JPY has no decimals: remove them');
+    expect(_enabled(tester, 'add.key.save'), isFalse);
+    expect(_enabled(tester, 'add.key.again'), isFalse);
+
+    await currency('USD');
+    expect(hint(), isNull, reason: 'USD allows 2 decimals');
+    expect(_enabled(tester, 'add.key.save'), isTrue);
+
+    await currency('JPY');
+    expect(hint(), 'JPY has no decimals: remove them');
+    await tester.tap(find.byKey(const Key('add.key.backspace')));
+    await tester.pump();
+    expect(hint(), 'JPY has no decimals: remove them');
+    await tester.tap(find.byKey(const Key('add.key.backspace')));
+    await tester.pump();
+    expect(_amountText(tester), '12. JPY');
+    expect(hint(), isNull);
+
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(repo.requests.single.postings.map((p) => (p.unit!.number.toString(), p.unit!.commodity)), [
+      ('-12', 'JPY'),
+      ('12', 'JPY'),
+    ]);
+  });
+
+  testWidgets('an unchanged prefilled amount keeps the ledger\'s decimals; a currency switch checks them', (
+    tester,
+  ) async {
+    final prefill = EntryPrefill(
+      fit: SimpleFit(
+        mode: EntryMode.expense,
+        amount: Decimal.parse('12.345'),
+        commodity: 'CNY',
+        source: 'Assets:WeChat',
+        target: 'Expenses:Clothing',
+      ),
+      base: CreateTransactionRequest(datetime: DateTime(2026, 10, 1, 12), payee: 'Market', postings: const []),
+      payee: 'Market',
+    );
+    await _pump(tester, screen: () => NewTransactionScreen(prefill: prefill));
+    String? hint() => tester.widgetList<Text>(find.byKey(const Key('add.hint'))).singleOrNull?.data;
+
+    expect(_amountText(tester), '¥12.345');
+    expect(hint(), isNull, reason: 'the ledger already has 12.345 CNY: not the user\'s mistake');
+    expect(_enabled(tester, 'add.key.save'), isTrue);
+
+    await tester.tap(find.byKey(const Key('add.commodity')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.commodity.USD')).last);
+    await tester.pumpAndSettle();
+    expect(hint(), 'USD allows 2 decimals: remove the extra digits');
+    expect(_enabled(tester, 'add.key.save'), isFalse);
+
+    await tester.tap(find.byKey(const Key('add.commodity')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.commodity.CNY')).last);
+    await tester.pumpAndSettle();
+    expect(hint(), isNull, reason: 'back to the unchanged prefill');
+
+    await tester.tap(find.byKey(const Key('add.key.backspace')));
+    await tester.pump();
+    expect(_amountText(tester), '¥12.34');
+    await tester.tap(find.byKey(const Key('add.key.5')));
+    await tester.pump();
+    expect(_amountText(tester), '¥12.34', reason: 'once changed, the keypad keeps to the precision');
+    expect(hint(), isNull);
+  });
+
+  testWidgets('the "last amount" chip is not offered with more decimals than the currency allows', (tester) async {
+    await _pump(tester);
+    await tester.enterText(find.byKey(const Key('add.payee')), 'Fancy');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add.payeeSuggestion.Fancy Cafe')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(find.byKey(const Key('add.payee'))).controller!.text, 'Fancy Cafe');
+    expect(find.byKey(const Key('add.lastAmount')), findsNothing, reason: '27.505 does not fit CNY (2 decimals)');
+    expect(find.textContaining('remove the extra digits'), findsNothing);
+    expect(_amountText(tester), '¥0');
+  });
+
+  testWidgets('income can be received on a liability (a refund onto the credit card)', (tester) async {
+    final (repo, _) = await _pump(tester);
+    await tester.tap(find.byKey(const Key('add.mode.income')));
+    await tester.pumpAndSettle();
+    expect(find.text('Deposit to: WeChat'), findsOneWidget, reason: 'the default is still an asset account');
+
+    await tester.tap(find.byKey(const Key('add.funding')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('picker.account.Liabilities:Card')), findsOneWidget);
+    expect(find.byKey(const Key('picker.account.Expenses:Clothing')), findsNothing);
+    expect(find.byKey(const Key('picker.account.Income:Salary')), findsNothing);
+    await tester.tap(find.byKey(const Key('picker.account.Liabilities:Card')));
+    await tester.pumpAndSettle();
+    expect(find.text('Deposit to: Card'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('add.category.Income:Salary')));
+    await tester.pumpAndSettle();
+    await _keys(tester, '25');
+    await tester.tap(find.byKey(const Key('add.key.save')));
+    await tester.pumpAndSettle();
+    expect(repo.requests.single.postings.map((p) => (p.account, p.unit!.number.toString())), [
+      ('Income:Salary', '-25'),
+      ('Liabilities:Card', '25'),
     ]);
   });
 

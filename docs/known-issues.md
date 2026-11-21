@@ -10,7 +10,6 @@
 - 只有 passkey 且 server 早于 PR #786（无 `app_login`）时仍用不了：连接测试提示开启密码登录；有 `app_login` 的 server 提示改用「浏览器登录」。
 - 浏览器登录的 iOS `ASWebAuthenticationSession` / Android Custom Tabs 不认 `allowSelfSigned`：自签名证书的 server 在浏览器里会被拦（App 内的 API 请求仍按 profile 放行）。
 - 明文 http 发送凭据没有提示（S01 要求显式 opt-in）。
-- 收入模式不能选 Liabilities 作为入账账户。
 - 账本时钟：`ledger.now` 与设备时钟的差值每个 profile 只取一次（取整到 15 分钟）。App 运行期间账本时区或设备时区切换夏令时，「今天 / 本月」会差一小时，直到重启或切换 profile。
 - 从账户页打开交易：`trx_id` 是真实交易 id，但没有按 id 取交易的接口，App 用 `/api/journals?keyword=<payee>` 最多翻 5 页（每页 100）去找；同名 payee 极多的老交易可能显示「找不到」。可改用 `journals.page` + `journals.postings{ids}`。
 - 编辑交易（S08）在以下情况被拦下并说明原因（仍可「复制为新交易」），需要 server 配合才能放开：
@@ -19,8 +18,6 @@
   - 插件生成的交易（posting 没有 `written`，PUT 会 400）、服务器不返回 posting `metas` / `edit_drops_text`（较旧的 zhang）、preview 本身报字段错误（无 `text`）。
 
 ## P2
-- 切换币种后不重新校验已输入的小数位（可输入 12.34 JPY）。
-- 键盘：`3−5=` 之后再输数字会变成 −20。
 - 标签过滤仍在客户端做（服务器依旧忽略百分号编码的 `tags%5B0%5D`，Dart 会重新编码 `[]`），罕见标签会把整个账本翻一遍、`total_count` 是未过滤的数。可改用内置查询 `journals.page{tags}`。
 - 报表净额线画到了未来日期；账户余额阶梯图的终点用设备时钟（`balance_history_chart.dart`）。
 - 两个 `formatAmount` helper 重复；`journal_providers` 直接 import main.dart。
@@ -34,6 +31,9 @@
 
 ## 已修（供参考）
 - 鉴权可叠加（2026-11-21，原 P1「鉴权类型互斥」）：登录方式（无 / Basic / 浏览器登录 / Bearer）只决定 `Authorization`，自定义 Header 与之叠加、每个请求都发（Cloudflare Access + zhang Basic、网关 Header + 浏览器登录的 session；浏览器登录的状态探测与 code 兑换也带 Header）。编辑表单的「登录」一节下方始终有「自定义 Header」；选了登录方式时拒绝自定义 `Authorization`，模型层也不会让它覆盖（decisions.md §7）。配置向导：网关 Header 通过后 zhang 仍要登录时，接着走 zhang 的登录并保留 Header。旧 profile 读取时迁移（`authType: headers` → 无需登录 + 原 Header，其余类型发出的请求头不变），有迁移测试。自定义 Header 不覆盖请求自己的头（SSE 的 `Accept`、编辑的 `If-Match`）；API 客户端不再跟随重定向（否则 dart:io 会把自定义 Header 带到重定向目标），3xx 报错：转到别的主机或网关登录页（如 Cloudflare Access 的 302）按网关处理、向导给出「前面有登录网关」，同主机内的重定向提示填最终地址。
+- 切换币种后重新校验小数位（2026-11-21，原 P2「可输入 12.34 JPY」）：金额的小数位多于当前币种的精度时，金额下方的提示行用错误色写明（「JPY 不能有小数，请删掉小数部分」「… 最多 2 位小数…」），保存 / 再记不可用，直到删掉多余的位数或换回允许的币种。不自动四舍五入（12.34 换成 JPY 多半是币种选错或要重输，悄悄变成 12 反而记错），与键盘「不接受超过精度的位数」、写入「按币种精度、从不舍入」一致；编辑 / 复制时未改动的原金额保留账本里原有的小数位，不受此限。「上次金额」chip 的金额若多于该币种允许的小数位就不显示（不让用户为没输入过的位数看到错误）。
+- 收入模式可选 Liabilities 作为入账账户（2026-11-21，原 P1）：例如退款 / 返现直接打到信用卡（`Income:… −` / `Liabilities:… +`）。账户选择器、按 payee 自动填表、分类的入账记忆和历史、「编辑交易」用普通表单的判断都放开了 Liabilities；没有记忆和历史时默认的入账账户仍只选 Assets（最近用过的、再是第一个开立的）。
+- 键盘 `=` 之后的输入（2026-11-21，原 P2「`3−5=` 之后再输数字会变成 −20」）：`=` 之后的结果像计算器一样处理——数字或 `.` 开始一个新数，运算符接着用结果计算（`3−5=` 再 `+1` 是 −1），退格删结果的最后一位、之后的数字接在它后面；表达式行里负的结果也用 U+2212 负号（`−2 + 1`）。
 - 切换 profile 的隔离（2026-11-20）：每个 active profile 一个账本会话（独立的 `ProviderContainer`，`LedgerSessionHost`，见 architecture.md「账本会话」）。切换 / 编辑 / 删除 active profile 时整个会话换新，任何 provider（含以后新增的）都不会在加载期间显示或保存上一个账本的数据（原「必须先修」第 1 条）；版本门禁下沉到 client（`gatedClient`）：切到 zhang < 0.2 的服务器只会收到 `/api/info`、`/api/auth/status`，其它请求不发出、直接 `ApiServerTooOld`（原 P1「版本门禁挡不住 provider」）。另：widget 测试不再依赖运行日期（假服务器的 `ledger.now` 用设备时钟，`--dart-define=ZHANG_TEST_NOW=…` 可整体换日期跑），SSE 测试改用 fake time。
 - 浏览器登录加上 PKCE（RFC 7636，仅 `S256`）与 `state`（2026-11-20，zhang PR #819）：每次登录生成随机 `code_verifier` / `state`，登录 URL 带 `code_challenge` 与 `state`，回调的 `state` 必须一致（server 有 `app_login_pkce` 时缺失也算失败），`app/exchange` 带 `code_verifier`。同一设备上截获 `zhang-app://` 回调的 App 拿不到 verifier，无法兑换。旧 server（无 `app_login_pkce`）仍可登录，但没有这层保护。
 - 预算、文档界面（2026-11-20，原「只有 repository，还没有界面」）：报表页顶部「收支 / 预算」分段，预算显示报表期间所在的月份（不改动报表的周 / 年 / 自定义期间，按月时两边一起翻）；按 `category` 分组的月度列表（已分配 / 已花 / 可用、进度条、超支带 ⚠ 和文字、余量不足 20 % 用警示色、本月剩余天数与日均可用、无预算时说明 `budget` 指令并给出 zhang / beancount 写法示例）；预算详情（关联账户可点开、本月分配与计入的 posting，点 posting 打开交易）。账户详情显示该账户（含子账户）的文档，交易详情显示交易附件（`journals.documents` 按交易 id），「账户 › ⋯ › 文档」列出全部文档；图片经 API 客户端下载（鉴权生效）在 App 内缩放预览，其他文件「打开或分享」走系统分享面板（新依赖 `share_plus`；临时文件写在 `<temp>/zhang-share/`，分享结束即删，启动时和删除服务器时连同 Android 上 share_plus 的 `<temp>/share_plus/` 一起清掉（`clearSharedDocuments()`）；单个文件超过 50 MB 不下载；iOS「存储图像」需要的相册权限说明已加中英文）。

@@ -108,6 +108,7 @@
   "addDecimalPoint": "小数点",
   "addHintAmount": "请输入金额",
   "addHintAmountPositive": "金额需大于 0",
+  "addHintAmountDecimals": "{precision, plural, =0{{commodity} 不能有小数，请删掉小数部分} other{{commodity} 最多 {precision} 位小数，请删掉多余的位数}}",
   "addHintCategory": "请选择类目",
   "addHintSubcategory": "请选择子类目",
   "addHintFunding": "请选择账户",
