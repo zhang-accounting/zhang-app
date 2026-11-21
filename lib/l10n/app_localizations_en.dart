@@ -191,7 +191,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorServerTooOld =>
-      'This zhang server is too old: zhang ≥ 0.2 with the built-in query API is required. Upgrade the server.';
+      'This zhang server is too old: the app needs zhang 0.3 or newer (a build of zhang\'s main branch from 2026-10-10 on also works). Upgrade the server.';
 
   @override
   String get errorPasskeyOnly =>
@@ -199,7 +199,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String errorApiMismatch(String message) {
-    return 'The server does not offer this API ($message). The app needs zhang ≥ 0.2.';
+    return 'The server does not offer this API ($message). The app needs zhang 0.3 or newer.';
   }
 
   @override
@@ -1324,7 +1324,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomeAboutBody =>
-      'zhang is open-source, self-hosted accounting that keeps your books as plain-text files you own. You run the server yourself, with Docker or a single binary, and this app connects to it. The app needs zhang 0.2 or newer.';
+      'zhang is open-source, self-hosted accounting that keeps your books as plain-text files you own. You run the server yourself, with Docker or a single binary, and this app connects to it. The app needs zhang 0.3 or newer.';
 
   @override
   String get welcomeReadDocs => 'Read the docs';
@@ -1410,7 +1410,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String setupTooOldBody(String version) {
-    return 'It runs zhang $version without the API this app uses. Upgrade the server to zhang 0.2 or newer, then try again.';
+    return 'It runs zhang $version without the API this app uses. Upgrade the server to zhang 0.3 or newer (a build of zhang\'s main branch from 2026-10-10 on also works), then try again.';
   }
 
   @override
