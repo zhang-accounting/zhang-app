@@ -40,6 +40,7 @@ import 'widgets/amount_keypad.dart';
 import 'widgets/category_grid.dart';
 import 'widgets/edit_dialogs.dart';
 import 'widgets/save_error_banner.dart';
+import 'widgets/saved_snack_bar.dart';
 import 'widgets/suggestion_chips.dart';
 import 'widgets/tags_sheet.dart';
 
@@ -355,14 +356,16 @@ class _NewTransactionScreenState extends ConsumerState<NewTransactionScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(
-          content: Text(
-            editId != null
-                ? l10n.editSavedSnack
-                : created?.mayDiffer ?? false
-                ? l10n.addSavedEarlierSnack
-                : l10n.addSavedSnack('$sign${r.format(draft.amount!)}', title),
-          ),
+        savedSnackBar(
+          context,
+          editId != null
+              ? l10n.editSavedSnack
+              : created?.mayDiffer ?? false
+              ? l10n.addSavedEarlierSnack
+              : l10n.addSavedSnack('$sign${r.format(draft.amount!)}', title),
+          // "View" once the screen has closed (not with "save and add another").
+          written: again ? null : created?.written,
+          hint: saved.hint,
         ),
       );
     if (again && editId == null) {

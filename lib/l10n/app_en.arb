@@ -252,6 +252,7 @@
       }
     }
   },
+  "addViewSaved": "View",
   "addSavedEarlierSnack": "Already recorded by an earlier try of this save. Check it: changes made since then may be missing.",
   "editSavedSnack": "Changes saved",
   "addSaveFailed": "Could not save",

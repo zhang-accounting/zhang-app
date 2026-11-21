@@ -836,6 +836,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 saved} other{{count} saved}}'**
   String addSavedCount(int count);
 
+  /// No description provided for @addViewSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get addViewSaved;
+
   /// No description provided for @addSavedEarlierSnack.
   ///
   /// In en, this message translates to:
