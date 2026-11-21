@@ -387,6 +387,30 @@ void main() {
     expect((results.single! as EntrySaved).hint, 'Supermarket');
   });
 
+  testWidgets('edit (advanced): the idempotency-key of the creating save is no row, and is sent back in place', (
+    tester,
+  ) async {
+    final tx = _journal(
+      postings: [('Assets:Paypal', '-28', 'USD'), ('Expenses:Fees', '28', 'USD')],
+      metas: [
+        {'key': 'count', 'value': '3'},
+        {'key': 'idempotency-key', 'value': 'k-1'},
+        {'key': 'note', 'value': 'x'},
+      ],
+    );
+    final (repo, _) = await _pump(tester, () => AdvancedEntryScreen(args: AdvancedEntryArgs.edit(EditTarget(tx))));
+    repo.listed = tx;
+    expect(find.byKey(const Key('adv.metaKey.0')), findsOneWidget);
+    expect(find.byKey(const Key('adv.metaKey.1')), findsOneWidget);
+    expect(find.byKey(const Key('adv.metaKey.2')), findsNothing, reason: 'not editable, so it cannot be dropped');
+    expect(find.text('idempotency-key'), findsNothing);
+
+    await _enter(tester, 'adv.narration', 'Weekly (edited)');
+    await tester.tap(find.byKey(const Key('adv.save')));
+    await tester.pumpAndSettle();
+    expect(repo.writes.single.$2.metas, const [Meta('count', '3'), Meta('idempotency-key', 'k-1'), Meta('note', 'x')]);
+  });
+
   testWidgets('edit (simple form): mode kept, hidden fields kept, unchanged amount keeps its decimals', (tester) async {
     final tx = _journal(
       postings: [('Expenses:Clothing', '88.5', 'CNY'), ('Assets:Bank', '-88.5', 'CNY')],

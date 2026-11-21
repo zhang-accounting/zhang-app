@@ -37,6 +37,17 @@ void main() {
     );
   });
 
+  test('"copy as text" keeps the idempotency-key metadata the detail hides', () {
+    final t = txn(
+      payee: 'Cafe',
+      postings: [('Assets:A', '-1', 'CNY'), ('Expenses:B', '1', 'CNY')],
+      metas: [
+        {'key': 'idempotency-key', 'value': 'k-1'},
+      ],
+    );
+    expect(transactionToText(t), contains('  idempotency-key: "k-1"\n'));
+  });
+
   test('payee without narration keeps an empty narration', () {
     final t = txn(payee: 'Shop', postings: [('Assets:A', '-1', 'CNY'), ('Expenses:B', '1', 'CNY')]);
     expect(transactionToText(t).split('\n').first, '2023-09-16 21:56:16 * "Shop" ""');
