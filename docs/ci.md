@@ -75,7 +75,7 @@ flutter build ios --release --no-codesign   # 编译检查；签名包请走 CI
 ## 版本号
 - `pubspec.yaml` 的 `version: x.y.z+build`：`x.y.z` 是安装包的版本名（Android `versionName`、iOS `CFBundleShortVersionString`），CI 不覆盖它。
 - build number（Android `versionCode`、iOS `CFBundleVersion`）在 CI 里一律由 `--build-number=${{ github.run_number }}` 覆盖，所以 TestFlight / Play 上的 build 号就是 `build` 工作流的 run 号，只增不减。`pubspec.yaml` 里的 `+build` 只对不带 `--build-number` 的本地构建生效；改版本时把它设为当时最大 run 号 + 1，本地包就不会小于已上传过的 build。
-- 已上传：TestFlight `1.0.0 (11)`、`1.0.0 (13)`（`workflow_dispatch`）。CI 产出的 Android 包 versionCode 到 57 为止（1.1.0 准备时）。
+- 已上传：TestFlight `1.0.0 (11)`、`1.0.0 (13)`（`workflow_dispatch`）。CI 产出的 Android 包 versionCode 到 114 为止（1.1.0 准备时，2026-11-23）。
 - 注意：重跑（re-run）同一个 run 时 run 号不变，TestFlight 会拒绝重复的 build，要重新上传请新开一次 `workflow_dispatch`；不要给 `build.yml` 改名，改名后 run 号从 1 重新开始。Play 要求 versionCode 严格递增，上传过的号不能再用。
 
 ## 发版步骤
