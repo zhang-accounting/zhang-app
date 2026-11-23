@@ -19,7 +19,9 @@ To ship with zhang 0.3.0. Replace "Unreleased" with the date when `v1.1.0` is ta
 - With zhang 0.3.0 (or `main` from 2026-11-20 on) browser sign-in uses PKCE and `state`, and edits are checked
   against the transaction's `version` with `If-Match`. `main` builds from 2026-10-10 to 2026-11-20 still work:
   sign-in runs without PKCE, and an edit re-reads the transaction by id before it is saved.
-- zhang 0.3.0 can also delete transactions and replay a create with an `Idempotency-Key`; this release uses neither.
+- Deleting a transaction (#16), **View** after a save (#14) and idempotent saves (#12) need zhang 0.3.0, or a `main`
+  build from 2026-11-20 on (zhang #818, #831). Older servers get no Delete and no View, and ignore the
+  `Idempotency-Key`, so there a retried save can still record a transaction twice.
 
 ### Upgrading from the 1.0.0 APK on Android
 
@@ -49,6 +51,13 @@ iOS (TestFlight) updates in place. Later APKs from GitHub Releases update 1.1.0 
 - Edit a transaction, or copy it as a new one, from its detail. Transactions that fit the simple form open there,
   the rest in the advanced editor; fields the form does not show are kept. Edits the server cannot write back without
   losing something (comment lines, plugin-made postings, posting flags) are blocked with an explanation. (#5)
+- Delete a transaction from its detail (⋮ › Delete, after a confirmation that names it). The app sends the
+  transaction's version (`If-Match`), so a transaction that changed on the server since it was listed is not deleted:
+  "Changed on the server" offers to refresh the list instead. There is no undo. Offered only on servers that version
+  transactions (zhang 0.3). (#16)
+- After a save, the snackbar offers **View**, which opens the transaction just recorded: in the Home tab when it was
+  recorded from Home, in the Journal tab otherwise. Shown when the server answers the new transaction's id
+  (zhang 0.3). (#14)
 - Step-by-step server setup: a welcome screen with a demo server, an address step that explains what it found
   (unreachable, certificate error, not a zhang server, too old), a sign-in step that offers only what the server
   supports, and a summary of the ledger before you start. Edit server in Settings is a compact form. (#3)
@@ -60,6 +69,22 @@ iOS (TestFlight) updates in place. Later APKs from GitHub Releases update 1.1.0 
   refuses a callback from it without `state`. (#6)
 - On servers that version transactions, a transaction changed on the server since you opened it is reported as
   changed instead of being overwritten (`If-Match`, 412). (#5)
+- Saves are idempotent: every save sends an `Idempotency-Key`, and every retry of that save (after a timeout or a
+  dropped connection, "Save anyway", or a fix of what the server refused) sends the same key, so the server records
+  the transaction once. "Save and add another" starts a new key. The server keeps the key as the transaction's
+  `idempotency-key` metadata, so each transaction recorded from the app has that extra line in the ledger file; the
+  app does not show it, and edits keep it. (#12)
+- Custom headers are sent together with the sign-in method: a profile behind a gateway such as Cloudflare Access can
+  send the gateway's headers and also sign in to zhang with a password, a token or the browser. The setup wizard
+  continues to zhang's sign-in once the gateway lets the headers through. Existing profiles are migrated and send
+  the same headers as before. A custom `Authorization` header is only allowed with "No sign-in". (#13)
+- Redirects are no longer followed, because the custom headers (such as `CF-Access-Client-Secret`) would go to the
+  redirect's target too: a redirect asks for the final address, and one to a sign-in gateway's login page says so.
+  (#13)
+- Credentials over plain `http://` need an explicit opt-in: a profile that sends a sign-in method or custom headers
+  over http to anything but this device (`localhost`, loopback addresses; LAN addresses are not exempt) needs "Send my
+  credentials over http anyway" in the setup or edit form, and shows a "Not encrypted" icon next to the ledger name.
+  Existing http profiles keep working and are asked on their next save. (#15)
 - Android: the application id is now `com.zhangaccounting.app`, as on iOS, and release builds are signed with the
   upload key, so 1.1.0 installs as a separate app (see "Upgrading from the 1.0.0 APK on Android"). (#2)
 
@@ -69,6 +94,11 @@ iOS (TestFlight) updates in place. Later APKs from GitHub Releases update 1.1.0 
   ledger's accounts or entries while the new one loads. (#7)
 - A server that is too old receives only the version check; every other request is stopped with "server too old"
   instead of being sent. (#7)
+- On the amount keypad, a digit after `=` starts a new number instead of extending the result (`3 − 5 =` then `20`
+  gave `−20`); an operator continues the calculation with the result. (#9)
+- Income can be received on a liability account, such as a refund or cashback paid onto a credit card. (#10)
+- Switching the currency re-checks the decimals already typed, so `12.34` typed in CNY can no longer be saved as
+  JPY: the hint under the amount says what to remove, and Save waits until it is removed. (#11)
 - The "server too old" messages ask for zhang 0.3 or newer. They asked for zhang 0.2, but the 0.2.0 release lacks
   the API the app needs.
 
