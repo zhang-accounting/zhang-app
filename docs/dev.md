@@ -17,7 +17,8 @@ No `build_runner`. The only generated code is `lib/l10n/app_localizations*.dart`
 
 ## Run against a local zhang server
 
-The app needs **zhang ≥ 0.2** (the built-in query API); older servers get "server too old". Build the server from
+The app needs the zhang v0.2 API (built-in queries): **zhang 0.3 or newer**, or a build of zhang `main` from
+2026-10-10 on. The 0.2.0 release and older servers get "server too old". Build the server from
 zhang `origin/main` in a throw-away worktree (the cargo package is `zhang`, not `zhang-cli`; ~8 min cold, about a
 minute with a warm cache):
 

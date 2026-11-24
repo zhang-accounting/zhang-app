@@ -35,7 +35,7 @@
 - `/api/journals` 仍不支持按日期 / 账户 / 金额过滤；v0.2 可用 BQL（`POST /api/query`、`postings.between` 等内置查询）代替。
 - 无预算写接口（budget-add / budget-transfer）。
 - 表单建议（`journals.payees`）无使用频次信号；账户不暴露允许的币种。
-- 2026-10-10 起 App 只支持 zhang ≥ 0.2（内置查询 API），见 docs/compat-v0.2.md；仍存在的服务器问题见 docs/zhang-api.md §5。
+- 2026-10-10 起 App 只支持 zhang ≥ 0.2（内置查询 API），见 docs/compat-v0.2.md；仍存在的服务器问题见 docs/zhang-api.md §5。这里的 0.2 指 zhang main 上的 v0.2 API，0.2.0 正式版（2026-10-02）还没有内置查询和 `format`。App 1.1.0 与 zhang 0.3.0 一起发布，所以从 2026-11-21 起 App 文案和文档都写「需要 zhang 0.3 或更新版本」，并注明 2026-10-10 之后从 main 构建的服务器也可用。
 
 ## 服务器配置向导（2026-10-14）
 - 作者反馈「整个 APP 的 onboarding 页面似乎做得不太好」：原先是一张长表单（名称、URL、溢出屏幕的 5 段鉴权选择、自签名开关、颜色、测试、保存）。改为按 design-research S01 的分步向导：欢迎页（仅首次启动；「连接我的服务器」/「试用 Demo」）→ 1 服务器地址（探测 `/api/auth/status` + `/api/info`）→ 2 登录（只显示服务器支持的方式，浏览器登录优先；开放的服务器跳过）→ 3 账本概览、名称、颜色 →「开始使用」。
